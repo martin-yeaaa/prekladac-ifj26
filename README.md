@@ -5,6 +5,6 @@ Název týmu: Tým xvaskom00
 
 ### Členové týmu
 **Martin Vaško - xvaskom00 - 282244**  
-Jiří, Švec, xsvecji00, 281993  
+Jiří Švec - xsvecji00 - 281993  
 Lukáš Dvořák - xdvoral00 - 282092  
-Michal, Bína, xbinami00, 282028  
+Michal Bína - xbinami00 - 282028  
