@@ -7,4 +7,4 @@ Název týmu: Tým xvaskom00
 **Martin Vaško - xvaskom00 - 282244**  
 Jiří, Švec, xsvecji00, 281993  
 Lukáš Dvořák - xdvoral00 - 282092  
-jméno, příjmení, vut login, osobně číslo  
+Michal, Bína, xbinami00, 282028  
