@@ -18,7 +18,6 @@ typedef struct tree_node {
   struct tree_node *left;
   struct tree_node *right;
 } TNode;
-typedef TNode *TNodePtr; // Helper typedef
 
 /**
  * Initializes declared binary search tree data structure.
