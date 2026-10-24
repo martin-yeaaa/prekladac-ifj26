@@ -72,3 +72,19 @@ TData BST_get_data(TNode *root, TKey key) {
 
   return NULL;
 }
+
+static bool is_empty(TNode *root) {
+
+  // root must not be NULL
+  assert(root != NULL);
+
+  // Here, a tree is considered empty when key of root is NULL
+  if (root->key == NULL)
+    return true;
+  else
+    return false;
+}
+
+static TNode *find_closest_node(TNode *node, TKey key) {}
+
+static TNode *create_node(TKey key, TData data) {}
