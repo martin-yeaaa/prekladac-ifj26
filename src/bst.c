@@ -35,6 +35,8 @@ static TNode *create_node(TKey key, TData data);
 
 // TODO functions for height balancing
 
+/* IMPLEMENTATION */
+
 void BST_init(TNode *root) {
 
   // Parameters must not be NULL
@@ -85,6 +87,18 @@ static bool is_empty(TNode *root) {
     return false;
 }
 
-static TNode *find_closest_node(TNode *node, TKey key) {}
+static TNode *find_closest_node(TNode *node, TKey key) {
 
-static TNode *create_node(TKey key, TData data) {}
+  // If *node points to a tree, it must not be an empty tree
+  if (node != NULL)
+    assert(is_empty(node) == false);
+  // key must not be NULL
+  assert(key != NULL);
+}
+
+static TNode *create_node(TKey key, TData data) {
+
+  // Parameters must not be NULL
+  assert(key != NULL);
+  assert(data != NULL);
+}
