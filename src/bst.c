@@ -77,8 +77,8 @@ bool BST_insert(TNode *root, TKey key, TData data) {
   // If tree isn't empty, we search the tree
   TNode *closest_node = find_closest_node(root, key);
 
-  // When comparing keys, first parameter is the searched key, second is node
-  // key
+  // When comparing keys, first parameter is the searched key, 
+  // second parameter is node key
   int key_comparison = compare_keys(key, closest_node->key);
 
   // Exact match -> rewrite data
