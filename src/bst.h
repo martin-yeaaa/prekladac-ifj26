@@ -22,35 +22,36 @@ typedef TNode *TNodePtr; // Helper typedef
 
 /**
  * Initializes declared binary search tree data structure.
- * @param root Pointer to uninitialized BST root.
+ * @param root Pointer to uninitialized BST root, must not be `NULL`.
  */
 void BST_init(TNode *root);
 
 /**
  * Inserts a new node into the tree, balances tree height if needed.
  * If a node with the same `key` already exists, the data gets overwritten.
+ * @param root Pointer to BST root, must not be `NULL`.
+ * @param key Key of the inserted node, must not be `NULL`.
+ * @param data Data of the inserted node, MUST NOT BE `NULL`.
  *
  * @return `true` if insertion is succesful.
- * @return If `data == NULL` or if runs out of memory, writes an error to
- * `stderr` and returns `false`.
- * @param root Pointer to BST root.
- * @param key Key of the inserted node.
- * @param data Data of the inserted node, must NOT be `NULL`.
+ * @return If memory allocation fails, writes an error to `stderr` and returns
+ * `false`.
  */
 bool BST_insert(TNode *root, TKey key, TData data);
 
 /**
  * Deletes a node with matching `key`, balances tree height if needed.
  * If a node with the same `key` doesn't exist, nothing happens.
- * @param root Pointer to BST root.
- * @param key Key of the inserted node.
+ * @param root Pointer to BST root, must not be `NULL`.
+ * @param key Key of the inserted node, must not be `NULL`.
  */
 void BST_delete(TNode *root, TKey key);
 
 /**
- * Searches the tree with `key` for data.
+ * Searches the tree for data with associated `key`.
+ * @param root Pointer to BST root, must not be `NULL`.
+ * @param key Key of the searched node, must not be `NULL`.
+ *
  * @return `TData` if key is found (`TData != NULL`). Otherwise returns `NULL`.
- * @param root Pointer to BST root.
- * @param key Key of the searched node.
  */
 TData BST_get_data(TNode *root, TKey key);
