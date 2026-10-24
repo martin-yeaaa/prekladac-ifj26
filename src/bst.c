@@ -12,7 +12,7 @@
 /* Declarations of internal functions */
 
 /**
- * Figures out if tree is empty or not
+ * Figures out if tree is empty or not.
  * @param root Pointer to node, must not be NULL.
  * @return `true` if tree is empty, otherwise `false`.
  */
@@ -65,6 +65,43 @@ bool BST_insert(TNode *root, TKey key, TData data) {
   assert(root != NULL);
   assert(key != NULL);
   assert(data != NULL);
+
+  // If root is an empty tree, we can write directly into it
+  if (is_empty(root)) {
+    root->key = key;
+    root->data = data;
+
+    return true;
+  }
+
+  // If tree isn't empty, we search the tree
+  TNode *closest_node = find_closest_node(root, key);
+
+  // When comparing keys, first parameter is the searched key, second is node
+  // key
+  int key_comparison = compare_keys(key, closest_node->key);
+
+  // Exact match -> rewrite data
+  if (key_comparison == 0) {
+    closest_node->data = data;
+  }
+  // No match -> create new node
+  else {
+    TNode *new_node = create_node(key, data);
+
+    // Check if creation succeeded
+    if (new_node == NULL)
+      return false;
+
+    // less than 0 -> left son
+    if (key_comparison < 0) {
+      closest_node->left = new_node;
+    }
+    // more than 0 -> right son
+    else { // key_comparison > 0
+      closest_node->right = new_node;
+    }
+  }
 
   return true;
 }
