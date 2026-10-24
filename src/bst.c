@@ -17,6 +17,15 @@
  * @return `true` if tree is empty, otherwise `false`.
  */
 static bool is_empty(TNode *root);
+
+/**
+ * Compares keys, used for consistent comparison order.
+ * @param searched_key Key which is being searched. Must not be `NULL`.
+ * @param node_key Key saved in a node. Must not be `NULL`.
+ * @return 0 on exact match, otherwise a positive or negative value.
+ */
+static int compare_keys(TKey searched_key, TKey node_key);
+
 /**
  * Attempts to find node with a matching `key`. If no such node exists,
  * returns the last node in which keys were compared.
@@ -25,6 +34,7 @@ static bool is_empty(TNode *root);
  * @return Pointer to closest node.
  */
 static TNode *find_closest_node(TNode *node, TKey key);
+
 /**
  * Creates a new node.
  * @param key Key of created node. Must not be `NULL`.
@@ -85,6 +95,15 @@ static bool is_empty(TNode *root) {
     return true;
   else
     return false;
+}
+
+static int compare_keys(TKey searched_key, TKey node_key) {
+  // Parameters must not be NULL
+  assert(searched_key != NULL);
+  assert(node_key != NULL);
+
+  // Lexicographical comparison
+  return strcmp(searched_key, node_key);
 }
 
 static TNode *find_closest_node(TNode *node, TKey key) {
