@@ -11,13 +11,8 @@ typedef char *BSTKey;
 // For our purposes, the tree needs to store pointers to any kind of data
 typedef void *BSTData;
 
-// Nodes of a binary tree store 2 pointers to children nodes
-typedef struct bst_node {
-  BSTKey key;
-  BSTData data;
-  struct bst_node *left;
-  struct bst_node *right;
-} BSTNode;
+// Declared structure for tree nodes
+typedef struct bst_node BSTNode;
 
 /**
  * Initializes declared binary search tree data structure.
@@ -51,6 +46,7 @@ void BST_delete(BSTNode *root, BSTKey key);
  * @param root Pointer to BST root, must not be `NULL`.
  * @param key Key of the searched node, must not be `NULL`.
  *
- * @return `BSTData` if key is found (`BSTData != NULL`). Otherwise returns `NULL`.
+ * @return `BSTData` if key is found (`BSTData != NULL`).
+ * Otherwise returns `NULL`.
  */
 BSTData BST_get_data(BSTNode *root, BSTKey key);
