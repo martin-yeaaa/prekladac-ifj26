@@ -38,9 +38,8 @@ bool BST_insert(BSTNode root, BSTKey key, BSTData data);
  * If a node with the same `key` doesn't exist, nothing happens.
  * @param root BST root.
  * @param key Key of the inserted node, must not be `NULL`.
- * @return `BSTData` that was inside the deleted node.
  */
-BSTData BST_delete(BSTNode root, BSTKey key);
+void BST_delete(BSTNode root, BSTKey key);
 
 /**
  * Searches the tree for data with associated `key`.

@@ -10,7 +10,17 @@
 #include <stdio.h>
 #include <string.h>
 
-bool error_flag = false;
+// set to true if an error occurs, namely malloc() failure
+static bool error_flag = false;
+
+// When deleting a node with two sons, the node gets replaced with another node
+// further down the tree, which actually gets deleted. When replacing, we can
+// replace key with another key. However, key is a pointer to a string. Now we
+// have the same key -> the same pointer in two places. When deleting the
+// replacement node further down the tree, we cannot free the key, because it
+// would break the node we replaced above. This variable lets us know if a
+// replacement has happened, so we know whether to free the key string or not
+static bool key_used_in_replacement = false;
 
 BSTNode BST_new() {
 
@@ -34,17 +44,21 @@ bool BST_insert(BSTNode root, BSTKey key, BSTData data) {
   }
 }
 
-BSTData BST_delete(BSTNode root, BSTKey key) {
+void BST_delete(BSTNode root, BSTKey key) {
 
   // Key must not be NULL
-  assert(root != NULL);
   assert(key != NULL);
+
+  // Deletion happens in recursive function.
+  // I didn't want BST_delete() itself to be recursive,
+  // because it would have to return BSTNode, which isn't
+  // really a problem, but it's prettier if it doesn't return anything.
+  root = delete_recursive(root, key);
 }
 
 BSTData BST_get_data(BSTNode root, BSTKey key) {
 
-  // Parameters must not be NULL
-  assert(root != NULL);
+  // Key must not be NULL
   assert(key != NULL);
 
   return NULL;
@@ -131,6 +145,89 @@ int compare_keys(BSTKey searched_key, BSTKey node_key) {
   return strcmp(searched_key, node_key);
 }
 
+BSTNode delete_recursive(BSTNode root, BSTKey key) {
+  // Key must not be NULL
+  assert(key != NULL);
+
+  // Empty tree -> nothing to do
+  if (root == NULL) {
+    return NULL;
+  }
+
+  // When comparing keys, first parameter is the searched key,
+  // second parameter is node key
+  int key_comparison = compare_keys(key, root->key);
+
+  // Exact match -> delete node
+  if (key_comparison == 0) {
+    root = delete_node(root); // May call delete_recursive()->indirect recursion
+  }
+  // less than 0 -> left son
+  else if (key_comparison < 0) {
+    root->left = delete_recursive(root->left, key);
+  }
+  // more than 0 -> right son
+  else { // key_comparison > 0
+    root->right = delete_recursive(root->right, key);
+  }
+
+  // TODO update_height()
+  // TODO balance()
+}
+
+BSTNode delete_node(BSTNode node) {
+
+  // Node must not be NULL
+  assert(node != NULL);
+
+  // Free node key string memory, only when it's not used elsewhere
+  if (key_used_in_replacement == false)
+    free(node->key);
+
+  key_used_in_replacement = false; // After checking, we can set it back
+
+  // Terminal node without sons
+  if (node->left == NULL && node->right == NULL) {
+    free(node); // Free node memory
+    return NULL;
+  }
+  // Has only right son
+  else if (node->left == NULL && node->right != NULL) {
+    free(node);         // Free node memory
+    return node->right; // Return non-NULL son
+  }
+  // Has only left son
+  else if (node->left != NULL && node->right == NULL) {
+    free(node);        // Free node memory
+    return node->left; // Return non-NULL son
+  }
+  // Has both sons - we need to replace the node
+  else {
+
+    // Our replacement is right-most son of left subtree
+    BSTNode replacement = get_right_most_son(node->left);
+
+    node->key = replacement->key;
+    key_used_in_replacement = true; // So we know not to free(key)
+    node->data = replacement->data;
+
+    // INDIRECT RECURSION!! But we need to delete replacement from left subtree
+    node->left = delete_recursive(node->left, replacement->key);
+  }
+}
+
+BSTNode get_right_most_son(BSTNode node) {
+
+  // Node must not be NULL
+  assert(node != NULL);
+
+  if (node->right == NULL)
+    return node;
+  else
+    return get_right_most_son(node->right);
+}
+
+// WILL REMOVE THIS
 BSTNode find_closest_node(BSTNode node, BSTKey key) {
 
   // If *node points to a tree, it must not be an empty tree
