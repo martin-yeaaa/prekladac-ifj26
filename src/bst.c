@@ -44,26 +44,6 @@ bool BST_insert(BSTNode root, BSTKey key, BSTData data) {
   }
 }
 
-void BST_delete(BSTNode root, BSTKey key) {
-
-  // Key must not be NULL
-  assert(key != NULL);
-
-  // Deletion happens in recursive function.
-  // I didn't want BST_delete() itself to be recursive,
-  // because it would have to return BSTNode, which isn't
-  // really a problem, but it's prettier if it doesn't return anything.
-  root = delete_recursive(root, key);
-}
-
-BSTData BST_get_data(BSTNode root, BSTKey key) {
-
-  // Key must not be NULL
-  assert(key != NULL);
-
-  return NULL;
-}
-
 BSTNode insert_recursive(BSTNode root, BSTKey key, BSTData data) {
 
   // Empty tree
@@ -136,13 +116,16 @@ BSTNode create_node(BSTKey key, BSTData data) {
   return new_node;
 }
 
-int compare_keys(BSTKey searched_key, BSTKey node_key) {
-  // Parameters must not be NULL
-  assert(searched_key != NULL);
-  assert(node_key != NULL);
+void BST_delete(BSTNode root, BSTKey key) {
 
-  // Lexicographical comparison
-  return strcmp(searched_key, node_key);
+  // Key must not be NULL
+  assert(key != NULL);
+
+  // Deletion happens in recursive function.
+  // I didn't want BST_delete() itself to be recursive,
+  // because it would have to return BSTNode, which isn't
+  // really a problem, but it's prettier if it doesn't return anything.
+  root = delete_recursive(root, key);
 }
 
 BSTNode delete_recursive(BSTNode root, BSTKey key) {
@@ -225,4 +208,21 @@ BSTNode get_right_most_son(BSTNode node) {
     return node;
   else
     return get_right_most_son(node->right);
+}
+
+BSTData BST_get_data(BSTNode root, BSTKey key) {
+
+  // Key must not be NULL
+  assert(key != NULL);
+
+  return NULL;
+}
+
+int compare_keys(BSTKey searched_key, BSTKey node_key) {
+  // Parameters must not be NULL
+  assert(searched_key != NULL);
+  assert(node_key != NULL);
+
+  // Lexicographical comparison
+  return strcmp(searched_key, node_key);
 }
