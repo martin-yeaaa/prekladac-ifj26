@@ -226,13 +226,3 @@ BSTNode get_right_most_son(BSTNode node) {
   else
     return get_right_most_son(node->right);
 }
-
-// WILL REMOVE THIS
-BSTNode find_closest_node(BSTNode node, BSTKey key) {
-
-  // If *node points to a tree, it must not be an empty tree
-  if (node != NULL)
-    assert(is_empty(node) == false);
-  // key must not be NULL
-  assert(key != NULL);
-}

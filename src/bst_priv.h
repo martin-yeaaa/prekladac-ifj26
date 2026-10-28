@@ -68,13 +68,4 @@ BSTNode delete_node(BSTNode node);
  */
 BSTNode get_right_most_son(BSTNode node);
 
-/**
- * Attempts to find node with a matching `key`. If no such node exists,
- * returns the last node in which keys were compared.
- * @param node Pointer to node. It must not point to an empty tree.
- * @param key Key of searched node. Must not be `NULL`.
- * @return Pointer to closest node.
- */
-BSTNode find_closest_node(BSTNode node, BSTKey key);
-
 // TODO functions for height balancing
