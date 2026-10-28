@@ -10,73 +10,38 @@
 #include <stdio.h>
 #include <string.h>
 
-void BST_init(BSTNode *root) {
+bool error_flag = false;
 
-  // Parameters must not be NULL
-  assert(root != NULL);
+BSTNode BST_new() {
 
-  // Initializes all values to NULL
-  root->key = NULL; // If the key is NULL, BST is empty!
-  root->data = NULL;
-  root->left = NULL;
-  root->right = NULL;
+  // Empty tree is simply NULL pointer
+  return NULL;
 }
 
-bool BST_insert(BSTNode *root, BSTKey key, BSTData data) {
+bool BST_insert(BSTNode root, BSTKey key, BSTData data) {
 
-  // Parameters must not be NULL
-  assert(root != NULL);
+  // Key must not be NULL
   assert(key != NULL);
-  assert(data != NULL);
 
-  // If root is an empty tree, we can write directly into it
-  if (is_empty(root)) {
-    root->key = key;
-    root->data = data;
+  // Call function for recursive insertion, sets error_flag
+  root = insert_recursive(root, key, data);
 
+  if (error_flag == true) {
+    fprintf(stderr, "very bad\n");
+    return false;
+  } else {
     return true;
   }
-
-  // If tree isn't empty, we search the tree
-  BSTNode *closest_node = find_closest_node(root, key);
-
-  // When comparing keys, first parameter is the searched key,
-  // second parameter is node key
-  int key_comparison = compare_keys(key, closest_node->key);
-
-  // Exact match -> rewrite data
-  if (key_comparison == 0) {
-    closest_node->data = data;
-  }
-  // No match -> create new node
-  else {
-    BSTNode *new_node = create_node(key, data);
-
-    // Check if creation succeeded
-    if (new_node == NULL)
-      return false;
-
-    // less than 0 -> left son
-    if (key_comparison < 0) {
-      closest_node->left = new_node;
-    }
-    // more than 0 -> right son
-    else { // key_comparison > 0
-      closest_node->right = new_node;
-    }
-  }
-
-  return true;
 }
 
-void BST_delete(BSTNode *root, BSTKey key) {
+void BST_delete(BSTNode root, BSTKey key) {
 
-  // Parameters must not be NULL
+  // Key must not be NULL
   assert(root != NULL);
   assert(key != NULL);
 }
 
-BSTData BST_get_data(BSTNode *root, BSTKey key) {
+BSTData BST_get_data(BSTNode root, BSTKey key) {
 
   // Parameters must not be NULL
   assert(root != NULL);
@@ -85,19 +50,47 @@ BSTData BST_get_data(BSTNode *root, BSTKey key) {
   return NULL;
 }
 
-static bool is_empty(BSTNode *root) {
+BSTNode insert_recursive(BSTNode root, BSTKey key, BSTData data) {
 
-  // root must not be NULL
-  assert(root != NULL);
+  // Empty tree
+  if (root == NULL) {
 
-  // Here, a tree is considered empty when key of root is NULL
-  if (root->key == NULL)
-    return true;
-  else
-    return false;
+    root = create_node(key, data);
+
+    // Check if creation succeeded
+    if (root == NULL) {
+      error_flag = true; // Creation failed, set error_flag
+    }
+
+  // Not empty tree
+  } else {
+
+    // When comparing keys, first parameter is the searched key,
+    // second parameter is node key
+    int key_comparison = compare_keys(key, root->key);
+
+    // Exact match -> rewrite data
+    if (key_comparison == 0) {
+      root->data = data;
+    }
+
+    // less than 0 -> left son
+    else if (key_comparison < 0) {
+      root->left = insert_recursive(root->left, key, data);
+    }
+    // more than 0 -> right son
+    else { // key_comparison > 0
+      root->right = insert_recursive(root->right, key, data);
+    }
+  }
+
+  // TODO update_height()
+  // TODO balance()
+
+  return root;
 }
 
-static int compare_keys(BSTKey searched_key, BSTKey node_key) {
+int compare_keys(BSTKey searched_key, BSTKey node_key) {
   // Parameters must not be NULL
   assert(searched_key != NULL);
   assert(node_key != NULL);
@@ -106,7 +99,7 @@ static int compare_keys(BSTKey searched_key, BSTKey node_key) {
   return strcmp(searched_key, node_key);
 }
 
-static BSTNode *find_closest_node(BSTNode *node, BSTKey key) {
+BSTNode find_closest_node(BSTNode node, BSTKey key) {
 
   // If *node points to a tree, it must not be an empty tree
   if (node != NULL)
@@ -115,7 +108,7 @@ static BSTNode *find_closest_node(BSTNode *node, BSTKey key) {
   assert(key != NULL);
 }
 
-static BSTNode *create_node(BSTKey key, BSTData data) {
+BSTNode create_node(BSTKey key, BSTData data) {
 
   // Parameters must not be NULL
   assert(key != NULL);
