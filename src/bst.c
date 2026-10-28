@@ -27,14 +27,14 @@ bool BST_insert(BSTNode root, BSTKey key, BSTData data) {
   root = insert_recursive(root, key, data);
 
   if (error_flag == true) {
-    fprintf(stderr, "very bad\n");
+    fprintf(stderr, "Error: Failed to insert new node!\n");
     return false;
   } else {
     return true;
   }
 }
 
-void BST_delete(BSTNode root, BSTKey key) {
+BSTData BST_delete(BSTNode root, BSTKey key) {
 
   // Key must not be NULL
   assert(root != NULL);
@@ -62,7 +62,7 @@ BSTNode insert_recursive(BSTNode root, BSTKey key, BSTData data) {
       error_flag = true; // Creation failed, set error_flag
     }
 
-  // Not empty tree
+    // Not empty tree
   } else {
 
     // When comparing keys, first parameter is the searched key,
@@ -90,6 +90,38 @@ BSTNode insert_recursive(BSTNode root, BSTKey key, BSTData data) {
   return root;
 }
 
+BSTNode create_node(BSTKey key, BSTData data) {
+
+  // Key must not be NULL
+  assert(key != NULL);
+
+  // Allocate memory for new node
+  BSTNode new_node = malloc(sizeof(struct bst_node)); //(BSTNode is a pointer!)
+  // Check allocation success
+  if (new_node == NULL)
+    return NULL;
+
+  // Allocate memory for key string
+  char *key_copy = malloc(sizeof(char) * (strlen(key) + 1));
+  // Check allocation success
+  if (key_copy == NULL) {
+    free(new_node);
+    return NULL;
+  }
+
+  // Copy string
+  strcpy(key_copy, key);
+
+  // Initialize new node
+  new_node->key = key_copy;
+  new_node->data = data;
+  new_node->height = 1;
+  new_node->left = NULL;
+  new_node->right = NULL;
+
+  return new_node;
+}
+
 int compare_keys(BSTKey searched_key, BSTKey node_key) {
   // Parameters must not be NULL
   assert(searched_key != NULL);
@@ -106,11 +138,4 @@ BSTNode find_closest_node(BSTNode node, BSTKey key) {
     assert(is_empty(node) == false);
   // key must not be NULL
   assert(key != NULL);
-}
-
-BSTNode create_node(BSTKey key, BSTData data) {
-
-  // Parameters must not be NULL
-  assert(key != NULL);
-  assert(data != NULL);
 }

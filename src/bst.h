@@ -12,7 +12,7 @@ typedef char *BSTKey;
 typedef void *BSTData;
 
 // Declared structure for tree nodes
-typedef struct bst_node *BSTNode;
+typedef struct bst_node *BSTNode; // BSTNode is a pointer to struct
 
 /**
  * Creates new binary search tree data structure.
@@ -38,8 +38,9 @@ bool BST_insert(BSTNode root, BSTKey key, BSTData data);
  * If a node with the same `key` doesn't exist, nothing happens.
  * @param root BST root.
  * @param key Key of the inserted node, must not be `NULL`.
+ * @return `BSTData` that was inside the deleted node.
  */
-void BST_delete(BSTNode root, BSTKey key);
+BSTData BST_delete(BSTNode root, BSTKey key);
 
 /**
  * Searches the tree for data with associated `key`.

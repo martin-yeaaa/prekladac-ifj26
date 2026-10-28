@@ -49,7 +49,7 @@ BSTNode find_closest_node(BSTNode node, BSTKey key);
 /**
  * Creates a new node.
  * @param key Key of created node. Must not be `NULL`.
- * @param data Data of created node. Must not be `NULL`.
+ * @param data Data of created node.
  * @return Pointer to newly created node. If creation fails, returns `NULL`.
  */
 BSTNode create_node(BSTKey key, BSTData data);
