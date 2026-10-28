@@ -16,7 +16,7 @@
  * @param root Pointer to node, must not be NULL.
  * @return `true` if tree is empty, otherwise `false`.
  */
-static bool is_empty(TNode *root);
+static bool is_empty(BSTNode *root);
 
 /**
  * Compares keys, used for consistent comparison order.
@@ -24,7 +24,7 @@ static bool is_empty(TNode *root);
  * @param node_key Key saved in a node. Must not be `NULL`.
  * @return 0 on exact match, otherwise a positive or negative value.
  */
-static int compare_keys(TKey searched_key, TKey node_key);
+static int compare_keys(BSTKey searched_key, BSTKey node_key);
 
 /**
  * Attempts to find node with a matching `key`. If no such node exists,
@@ -33,7 +33,7 @@ static int compare_keys(TKey searched_key, TKey node_key);
  * @param key Key of searched node. Must not be `NULL`.
  * @return Pointer to closest node.
  */
-static TNode *find_closest_node(TNode *node, TKey key);
+static BSTNode *find_closest_node(BSTNode *node, BSTKey key);
 
 /**
  * Creates a new node.
@@ -41,13 +41,13 @@ static TNode *find_closest_node(TNode *node, TKey key);
  * @param data Data of created node. Must not be `NULL`.
  * @return Pointer to newly created node. If creation fails, returns `NULL`.
  */
-static TNode *create_node(TKey key, TData data);
+static BSTNode *create_node(BSTKey key, BSTData data);
 
 // TODO functions for height balancing
 
 /* IMPLEMENTATION */
 
-void BST_init(TNode *root) {
+void BST_init(BSTNode *root) {
 
   // Parameters must not be NULL
   assert(root != NULL);
@@ -59,7 +59,7 @@ void BST_init(TNode *root) {
   root->right = NULL;
 }
 
-bool BST_insert(TNode *root, TKey key, TData data) {
+bool BST_insert(BSTNode *root, BSTKey key, BSTData data) {
 
   // Parameters must not be NULL
   assert(root != NULL);
@@ -75,7 +75,7 @@ bool BST_insert(TNode *root, TKey key, TData data) {
   }
 
   // If tree isn't empty, we search the tree
-  TNode *closest_node = find_closest_node(root, key);
+  BSTNode *closest_node = find_closest_node(root, key);
 
   // When comparing keys, first parameter is the searched key, 
   // second parameter is node key
@@ -87,7 +87,7 @@ bool BST_insert(TNode *root, TKey key, TData data) {
   }
   // No match -> create new node
   else {
-    TNode *new_node = create_node(key, data);
+    BSTNode *new_node = create_node(key, data);
 
     // Check if creation succeeded
     if (new_node == NULL)
@@ -106,14 +106,14 @@ bool BST_insert(TNode *root, TKey key, TData data) {
   return true;
 }
 
-void BST_delete(TNode *root, TKey key) {
+void BST_delete(BSTNode *root, BSTKey key) {
 
   // Parameters must not be NULL
   assert(root != NULL);
   assert(key != NULL);
 }
 
-TData BST_get_data(TNode *root, TKey key) {
+BSTData BST_get_data(BSTNode *root, BSTKey key) {
 
   // Parameters must not be NULL
   assert(root != NULL);
@@ -122,7 +122,7 @@ TData BST_get_data(TNode *root, TKey key) {
   return NULL;
 }
 
-static bool is_empty(TNode *root) {
+static bool is_empty(BSTNode *root) {
 
   // root must not be NULL
   assert(root != NULL);
@@ -134,7 +134,7 @@ static bool is_empty(TNode *root) {
     return false;
 }
 
-static int compare_keys(TKey searched_key, TKey node_key) {
+static int compare_keys(BSTKey searched_key, BSTKey node_key) {
   // Parameters must not be NULL
   assert(searched_key != NULL);
   assert(node_key != NULL);
@@ -143,7 +143,7 @@ static int compare_keys(TKey searched_key, TKey node_key) {
   return strcmp(searched_key, node_key);
 }
 
-static TNode *find_closest_node(TNode *node, TKey key) {
+static BSTNode *find_closest_node(BSTNode *node, BSTKey key) {
 
   // If *node points to a tree, it must not be an empty tree
   if (node != NULL)
@@ -152,7 +152,7 @@ static TNode *find_closest_node(TNode *node, TKey key) {
   assert(key != NULL);
 }
 
-static TNode *create_node(TKey key, TData data) {
+static BSTNode *create_node(BSTKey key, BSTData data) {
 
   // Parameters must not be NULL
   assert(key != NULL);
