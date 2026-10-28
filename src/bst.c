@@ -215,7 +215,27 @@ BSTData BST_get_data(BSTNode root, BSTKey key) {
   // Key must not be NULL
   assert(key != NULL);
 
-  return NULL;
+  // Key was never found
+  if (root == NULL) {
+    return NULL;
+  }
+
+  // When comparing keys, first parameter is the searched key,
+  // second parameter is node key
+  int key_comparison = compare_keys(key, root->key);
+
+  // Exact match -> return data
+  if (key_comparison == 0) {
+    return root->data;
+  }
+  // less than 0 -> left son
+  else if (key_comparison < 0) {
+    return BST_get_data(root->left, key);
+  }
+  // more than 0 -> right son
+  else { // key_comparison > 0
+    return BST_get_data(root->right, key);
+  }
 }
 
 int compare_keys(BSTKey searched_key, BSTKey node_key) {
