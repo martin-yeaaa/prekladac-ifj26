@@ -97,6 +97,37 @@ TEST(BST_basic, func_BST_delete) {
   EXPECT_TRUE(tree == NULL);
 }
 
+
+TEST(BST_basic, func_BST_get_data) {
+
+  // New tree
+  BSTNode tree = BST_new();
+  // Insert data
+  int data = 5;
+  char key[] = "hello";
+  EXPECT_TRUE(BST_insert(&tree, key, &data));
+  // Insert more data
+  int data2 = 52;
+  char key2[] = "aaaa";
+  EXPECT_TRUE(BST_insert(&tree, key2, &data2));
+
+  // Check if it's really there
+  ASSERT_FALSE(tree == NULL);
+  // Test get_data()
+  EXPECT_TRUE(BST_get_data(tree, key) == &data);
+  EXPECT_TRUE(BST_get_data(tree, key2) == &data2);
+  // Test if it works correctly after deleting nodes
+  BST_delete(&tree, key);
+  EXPECT_TRUE(BST_get_data(tree, key) == NULL);
+  EXPECT_TRUE(BST_get_data(tree, key2) == &data2);
+  BST_delete(&tree, key2);
+  EXPECT_TRUE(BST_get_data(tree, key) == NULL);
+  EXPECT_TRUE(BST_get_data(tree, key2) == NULL);
+  // Tree should be empty
+  EXPECT_TRUE(tree == NULL);
+}
+
+
 class BST_balanced_fill : public testing::Test {
 protected:
 
