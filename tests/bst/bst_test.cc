@@ -97,7 +97,7 @@ TEST(BST_basic, func_BST_delete) {
   EXPECT_TRUE(tree == NULL);
 }
 
-class BST_friendly_fill : public testing::Test {
+class BST_balanced_fill : public testing::Test {
 protected:
 
   BSTNode tree;
@@ -110,7 +110,7 @@ protected:
   char keyf[2] = "f";
   char keyg[2] = "g";
   
-  BST_friendly_fill() {
+  BST_balanced_fill() {
     // New tree
     tree = BST_new();
     // Insert data
@@ -138,7 +138,7 @@ protected:
   }
 };
 
-TEST_F(BST_friendly_fill, fixture_test) {
+TEST_F(BST_balanced_fill, fixture_test) {
 
   // Check if it's really there
   ASSERT_FALSE(tree == NULL);
@@ -156,7 +156,7 @@ TEST_F(BST_friendly_fill, fixture_test) {
   EXPECT_EQ(*((int*)tree->right->right->data), 7);
 }
 
-TEST_F(BST_friendly_fill, func_BST_delete_all) {
+TEST_F(BST_balanced_fill, func_BST_delete_all) {
   // Delete every entry
   BST_delete(&tree, keya);
   BST_delete(&tree, keyb);
@@ -170,7 +170,7 @@ TEST_F(BST_friendly_fill, func_BST_delete_all) {
   EXPECT_TRUE(tree == NULL);
 }
 
-TEST_F(BST_friendly_fill, func_BST_delete_nonterminal_with_left_son) {
+TEST_F(BST_balanced_fill, func_BST_delete_nonterminal_with_left_son) {
 
   // Insert leftmost son (key "0" < "a")
   char leftkey[] = "0";
@@ -187,4 +187,25 @@ TEST_F(BST_friendly_fill, func_BST_delete_nonterminal_with_left_son) {
   EXPECT_TRUE(BST_get_data(tree, keya) == NULL);
   // It's place should be taken by newly inserted node
   EXPECT_TRUE(tree->left->left->data == &leftdata);
-} 
+}
+
+TEST_F(BST_balanced_fill, func_BST_delete_nonterminal_with_right_son) {
+
+  // The exact same thing as func_BST_delete_nonterminal_with_left_son
+  // But it's the right son now
+
+  char rightkey[] = "z";
+  int rightdata = 20;
+  BST_insert(&tree, rightkey, &rightdata);
+
+  // Check correct insertion
+  ASSERT_TRUE(tree->right->right->right->data == &rightdata);
+
+  // Delete node above newly inserted one
+  BST_delete(&tree, keyg);
+
+  // Node with key "g" should be gone
+  EXPECT_TRUE(BST_get_data(tree, keyg) == NULL);
+  // It's place should be taken by newly inserted node
+  EXPECT_TRUE(tree->right->right->data == &rightdata);
+}
