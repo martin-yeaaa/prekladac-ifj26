@@ -4,7 +4,7 @@
 cmake_minimum_required(VERSION 3.14)
 project(prekladac-ifj26)
 
-# GoogleTest requires at least C++17
+# GoogleTest requires C++17 or more
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -13,7 +13,8 @@ FetchContent_Declare(
   googletest
   URL https://github.com/google/googletest/archive/refs/tags/v1.18.0.zip
 )
-# For Windows: Prevent overriding the parent project's compiler/linker settings
+
+# Something that needs to be here for Windows
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
