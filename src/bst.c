@@ -9,6 +9,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 // set to true if an error occurs, namely malloc() failure
 static bool error_flag = false;
