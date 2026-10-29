@@ -8,8 +8,8 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 // set to true if an error occurs, namely malloc() failure
 static bool error_flag = false;
@@ -49,7 +49,7 @@ BSTNode insert_recursive(BSTNode root, BSTKey key, BSTData data) {
 
   // Empty tree
   if (root == NULL) {
-    
+
     root = create_node(key, data);
 
     // Check if creation succeeded
@@ -157,7 +157,7 @@ BSTNode delete_recursive(BSTNode root, BSTKey key) {
 
   // TODO update_height()
   // TODO balance()
-  
+
   return root;
 }
 
