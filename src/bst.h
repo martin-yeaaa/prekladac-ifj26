@@ -23,7 +23,7 @@ BSTNode BST_new();
 /**
  * Inserts a new node into the tree, balances tree height if needed.
  * If a node with the same `key` already exists, the data gets overwritten.
- * @param root BST root.
+ * @param root Pointer(!) to BST root.
  * @param key Key of the inserted node, must not be `NULL`.
  * @param data Data of the inserted node.
  *
@@ -31,15 +31,15 @@ BSTNode BST_new();
  * @return If memory allocation fails, writes an error to `stderr` and returns
  * `false`.
  */
-bool BST_insert(BSTNode root, BSTKey key, BSTData data);
+bool BST_insert(BSTNode *root, BSTKey key, BSTData data);
 
 /**
  * Deletes a node with matching `key`, balances tree height if needed.
  * If a node with the same `key` doesn't exist, nothing happens.
- * @param root BST root.
+ * @param root Pointer(!) to BST root.
  * @param key Key of the inserted node, must not be `NULL`.
  */
-void BST_delete(BSTNode root, BSTKey key);
+void BST_delete(BSTNode *root, BSTKey key);
 
 /**
  * Searches the tree for data with associated `key`.

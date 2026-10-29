@@ -29,13 +29,13 @@ BSTNode BST_new() {
   return NULL;
 }
 
-bool BST_insert(BSTNode root, BSTKey key, BSTData data) {
+bool BST_insert(BSTNode *root, BSTKey key, BSTData data) {
 
   // Key must not be NULL
   assert(key != NULL);
 
   // Call function for recursive insertion, sets error_flag
-  root = insert_recursive(root, key, data);
+  *root = insert_recursive(*root, key, data);
 
   if (error_flag == true) {
     fprintf(stderr, "Error: Failed to insert new node!\n");
@@ -49,7 +49,7 @@ BSTNode insert_recursive(BSTNode root, BSTKey key, BSTData data) {
 
   // Empty tree
   if (root == NULL) {
-
+    
     root = create_node(key, data);
 
     // Check if creation succeeded
@@ -117,7 +117,7 @@ BSTNode create_node(BSTKey key, BSTData data) {
   return new_node;
 }
 
-void BST_delete(BSTNode root, BSTKey key) {
+void BST_delete(BSTNode *root, BSTKey key) {
 
   // Key must not be NULL
   assert(key != NULL);
@@ -126,7 +126,7 @@ void BST_delete(BSTNode root, BSTKey key) {
   // I didn't want BST_delete() itself to be recursive,
   // because it would have to return BSTNode, which isn't
   // really a problem, but it's prettier if it doesn't return anything.
-  root = delete_recursive(root, key);
+  *root = delete_recursive(*root, key);
 }
 
 BSTNode delete_recursive(BSTNode root, BSTKey key) {
