@@ -63,17 +63,23 @@ TEST(BST_basic, func_BST_insert_many) {
 
   // Check if it's really there
   ASSERT_FALSE(tree == NULL);
-  // Check private data
-  // TODO HEIGHT TEST WHEN HEIGHT UPDATE IS IMPLEMENTED
+  // Check private data and height
   EXPECT_EQ(*((int*)tree->data), 4);
+  EXPECT_EQ(tree->height, 3);
 
   EXPECT_EQ(*((int*)tree->left->data), 2);
   EXPECT_EQ(*((int*)tree->right->data), 6);
+  EXPECT_EQ(tree->left->height, 2);
+  EXPECT_EQ(tree->right->height, 2);
 
   EXPECT_EQ(*((int*)tree->left->left->data), 1);
   EXPECT_EQ(*((int*)tree->left->right->data), 3);
   EXPECT_EQ(*((int*)tree->right->left->data), 5);
   EXPECT_EQ(*((int*)tree->right->right->data), 7);
+  EXPECT_EQ(tree->left->left->height, 1);
+  EXPECT_EQ(tree->left->right->height, 1);
+  EXPECT_EQ(tree->right->left->height, 1);
+  EXPECT_EQ(tree->right->right->height, 1);
 }
 
 
@@ -175,7 +181,6 @@ TEST_F(BST_balanced_fill, fixture_test) {
   ASSERT_FALSE(tree == NULL);
   
   // Check private data
-  // TODO HEIGHT TEST WHEN HEIGHT UPDATE IS IMPLEMENTED
   EXPECT_EQ(*((int*)tree->data), 4);
 
   EXPECT_EQ(*((int*)tree->left->data), 2);
@@ -185,6 +190,15 @@ TEST_F(BST_balanced_fill, fixture_test) {
   EXPECT_EQ(*((int*)tree->left->right->data), 3);
   EXPECT_EQ(*((int*)tree->right->left->data), 5);
   EXPECT_EQ(*((int*)tree->right->right->data), 7);
+
+  // Check height
+  EXPECT_EQ(tree->height, 3);
+  EXPECT_EQ(tree->left->height, 2);
+  EXPECT_EQ(tree->right->height, 2);
+  EXPECT_EQ(tree->left->left->height, 1);
+  EXPECT_EQ(tree->left->right->height, 1);
+  EXPECT_EQ(tree->right->left->height, 1);
+  EXPECT_EQ(tree->right->right->height, 1);
 }
 
 TEST_F(BST_balanced_fill, func_BST_delete_all) {
@@ -207,9 +221,10 @@ TEST_F(BST_balanced_fill, func_BST_delete_nonterminal_with_left_son) {
   char leftkey[] = "0";
   int leftdata = 10;
   BST_insert(&tree, leftkey, &leftdata);
-
+  
   // Check correct insertion
   ASSERT_TRUE(tree->left->left->left->data == &leftdata);
+  EXPECT_EQ(tree->height, 4); // Height check
 
   // Delete node above newly inserted one
   BST_delete(&tree, keya);
@@ -218,6 +233,10 @@ TEST_F(BST_balanced_fill, func_BST_delete_nonterminal_with_left_son) {
   EXPECT_TRUE(BST_get_data(tree, keya) == NULL);
   // It's place should be taken by newly inserted node
   EXPECT_TRUE(tree->left->left->data == &leftdata);
+  // Height check
+  EXPECT_EQ(tree->height, 3);
+  EXPECT_EQ(tree->left->height, 2);
+  EXPECT_EQ(tree->left->left->height, 1);
 }
 
 TEST_F(BST_balanced_fill, func_BST_delete_nonterminal_with_right_son) {
@@ -231,6 +250,7 @@ TEST_F(BST_balanced_fill, func_BST_delete_nonterminal_with_right_son) {
 
   // Check correct insertion
   ASSERT_TRUE(tree->right->right->right->data == &rightdata);
+  EXPECT_EQ(tree->height, 4); // Height check
 
   // Delete node above newly inserted one
   BST_delete(&tree, keyg);
@@ -239,6 +259,10 @@ TEST_F(BST_balanced_fill, func_BST_delete_nonterminal_with_right_son) {
   EXPECT_TRUE(BST_get_data(tree, keyg) == NULL);
   // It's place should be taken by newly inserted node
   EXPECT_TRUE(tree->right->right->data == &rightdata);
+  // Height check
+  EXPECT_EQ(tree->height, 3);
+  EXPECT_EQ(tree->right->height, 2);
+  EXPECT_EQ(tree->right->right->height, 1);
 }
 
 TEST_F(BST_balanced_fill, func_BST_delete_nonterminal_with_both_sons) {
@@ -247,6 +271,8 @@ TEST_F(BST_balanced_fill, func_BST_delete_nonterminal_with_both_sons) {
   BST_delete(&tree, keyd);
   // Check deletion
   ASSERT_TRUE(BST_get_data(tree, keyd) == NULL);
+  EXPECT_EQ(tree->height, 3); // Height check
+
   // Replacement is right-most son of left subtree
   // In this case it's the node with key "c"
   ASSERT_EQ(strcmp(tree->key, keyc), 0);
@@ -259,6 +285,10 @@ TEST_F(BST_balanced_fill, func_BST_delete_nonterminal_with_both_sons) {
   BST_delete(&tree, keyf);
   ASSERT_TRUE(BST_get_data(tree, keyf) == NULL);
   ASSERT_EQ(strcmp(tree->right->key, keye), 0);
+  // Height check
+  EXPECT_EQ(tree->height, 3);
+  EXPECT_EQ(tree->left->height, 1);
+  EXPECT_EQ(tree->right->height, 2);
 }
 
 TEST_F(BST_balanced_fill, func_BST_delete_complex) {
@@ -269,6 +299,7 @@ TEST_F(BST_balanced_fill, func_BST_delete_complex) {
   BST_insert(&tree, key_s, &data_s);
   // Check insertion
   ASSERT_TRUE(tree->left->right->left->data == &data_s);
+  EXPECT_EQ(tree->height, 4); // Height check
 
   // Delete node with two sons
   BST_delete(&tree, keyd);
@@ -281,4 +312,8 @@ TEST_F(BST_balanced_fill, func_BST_delete_complex) {
   // Node with key "c" should be "replaced" by node with key "bm"
   ASSERT_EQ(strcmp(tree->left->right->key, key_s), 0);
   ASSERT_TRUE(tree->left->right->left == NULL);
+  // Height check
+  EXPECT_EQ(tree->height, 3);
+  EXPECT_EQ(tree->left->height, 2);
+  EXPECT_EQ(tree->right->height, 2);
 }
