@@ -199,6 +199,8 @@ BSTNode delete_node(BSTNode node) {
 
     // INDIRECT RECURSION!! But we need to delete replacement from left subtree
     node->left = delete_recursive(node->left, replacement->key);
+
+    return node;
   }
 }
 
