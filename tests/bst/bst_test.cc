@@ -230,3 +230,24 @@ TEST_F(BST_balanced_fill, func_BST_delete_nonterminal_with_both_sons) {
   ASSERT_EQ(strcmp(tree->right->key, keye), 0);
 }
 
+TEST_F(BST_balanced_fill, func_BST_delete_complex) {
+
+  // Insert another carefully placed node
+  int data_s = 67;
+  char key_s[3] = "bm";
+  BST_insert(&tree, key_s, &data_s);
+  // Check insertion
+  ASSERT_TRUE(tree->left->right->left->data == &data_s);
+
+  // Delete node with two sons
+  BST_delete(&tree, keyd);
+  // Check deletion
+  ASSERT_TRUE(BST_get_data(tree, keyd) == NULL);
+  // Replacement is right-most son of left subtree
+  // In this case it's the node with key "c"
+  ASSERT_EQ(strcmp(tree->key, keyc), 0);
+
+  // Node with key "c" should be "replaced" by node with key "bm"
+  ASSERT_EQ(strcmp(tree->left->right->key, key_s), 0);
+  ASSERT_TRUE(tree->left->right->left == NULL);
+}
