@@ -157,6 +157,8 @@ BSTNode delete_recursive(BSTNode root, BSTKey key) {
 
   // TODO update_height()
   // TODO balance()
+  
+  return root;
 }
 
 BSTNode delete_node(BSTNode node) {
