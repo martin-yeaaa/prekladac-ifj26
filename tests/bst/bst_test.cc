@@ -125,6 +125,16 @@ protected:
     BST_insert(&tree, keyc, &data[2]);
     BST_insert(&tree, keye, &data[4]);
     BST_insert(&tree, keyg, &data[6]);
+
+    /*  Scheme of created tree (with keys as nodes):
+
+                 D
+               /    \
+              B      F
+             / \    / \
+            A   C  E   G
+
+    */
   }
 };
 
@@ -159,3 +169,22 @@ TEST_F(BST_friendly_fill, func_BST_delete_all) {
   // Tree should be empty
   EXPECT_TRUE(tree == NULL);
 }
+
+TEST_F(BST_friendly_fill, func_BST_delete_nonterminal_with_left_son) {
+
+  // Insert leftmost son (key "0" < "a")
+  char leftkey[] = "0";
+  int leftdata = 10;
+  BST_insert(&tree, leftkey, &leftdata);
+
+  // Check correct insertion
+  ASSERT_TRUE(tree->left->left->left->data == &leftdata);
+
+  // Delete node above newly inserted one
+  BST_delete(&tree, keya);
+
+  // Node with key "a" should be gone
+  EXPECT_TRUE(BST_get_data(tree, keya) == NULL);
+  // It's place should be taken by newly inserted node
+  EXPECT_TRUE(tree->left->left->data == &leftdata);
+} 

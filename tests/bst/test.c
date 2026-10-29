@@ -4,6 +4,6 @@
 int main()
 {
     
-    printf("hmm %d\n", strcmp("c", "b"));
+    printf("hmm %d\n", strcmp("0", "a"));
     return 0;
 }
