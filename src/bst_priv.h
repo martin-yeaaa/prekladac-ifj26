@@ -68,4 +68,13 @@ BSTNode delete_node(BSTNode node);
  */
 BSTNode get_right_most_son(BSTNode node);
 
+/**
+ * Sets height of a node based on its sons.
+ * @param node Node which we want to update.
+ * @return Difference in height of sons.
+ * Negative value means left son is taller.
+ * Positive value means right son is taller.
+ */
+int update_height(BSTNode node);
+
 // TODO functions for height balancing

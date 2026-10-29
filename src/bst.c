@@ -79,7 +79,7 @@ BSTNode insert_recursive(BSTNode root, BSTKey key, BSTData data) {
     }
   }
 
-  // TODO update_height()
+  int height_diff = update_height(root);
   // TODO balance()
 
   return root;
@@ -155,7 +155,7 @@ BSTNode delete_recursive(BSTNode root, BSTKey key) {
     root->right = delete_recursive(root->right, key);
   }
 
-  // TODO update_height()
+  int height_diff = update_height(root);
   // TODO balance()
 
   return root;
@@ -199,7 +199,7 @@ BSTNode delete_node(BSTNode node) {
 
     // INDIRECT RECURSION!! But we need to delete replacement from left subtree
     node->left = delete_recursive(node->left, replacement->key);
-
+    // Don't forget to return the replacement
     return node;
   }
 }
@@ -250,4 +250,32 @@ int compare_keys(BSTKey searched_key, BSTKey node_key) {
 
   // Lexicographical comparison
   return strcmp(searched_key, node_key);
+}
+
+int update_height(BSTNode node) {
+
+  // node may be NULL
+  if (node == NULL)
+    return 0;
+
+  int left_height = 0;
+  int right_height = 0;
+
+  // Set left/right height if possible
+  if (node->left != NULL) {
+    left_height = node->left->height;
+  }
+  if (node->right != NULL) {
+    right_height = node->right->height;
+  }
+
+  // Update height of node with larger value+1
+  if (left_height > right_height) {
+    node->height = left_height + 1;
+  } else {
+    node->height = right_height + 1;
+  }
+
+  // Return height difference
+  return right_height - left_height;
 }
