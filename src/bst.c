@@ -79,7 +79,11 @@ BSTNode insert_recursive(BSTNode root, BSTKey key, BSTData data) {
     }
   }
 
-  int height_diff = update_height(root);
+  // Set new height
+  update_height(root);
+
+  // Fix imbalance
+  int height_diff = get_height_diff(root);
   // TODO balance()
 
   return root;
@@ -155,7 +159,11 @@ BSTNode delete_recursive(BSTNode root, BSTKey key) {
     root->right = delete_recursive(root->right, key);
   }
 
-  int height_diff = update_height(root);
+  // Set new height
+  update_height(root);
+
+  // Fix imbalance
+  int height_diff = get_height_diff(root);
   // TODO balance()
 
   return root;
@@ -252,11 +260,11 @@ int compare_keys(BSTKey searched_key, BSTKey node_key) {
   return strcmp(searched_key, node_key);
 }
 
-int update_height(BSTNode node) {
+void update_height(BSTNode node) {
 
   // node may be NULL
   if (node == NULL)
-    return 0;
+    return;
 
   int left_height = 0;
   int right_height = 0;
@@ -274,6 +282,24 @@ int update_height(BSTNode node) {
     node->height = left_height + 1;
   } else {
     node->height = right_height + 1;
+  }
+}
+
+int get_height_diff(BSTNode node) {
+
+  // node may be NULL
+  if (node == NULL)
+    return 0;
+
+  int left_height = 0;
+  int right_height = 0;
+
+  // Set left/right height if possible
+  if (node->left != NULL) {
+    left_height = node->left->height;
+  }
+  if (node->right != NULL) {
+    right_height = node->right->height;
   }
 
   // Return height difference
