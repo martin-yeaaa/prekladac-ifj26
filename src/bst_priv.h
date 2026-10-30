@@ -77,11 +77,17 @@ void update_height(BSTNode node);
 /**
  * Gets height difference of subtrees.
  * @param node Parent node.
- * @return Difference in height of sons.
- * Negative value means left son is taller.
- * Positive value means right son is taller.
+ * @return Difference in height of subtrees.
+ * Negative value means left subtree is taller.
+ * Positive value means right subtree is taller.
  * Zero means tree is balanced
  */
 int get_height_diff(BSTNode node);
 
-// TODO functions for height balancing
+/**
+ * Detects type of imbalance (LL, LR, RL, RR) and performs rotations to make the
+ * tree height-balanced. If tree is balanced, nothing happens.
+ * @param crit_node Critical node in imbalanced tree.
+ * @return Node that takes place of critical node.
+ */
+BSTNode rebalance_tree(BSTNode crit_node);

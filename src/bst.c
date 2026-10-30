@@ -161,10 +161,8 @@ BSTNode delete_recursive(BSTNode root, BSTKey key) {
 
   // Set new height
   update_height(root);
-
   // Fix imbalance
-  int height_diff = get_height_diff(root);
-  // TODO balance()
+  root = rebalance_tree(root);
 
   return root;
 }
@@ -304,4 +302,39 @@ int get_height_diff(BSTNode node) {
 
   // Return height difference
   return right_height - left_height;
+}
+
+BSTNode rebalance_tree(BSTNode crit_node) {
+
+  // Get height difference
+  int crit_diff = get_height_diff(crit_node);
+
+  // Assert assumption
+  if (crit_diff != 0) {
+    assert(crit_node != NULL);
+  }
+
+  // Detect type of imbalance
+  // Critical node left heavy
+  if (crit_diff < -1) {
+
+    int left_diff = get_height_diff(crit_node->left);
+
+    // Left son left heavy or balanced = LL
+    if (left_diff <= 0) {}
+    // Left son right heavy = LR
+    else {}
+  }
+  // Critical node right heavy
+  else if (crit_diff > 1) {
+
+    int right_diff = get_height_diff(crit_node->right);
+
+    // Right son right heavy or balanced = RR
+    if (right_diff >= 0) {}
+    // Right son left heavy = LR
+    else {}
+  }
+
+  return crit_node;
 }
