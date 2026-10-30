@@ -1,5 +1,6 @@
-// bst.c
-// Authors: Martin Vaško (vaskom00)
+// Project: prekladac-ifj26
+// File: bst.c
+// Author: Martin Vaško (xvaskom00)
 
 // Implementation of height-balanced binary search tree
 
@@ -183,13 +184,15 @@ BSTNode delete_node(BSTNode node) {
   }
   // Has only right son
   else if (node->left == NULL && node->right != NULL) {
+    BSTNode son = node->right;
     free(node);         // Free node memory
-    return node->right; // Return non-NULL son
+    return son; // Return non-NULL son
   }
   // Has only left son
   else if (node->left != NULL && node->right == NULL) {
+    BSTNode son = node->left;
     free(node);        // Free node memory
-    return node->left; // Return non-NULL son
+    return son; // Return non-NULL son
   }
   // Has both sons - we need to replace the node
   else {
