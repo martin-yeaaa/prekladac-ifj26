@@ -1,5 +1,6 @@
-// bst.h
-// Authors: Martin Vaško (vaskom00)
+// Project: prekladac-ifj26
+// File: bst.h
+// Author: Martin Vaško (xvaskom00)
 
 // Header file for height-balanced binary search tree implementation
 

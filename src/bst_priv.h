@@ -1,5 +1,6 @@
-// bst_priv.h
-// Authors: Martin Vaško (vaskom00)
+// Project: prekladac-ifj26
+// File: bst_priv.h
+// Author: Martin Vaško (xvaskom00)
 
 // Header file for private declarations only visible to bst.c
 

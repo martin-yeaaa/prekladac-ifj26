@@ -1,5 +1,6 @@
-# CMakeLists.txt for testing
-# Author: Martin Vaško
+# Project: prekladac-ifj26
+# File: CMakeLists.txt
+# Author: Martin Vaško (xvaskom00)
 
 cmake_minimum_required(VERSION 3.14)
 project(prekladac-ifj26)

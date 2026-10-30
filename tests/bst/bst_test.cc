@@ -1,5 +1,6 @@
-// Binary search tree test
-// Author: Martin Vaško
+// Project: prekladac-ifj26
+// File: bst_test.cc
+// Author: Martin Vaško (xvaskom00)
 
 #include <gtest/gtest.h>
 

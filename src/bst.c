@@ -185,13 +185,13 @@ BSTNode delete_node(BSTNode node) {
   // Has only right son
   else if (node->left == NULL && node->right != NULL) {
     BSTNode son = node->right;
-    free(node);         // Free node memory
+    free(node); // Free node memory
     return son; // Return non-NULL son
   }
   // Has only left son
   else if (node->left != NULL && node->right == NULL) {
     BSTNode son = node->left;
-    free(node);        // Free node memory
+    free(node); // Free node memory
     return son; // Return non-NULL son
   }
   // Has both sons - we need to replace the node
