@@ -81,10 +81,8 @@ BSTNode insert_recursive(BSTNode root, BSTKey key, BSTData data) {
 
   // Set new height
   update_height(root);
-
   // Fix imbalance
-  int height_diff = get_height_diff(root);
-  // TODO balance()
+  root = rebalance_tree(root);
 
   return root;
 }
@@ -358,7 +356,15 @@ BSTNode node_right_rotation(BSTNode parent, BSTNode left_son) {
   assert(parent != NULL);
   assert(left_son != NULL);
 
-  return parent;
+  // Save node pointer
+  BSTNode transferred_node = left_son->right;
+
+  // Perform rotation
+  left_son->right = parent;
+  parent->left = transferred_node;
+
+  // Left son becomes parent
+  return left_son;
 }
 
 BSTNode node_left_rotation(BSTNode parent, BSTNode right_son) {
@@ -367,5 +373,13 @@ BSTNode node_left_rotation(BSTNode parent, BSTNode right_son) {
   assert(parent != NULL);
   assert(right_son != NULL);
 
-  return parent;
+  // Save node pointer
+  BSTNode transferred_node = right_son->left;
+
+  // Perform rotation
+  right_son->left = parent;
+  parent->right = transferred_node;
+
+  // Right son becomes parent
+  return right_son;
 }
