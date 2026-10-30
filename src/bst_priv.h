@@ -91,3 +91,19 @@ int get_height_diff(BSTNode node);
  * @return Node that takes place of critical node.
  */
 BSTNode rebalance_tree(BSTNode crit_node);
+
+/**
+ * Performs right rotation of tree nodes.
+ * @param parent Parent node. Must not be `NULL`.
+ * @param left_son Left son of parent node. Must not be `NULL`.
+ * @return Node that takes place of parent node.
+ */
+BSTNode node_right_rotation(BSTNode parent, BSTNode left_son);
+
+/**
+ * Performs left rotation of tree nodes.
+ * @param parent Parent node. Must not be `NULL`.
+ * @param right_son Right son of parent node. Must not be `NULL`.
+ * @return Node that takes place of parent node.
+ */
+BSTNode node_left_rotation(BSTNode parent, BSTNode right_son);

@@ -321,9 +321,15 @@ BSTNode rebalance_tree(BSTNode crit_node) {
     int left_diff = get_height_diff(crit_node->left);
 
     // Left son left heavy or balanced = LL
-    if (left_diff <= 0) {}
+    if (left_diff <= 0) {
+      crit_node = node_right_rotation(crit_node, crit_node->left);
+    }
     // Left son right heavy = LR
-    else {}
+    else {
+      BSTNode left_son = crit_node->left;
+      left_son = node_left_rotation(left_son, left_son->right);
+      crit_node = node_right_rotation(crit_node, left_son);
+    }
   }
   // Critical node right heavy
   else if (crit_diff > 1) {
@@ -331,10 +337,35 @@ BSTNode rebalance_tree(BSTNode crit_node) {
     int right_diff = get_height_diff(crit_node->right);
 
     // Right son right heavy or balanced = RR
-    if (right_diff >= 0) {}
+    if (right_diff >= 0) {
+      crit_node = node_left_rotation(crit_node, crit_node->right);
+    }
     // Right son left heavy = LR
-    else {}
+    else {
+      BSTNode right_son = crit_node->right;
+      right_son = node_right_rotation(right_son, right_son->left);
+      crit_node = node_left_rotation(crit_node, right_son);
+    }
   }
 
+  // Return node that took place of critical node
   return crit_node;
+}
+
+BSTNode node_right_rotation(BSTNode parent, BSTNode left_son) {
+
+  // Nodes must not be NULL
+  assert(parent != NULL);
+  assert(left_son != NULL);
+
+  return parent;
+}
+
+BSTNode node_left_rotation(BSTNode parent, BSTNode right_son) {
+
+  // Nodes must not be NULL
+  assert(parent != NULL);
+  assert(right_son != NULL);
+
+  return parent;
 }
