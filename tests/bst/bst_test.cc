@@ -703,3 +703,65 @@ TEST_F(BST_right_heavy_fill, insert_RL_2) {
   EXPECT_TRUE(tree->left->height == 2);
   EXPECT_TRUE(tree->left->left->height == 1);
 }
+
+TEST_F(BST_right_heavy_fill, delete_RR_unbalanced) {
+  
+  // This won't cause rotation
+  char del[] = "i";
+  BST_delete(&tree, del);
+
+  // This WILL cause rotation
+  char del2[] = "e";
+  BST_delete(&tree, del2);
+
+  // Check each node
+  EXPECT_TRUE(strcmp(tree->right->key, "m") == 0);
+  EXPECT_TRUE(strcmp(tree->key, "k") == 0);
+  EXPECT_TRUE(strcmp(tree->left->key, "g") == 0);
+
+  // Height check
+  EXPECT_TRUE(tree->height == 2);
+  EXPECT_TRUE(tree->right->height == 1);
+  EXPECT_TRUE(tree->left->height == 1);
+}
+
+TEST_F(BST_right_heavy_fill, delete_RR_balanced) {
+  
+  // This WILL cause rotation
+  char del2[] = "e";
+  BST_delete(&tree, del2);
+
+  // Check each node
+  EXPECT_TRUE(strcmp(tree->right->key, "m") == 0);
+  EXPECT_TRUE(strcmp(tree->key, "k") == 0);
+  EXPECT_TRUE(strcmp(tree->left->key, "g") == 0);
+  EXPECT_TRUE(strcmp(tree->left->right->key, "i") == 0);
+
+  // Height check
+  EXPECT_TRUE(tree->height == 3);
+  EXPECT_TRUE(tree->left->height == 2);
+  EXPECT_TRUE(tree->left->right->height == 1);
+  EXPECT_TRUE(tree->right->height == 1);
+}
+
+
+TEST_F(BST_right_heavy_fill, delete_RL)  {
+
+  // This won't cause rotation
+  char del[] = "m";
+  BST_delete(&tree, del);
+
+  // This WILL cause rotation
+  char del2[] = "e";
+  BST_delete(&tree, del2);
+
+  // Check each node
+  EXPECT_TRUE(strcmp(tree->right->key, "k") == 0);
+  EXPECT_TRUE(strcmp(tree->key, "i") == 0);
+  EXPECT_TRUE(strcmp(tree->left->key, "g") == 0);
+
+  // Height check
+  EXPECT_TRUE(tree->height == 2);
+  EXPECT_TRUE(tree->right->height == 1);
+  EXPECT_TRUE(tree->left->height == 1);
+}
