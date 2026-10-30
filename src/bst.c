@@ -363,6 +363,10 @@ BSTNode node_right_rotation(BSTNode parent, BSTNode left_son) {
   left_son->right = parent;
   parent->left = transferred_node;
 
+  // Update height, parent first because its now below left
+  update_height(parent);
+  update_height(left_son);
+
   // Left son becomes parent
   return left_son;
 }
@@ -379,6 +383,10 @@ BSTNode node_left_rotation(BSTNode parent, BSTNode right_son) {
   // Perform rotation
   right_son->left = parent;
   parent->right = transferred_node;
+
+  // Update height, parent first because its now below right_son
+  update_height(parent);
+  update_height(right_son);
 
   // Right son becomes parent
   return right_son;
