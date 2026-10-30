@@ -317,3 +317,87 @@ TEST_F(BST_balanced_fill, func_BST_delete_complex) {
   EXPECT_EQ(tree->left->height, 2);
   EXPECT_EQ(tree->right->height, 2);
 }
+
+
+TEST(BST_unbalanced, insert_LL) {
+
+  BSTNode tree = BST_new();
+  int data[] = {1, 2, 3};
+  char keyc[2] = "c";
+  char keyd[2] = "d";
+  char keye[2] = "e";
+
+  // Inserting only on left side
+  BST_insert(&tree, keye, &data[0]);
+  BST_insert(&tree, keyd, &data[1]);
+  // No rotation yet
+  ASSERT_TRUE(tree->data == &data[0]);
+  ASSERT_TRUE(tree->left->data == &data[1]);
+
+  // This will cause LL imbalance
+  BST_insert(&tree, keyc, &data[2]);
+  // Check correct rotation
+  EXPECT_TRUE(tree->data == &data[1]);
+  EXPECT_TRUE(tree->left->data == &data[2]);
+  EXPECT_TRUE(tree->right->data == &data[0]);
+  
+  // Sanity check
+  EXPECT_TRUE(tree->left->left == NULL);
+  EXPECT_TRUE(tree->left->right == NULL);
+  EXPECT_TRUE(tree->right->left == NULL);
+  EXPECT_TRUE(tree->right->right == NULL);
+
+  // Try more
+  int data_more[] = {6, 7};
+  char keya[] = "a";
+  char keyb[] = "b";
+
+  BST_insert(&tree, keyb, &data_more[0]);
+  BST_insert(&tree, keya, &data_more[1]);
+
+  EXPECT_TRUE(tree->left->data == &data_more[0]);       // b
+  EXPECT_TRUE(tree->left->left->data == &data_more[1]); // a
+  EXPECT_TRUE(tree->left->right->data == &data[2]);     // c
+
+}
+
+TEST(BST_unbalanced, insert_RR) {
+
+  BSTNode tree = BST_new();
+  int data[] = {1, 2, 3};
+  char keya[2] = "a";
+  char keyb[2] = "b";
+  char keyc[2] = "c";
+
+  // Inserting only on right side
+  BST_insert(&tree, keya, &data[0]);
+  BST_insert(&tree, keyb, &data[1]);
+  // No rotation yet
+  ASSERT_TRUE(tree->data == &data[0]);
+  ASSERT_TRUE(tree->right->data == &data[1]);
+
+  // This will cause RR imbalance
+  BST_insert(&tree, keyc, &data[2]);
+  // Check correct rotation
+  EXPECT_TRUE(tree->data == &data[1]);
+  EXPECT_TRUE(tree->left->data == &data[0]);
+  EXPECT_TRUE(tree->right->data == &data[2]);
+  
+  // Sanity check
+  EXPECT_TRUE(tree->left->left == NULL);
+  EXPECT_TRUE(tree->left->right == NULL);
+  EXPECT_TRUE(tree->right->left == NULL);
+  EXPECT_TRUE(tree->right->right == NULL);
+
+    // Try more
+  int data_more[] = {6, 7};
+  char keyd[] = "d";
+  char keye[] = "e";
+
+  BST_insert(&tree, keyd, &data_more[0]);
+  BST_insert(&tree, keye, &data_more[1]);
+
+  EXPECT_TRUE(tree->right->data == &data_more[0]);        // d
+  EXPECT_TRUE(tree->right->left->data == &data[2]);       // c
+  EXPECT_TRUE(tree->right->right->data == &data_more[1]); // e
+}
