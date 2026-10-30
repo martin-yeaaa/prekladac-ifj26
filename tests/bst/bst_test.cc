@@ -340,7 +340,11 @@ TEST(BST_unbalanced, insert_LL) {
   EXPECT_TRUE(tree->data == &data[1]);
   EXPECT_TRUE(tree->left->data == &data[2]);
   EXPECT_TRUE(tree->right->data == &data[0]);
-  
+  // Check height
+  EXPECT_TRUE(tree->height == 2);
+  EXPECT_TRUE(tree->left->height == 1);
+  EXPECT_TRUE(tree->right->height == 1);
+
   // Sanity check
   EXPECT_TRUE(tree->left->left == NULL);
   EXPECT_TRUE(tree->left->right == NULL);
@@ -358,6 +362,12 @@ TEST(BST_unbalanced, insert_LL) {
   EXPECT_TRUE(tree->left->data == &data_more[0]);       // b
   EXPECT_TRUE(tree->left->left->data == &data_more[1]); // a
   EXPECT_TRUE(tree->left->right->data == &data[2]);     // c
+  // Height
+  EXPECT_TRUE(tree->height == 3);
+  EXPECT_TRUE(tree->right->height == 1);
+  EXPECT_TRUE(tree->left->height == 2);
+  EXPECT_TRUE(tree->left->left->height == 1);
+  EXPECT_TRUE(tree->left->right->height == 1);
 
 }
 
@@ -382,6 +392,10 @@ TEST(BST_unbalanced, insert_RR) {
   EXPECT_TRUE(tree->data == &data[1]);
   EXPECT_TRUE(tree->left->data == &data[0]);
   EXPECT_TRUE(tree->right->data == &data[2]);
+  // Check height
+  EXPECT_TRUE(tree->height == 2);
+  EXPECT_TRUE(tree->left->height == 1);
+  EXPECT_TRUE(tree->right->height == 1);
   
   // Sanity check
   EXPECT_TRUE(tree->left->left == NULL);
@@ -400,4 +414,181 @@ TEST(BST_unbalanced, insert_RR) {
   EXPECT_TRUE(tree->right->data == &data_more[0]);        // d
   EXPECT_TRUE(tree->right->left->data == &data[2]);       // c
   EXPECT_TRUE(tree->right->right->data == &data_more[1]); // e
+  // Height
+  EXPECT_TRUE(tree->height == 3);
+  EXPECT_TRUE(tree->left->height == 1);
+  EXPECT_TRUE(tree->right->height == 2);
+  EXPECT_TRUE(tree->right->left->height == 1);
+  EXPECT_TRUE(tree->right->right->height == 1);
+}
+
+
+class BST_left_heavy_fill : public testing::Test {
+protected:
+
+  BSTNode tree;
+  int data[5] = {1, 2, 3, 4, 5};
+  char keye[2] = "e";
+  char keyg[2] = "g";
+  char keyi[2] = "i";
+  char keyk[2] = "k";
+  char keym[2] = "m";
+
+  BST_left_heavy_fill() {
+    // New tree
+    tree = BST_new();
+    // Insert data
+    // We insert data in a way so there's no need for internal rebalancing
+    // However we expect correct sorting
+    BST_insert(&tree, keyk, &data[0]);
+
+    BST_insert(&tree, keyg, &data[1]);
+    BST_insert(&tree, keym, &data[2]);
+
+    BST_insert(&tree, keye, &data[3]);
+    BST_insert(&tree, keyi, &data[4]);
+
+    /*  Scheme of created tree (with keys as nodes):
+
+                K
+               / \
+              G   M
+             / \
+            E   I
+                  
+    */
+  }
+};
+
+TEST_F(BST_left_heavy_fill, fixture_test) {
+
+  // Check if it's really there
+  ASSERT_FALSE(tree == NULL);
+  
+  // Check private data
+  EXPECT_EQ(*((int*)tree->data), 1);
+
+  EXPECT_EQ(*((int*)tree->left->data), 2);
+  EXPECT_EQ(*((int*)tree->right->data), 3);
+
+  EXPECT_EQ(*((int*)tree->left->left->data), 4);
+  EXPECT_EQ(*((int*)tree->left->right->data), 5);
+
+  // Check height
+  EXPECT_EQ(tree->height, 3);
+  EXPECT_EQ(tree->left->height, 2);
+  EXPECT_EQ(tree->right->height, 1);
+  EXPECT_EQ(tree->left->left->height, 1);
+  EXPECT_EQ(tree->left->right->height, 1);
+}
+
+TEST_F(BST_left_heavy_fill, insert_LR_1) {
+
+  int lrdata = 67;
+  char keyj[2] = "j";
+
+  // This will cause LR rotation
+  BST_insert(&tree, keyj, &lrdata);
+
+  // Check each node
+  EXPECT_TRUE(strcmp(tree->key, "i") == 0);
+  EXPECT_TRUE(strcmp(tree->right->key, "k") == 0);
+  EXPECT_TRUE(strcmp(tree->right->right->key, "m") == 0);
+  EXPECT_TRUE(strcmp(tree->right->left->key, "j") == 0);
+  EXPECT_TRUE(strcmp(tree->left->key, "g") == 0);
+  EXPECT_TRUE(strcmp(tree->left->left->key, "e") == 0);
+
+  // Height check
+  EXPECT_TRUE(tree->height == 3);
+  EXPECT_TRUE(tree->right->height == 2);
+  EXPECT_TRUE(tree->right->right->height == 1);
+  EXPECT_TRUE(tree->right->left->height == 1);
+  EXPECT_TRUE(tree->left->height == 2);
+  EXPECT_TRUE(tree->left->left->height == 1);
+}
+
+TEST_F(BST_left_heavy_fill, insert_LR_2) {
+
+  int lrdata = 67;
+  char keyj[2] = "h";
+
+  // This will cause LR rotation
+  BST_insert(&tree, keyj, &lrdata);
+
+  // Check each node
+  EXPECT_TRUE(strcmp(tree->key, "i") == 0);
+  EXPECT_TRUE(strcmp(tree->right->key, "k") == 0);
+  EXPECT_TRUE(strcmp(tree->right->right->key, "m") == 0);
+  EXPECT_TRUE(strcmp(tree->left->right->key, "h") == 0);
+  EXPECT_TRUE(strcmp(tree->left->key, "g") == 0);
+  EXPECT_TRUE(strcmp(tree->left->left->key, "e") == 0);
+
+  // Height check
+  EXPECT_TRUE(tree->height == 3);
+  EXPECT_TRUE(tree->right->height == 2);
+  EXPECT_TRUE(tree->right->right->height == 1);
+  EXPECT_TRUE(tree->left->right->height == 1);
+  EXPECT_TRUE(tree->left->height == 2);
+  EXPECT_TRUE(tree->left->left->height == 1);
+}
+
+
+
+class BST_right_heavy_fill : public testing::Test {
+protected:
+
+  BSTNode tree;
+  int data[5] = {1, 2, 3, 4, 5};
+  char keye[2] = "e";
+  char keyg[2] = "g";
+  char keyi[2] = "i";
+  char keyk[2] = "k";
+  char keym[2] = "m";
+
+  BST_right_heavy_fill() {
+    // New tree
+    tree = BST_new();
+    // Insert data
+    // We insert data in a way so there's no need for internal rebalancing
+    // However we expect correct sorting
+    BST_insert(&tree, keyg, &data[1]);
+
+    BST_insert(&tree, keye, &data[3]);
+    BST_insert(&tree, keyk, &data[0]);
+    
+    BST_insert(&tree, keym, &data[2]);
+    BST_insert(&tree, keyi, &data[4]);
+
+    /*  Scheme of created tree (with keys as nodes):
+
+                G
+               / \
+              E   K
+                 / \
+                I   M
+                  
+    */
+  }
+};
+
+TEST_F(BST_right_heavy_fill, fixture_test) {
+
+  // Check if it's really there
+  ASSERT_FALSE(tree == NULL);
+  
+  // Check private data
+  EXPECT_EQ(*((int*)tree->data), 2);
+
+  EXPECT_EQ(*((int*)tree->left->data), 4);
+  EXPECT_EQ(*((int*)tree->right->data), 1);
+
+  EXPECT_EQ(*((int*)tree->right->left->data), 5);
+  EXPECT_EQ(*((int*)tree->right->right->data), 3);
+
+  // Check height
+  EXPECT_EQ(tree->height, 3);
+  EXPECT_EQ(tree->left->height, 1);
+  EXPECT_EQ(tree->right->height, 2);
+  EXPECT_EQ(tree->right->left->height, 1);
+  EXPECT_EQ(tree->right->right->height, 1);
 }
