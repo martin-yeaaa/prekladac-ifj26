@@ -510,10 +510,10 @@ TEST_F(BST_left_heavy_fill, insert_LR_1) {
 TEST_F(BST_left_heavy_fill, insert_LR_2) {
 
   int lrdata = 67;
-  char keyj[2] = "h";
+  char keyh[2] = "h";
 
   // This will cause LR rotation
-  BST_insert(&tree, keyj, &lrdata);
+  BST_insert(&tree, keyh, &lrdata);
 
   // Check each node
   EXPECT_TRUE(strcmp(tree->key, "i") == 0);
@@ -591,4 +591,54 @@ TEST_F(BST_right_heavy_fill, fixture_test) {
   EXPECT_EQ(tree->right->height, 2);
   EXPECT_EQ(tree->right->left->height, 1);
   EXPECT_EQ(tree->right->right->height, 1);
+}
+
+TEST_F(BST_right_heavy_fill, insert_RL_1) {
+
+  int rldata = 67;
+  char keyh[2] = "h";
+
+  // This will cause RL rotation
+  BST_insert(&tree, keyh, &rldata);
+
+  // Check each node
+  EXPECT_TRUE(strcmp(tree->key, "i") == 0);
+  EXPECT_TRUE(strcmp(tree->right->key, "k") == 0);
+  EXPECT_TRUE(strcmp(tree->right->right->key, "m") == 0);
+  EXPECT_TRUE(strcmp(tree->left->key, "g") == 0);
+  EXPECT_TRUE(strcmp(tree->left->right->key, "h") == 0);
+  EXPECT_TRUE(strcmp(tree->left->left->key, "e") == 0);
+
+  // Height check
+  EXPECT_TRUE(tree->height == 3);
+  EXPECT_TRUE(tree->right->height == 2);
+  EXPECT_TRUE(tree->right->right->height == 1);
+  EXPECT_TRUE(tree->left->height == 2);
+  EXPECT_TRUE(tree->left->right->height == 1);
+  EXPECT_TRUE(tree->left->left->height == 1);
+}
+
+TEST_F(BST_right_heavy_fill, insert_RL_2) {
+
+  int lrdata = 67;
+  char keyj[2] = "j";
+
+  // This will cause RL rotation
+  BST_insert(&tree, keyj, &lrdata);
+
+  // Check each node
+  EXPECT_TRUE(strcmp(tree->key, "i") == 0);
+  EXPECT_TRUE(strcmp(tree->right->key, "k") == 0);
+  EXPECT_TRUE(strcmp(tree->right->right->key, "m") == 0);
+  EXPECT_TRUE(strcmp(tree->right->left->key, "j") == 0);
+  EXPECT_TRUE(strcmp(tree->left->key, "g") == 0);
+  EXPECT_TRUE(strcmp(tree->left->left->key, "e") == 0);
+
+  // Height check
+  EXPECT_TRUE(tree->height == 3);
+  EXPECT_TRUE(tree->right->height == 2);
+  EXPECT_TRUE(tree->right->right->height == 1);
+  EXPECT_TRUE(tree->right->left->height == 1);
+  EXPECT_TRUE(tree->left->height == 2);
+  EXPECT_TRUE(tree->left->left->height == 1);
 }
