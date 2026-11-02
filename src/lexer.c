@@ -26,6 +26,7 @@ token_t *lexer_parse(char *source)
     for (size_t i=0; i < length; i++) {
         char current = source[i];
 
+        // Single-char tokens
         switch (current) {
             case ',':
             lexer_push(COMMA, ",");
@@ -156,6 +157,62 @@ token_t *lexer_parse(char *source)
             }
             else {
                 lexer_push(OP_DIV, "/");
+            }
+        }
+
+        // 
+        else if (current = '"') {
+            if (i + 1 < length && source[i+1] == '"'){
+                if (i + 2 < length){
+                    if (source[i+2] == '"') {
+                         // Multi-line string
+                    }
+                    else {
+                        lexer_push(VAL_STRING, "");
+                        i+=2;
+                    }
+                } 
+                else {
+                    lexer_push(VAL_STRING, "");
+                    i+=2;
+                }
+            }
+            // OneLine string
+            else { 
+                int string_start = i; // with "
+                while (i+1 < length && source[i+1] != '"'){
+                    i++;
+                    // Escape sequencions
+                    if (source[i] == '\\')  {
+                        if (source[i + 1] < length) {
+                            if (source[i+1] == '\\' || source[i+1] == '"' || source[i+1] == 'n' || 
+                                source[i+1] == 'r' || source[i+1] == 't'){
+                                i+=2;
+                            }
+                            else {
+                                exit(1);
+                            }                           
+                        }
+                        else {
+                            exit(1);
+                        }
+                    }
+                    else {
+                        if (source[i] == '\n') {
+                            exit(1);
+                        }
+                    }
+                }
+                int string_end = i;
+
+                size_t string_length = string_end - (string_start+1);
+
+                char *value = malloc(string_length + 1);
+
+                memcpy(value, string_start, string_length);
+                value[string_length] = '\0';
+
+                lexer_push(VAL_STRING, value);
             }
         }
     }
