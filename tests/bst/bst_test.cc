@@ -216,6 +216,14 @@ TEST_F(BST_balanced_fill, func_BST_delete_all) {
   EXPECT_TRUE(tree == NULL);
 }
 
+TEST_F(BST_balanced_fill, func_BST_destroy_tree) {
+
+  // Call the function
+  BST_destroy_tree(tree);
+
+  // There's nothing more to safely test, run memory tests!
+}
+
 TEST_F(BST_balanced_fill, func_BST_delete_nonterminal_with_left_son) {
 
   // Insert leftmost son (key "0" < "a")
