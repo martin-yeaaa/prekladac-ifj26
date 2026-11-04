@@ -8,6 +8,8 @@
 
 static token_t *list;
 
+// TODO create token returning function
+
 void lexer_push(token_type_t type, char *value)
 {
     list->next =(token_t *) malloc(sizeof(token_t));
@@ -161,11 +163,43 @@ token_t *lexer_parse(char *source)
         }
 
         // 
-        else if (current = '"') {
+        else if (current == '"') {
             if (i + 1 < length && source[i+1] == '"'){
                 if (i + 2 < length){
                     if (source[i+2] == '"') {
-                         // Multi-line string
+                        // Multi-line string
+                        int string_start = i; // with "
+                while (i+1 < length && source[i+1] != '"'){
+                    i++;
+                    // Escape sequencions
+                    if (source[i] == '\\')  {
+                        if (i + 1 < length) {
+                            if (source[i+1] == '\\' || source[i+1] == '"' || source[i+1] == 'n' || 
+                                source[i+1] == 'r' || source[i+1] == 't'){
+                                i+=2;
+                            }
+                            else {
+                                exit(1);
+                            }                           
+                        }
+                        else {
+                            exit(1);
+                        }
+                    }
+                }
+                if (!(i+3 < length && source[i+2] == '"' && source[i+3] == '"')) {
+                    exit(1);
+                }
+                int string_end = i;
+
+                size_t string_length = string_end - (string_start+1);
+
+                char *value = malloc(string_length + 1);
+
+                memcpy(value, source + string_start, string_length);
+                value[string_length] = '\0';
+
+                lexer_push(VAL_STRING, value);
                     }
                     else {
                         lexer_push(VAL_STRING, "");
@@ -184,7 +218,7 @@ token_t *lexer_parse(char *source)
                     i++;
                     // Escape sequencions
                     if (source[i] == '\\')  {
-                        if (source[i + 1] < length) {
+                        if (i + 1 < length) {
                             if (source[i+1] == '\\' || source[i+1] == '"' || source[i+1] == 'n' || 
                                 source[i+1] == 'r' || source[i+1] == 't'){
                                 i+=2;
@@ -209,10 +243,21 @@ token_t *lexer_parse(char *source)
 
                 char *value = malloc(string_length + 1);
 
-                memcpy(value, string_start, string_length);
+                memcpy(value, source + string_start, string_length);
                 value[string_length] = '\0';
 
                 lexer_push(VAL_STRING, value);
+            }
+        }
+        else if (current == '_') {
+            if ((i+1 < length && ((source[i+1] > 64 && source[i+1] < 91) || (source[i+1] > 97 && source[i+1] < 123)))){
+                exit(1);
+            }
+        }
+        else if (((current > 64 && current < 91) || (current > 97 && current < 123))) {
+            while (i+1 < length && ((source[i+1] > 64 && source[i+1] < 91) || (source[i+1] > 97 && source[i+1] < 123))){
+
+                
             }
         }
     }
