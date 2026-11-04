@@ -50,3 +50,9 @@ void BST_delete(BSTNode *root, BSTKey key);
  * @return `BSTData` if key is found. Otherwise returns `NULL`.
  */
 BSTData BST_get_data(BSTNode root, BSTKey key);
+
+/**
+ * Deletes the entire tree, frees it from memory.
+ * @param root BST root. After performing this, `root` becomes unusable!
+ */
+void BST_destroy_tree(BSTNode root);

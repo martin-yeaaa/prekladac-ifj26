@@ -222,6 +222,21 @@ BSTNode get_right_most_son(BSTNode node) {
     return get_right_most_son(node->right);
 }
 
+void BST_destroy_tree(BSTNode root) {
+
+  // If tree is empty, do nothing
+  if (root == NULL)
+    return;
+
+  // PostOrder deletion of nodes
+  BST_destroy_tree(root->left);
+  BST_destroy_tree(root->right);
+
+  // After subtrees are destroyed, we free the memory of the current node
+  free(root->key);
+  free(root);
+}
+
 BSTData BST_get_data(BSTNode root, BSTKey key) {
 
   // Key must not be NULL
