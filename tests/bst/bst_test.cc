@@ -27,13 +27,13 @@ TEST(BST_basic, func_BST_insert_empty) {
   // Insert data
   int data = 5;
   char key[] = "hello";
-  EXPECT_TRUE(BST_insert(&tree, key, &data));
+  EXPECT_TRUE(BST_insert(&tree, key, &data, sizeof(data)));
 
   // Check if it's really there
   ASSERT_FALSE(tree == NULL);
   // Check private data
   EXPECT_EQ(tree->height, 1);
-  EXPECT_EQ(tree->data, &data);
+  EXPECT_EQ(*(int*)(tree->data), data);
 }
 
 TEST(BST_basic, func_BST_insert_many) {
@@ -52,15 +52,15 @@ TEST(BST_basic, func_BST_insert_many) {
 
   // We insert data in a way so there's no need for internal rebalancing
   // However we expect correct sorting
-  EXPECT_TRUE(BST_insert(&tree, keyd, &data[3]));
+  EXPECT_TRUE(BST_insert(&tree, keyd, &data[3], sizeof(data[0])));
 
-  EXPECT_TRUE(BST_insert(&tree, keyb, &data[1]));
-  EXPECT_TRUE(BST_insert(&tree, keyf, &data[5]));
+  EXPECT_TRUE(BST_insert(&tree, keyb, &data[1], sizeof(data[0])));
+  EXPECT_TRUE(BST_insert(&tree, keyf, &data[5], sizeof(data[0])));
 
-  EXPECT_TRUE(BST_insert(&tree, keya, &data[0]));
-  EXPECT_TRUE(BST_insert(&tree, keyc, &data[2]));
-  EXPECT_TRUE(BST_insert(&tree, keye, &data[4]));
-  EXPECT_TRUE(BST_insert(&tree, keyg, &data[6]));
+  EXPECT_TRUE(BST_insert(&tree, keya, &data[0], sizeof(data[0])));
+  EXPECT_TRUE(BST_insert(&tree, keyc, &data[2], sizeof(data[0])));
+  EXPECT_TRUE(BST_insert(&tree, keye, &data[4], sizeof(data[0])));
+  EXPECT_TRUE(BST_insert(&tree, keyg, &data[6], sizeof(data[0])));
 
   // Check if it's really there
   ASSERT_FALSE(tree == NULL);
@@ -90,13 +90,13 @@ TEST(BST_basic, func_BST_delete) {
   // Insert data
   int data = 5;
   char key[] = "hello";
-  EXPECT_TRUE(BST_insert(&tree, key, &data));
+  EXPECT_TRUE(BST_insert(&tree, key, &data, sizeof(data)));
 
   // Check if it's really there
   ASSERT_FALSE(tree == NULL);
   // Check private data
   EXPECT_EQ(tree->height, 1);
-  EXPECT_EQ(tree->data, &data);
+  EXPECT_EQ(*(int*)tree->data, data);
 
   // Delete data
   BST_delete(&tree, key);
@@ -112,21 +112,21 @@ TEST(BST_basic, func_BST_get_data) {
   // Insert data
   int data = 5;
   char key[] = "hello";
-  EXPECT_TRUE(BST_insert(&tree, key, &data));
+  EXPECT_TRUE(BST_insert(&tree, key, &data, sizeof(data)));
   // Insert more data
   int data2 = 52;
   char key2[] = "aaaa";
-  EXPECT_TRUE(BST_insert(&tree, key2, &data2));
+  EXPECT_TRUE(BST_insert(&tree, key2, &data2, sizeof(data2)));
 
   // Check if it's really there
   ASSERT_FALSE(tree == NULL);
   // Test get_data()
-  EXPECT_TRUE(BST_get_data(tree, key) == &data);
-  EXPECT_TRUE(BST_get_data(tree, key2) == &data2);
+  EXPECT_TRUE(*(int*)BST_get_data(tree, key) == data);
+  EXPECT_TRUE(*(int*)BST_get_data(tree, key2) == data2);
   // Test if it works correctly after deleting nodes
   BST_delete(&tree, key);
   EXPECT_TRUE(BST_get_data(tree, key) == NULL);
-  EXPECT_TRUE(BST_get_data(tree, key2) == &data2);
+  EXPECT_TRUE(*(int*)BST_get_data(tree, key2) == data2);
   BST_delete(&tree, key2);
   EXPECT_TRUE(BST_get_data(tree, key) == NULL);
   EXPECT_TRUE(BST_get_data(tree, key2) == NULL);
@@ -154,15 +154,15 @@ protected:
     // Insert data
     // We insert data in a way so there's no need for internal rebalancing
     // However we expect correct sorting
-    BST_insert(&tree, keyd, &data[3]);
+    BST_insert(&tree, keyd, &data[3], sizeof(data[0]));
 
-    BST_insert(&tree, keyb, &data[1]);
-    BST_insert(&tree, keyf, &data[5]);
+    BST_insert(&tree, keyb, &data[1], sizeof(data[0]));
+    BST_insert(&tree, keyf, &data[5], sizeof(data[0]));
 
-    BST_insert(&tree, keya, &data[0]);
-    BST_insert(&tree, keyc, &data[2]);
-    BST_insert(&tree, keye, &data[4]);
-    BST_insert(&tree, keyg, &data[6]);
+    BST_insert(&tree, keya, &data[0], sizeof(data[0]));
+    BST_insert(&tree, keyc, &data[2], sizeof(data[0]));
+    BST_insert(&tree, keye, &data[4], sizeof(data[0]));
+    BST_insert(&tree, keyg, &data[6], sizeof(data[0]));
 
     /*  Scheme of created tree (with keys as nodes):
 
@@ -229,10 +229,10 @@ TEST_F(BST_balanced_fill, func_BST_delete_nonterminal_with_left_son) {
   // Insert leftmost son (key "0" < "a")
   char leftkey[] = "0";
   int leftdata = 10;
-  BST_insert(&tree, leftkey, &leftdata);
+  BST_insert(&tree, leftkey, &leftdata, sizeof(leftdata));
   
   // Check correct insertion
-  ASSERT_TRUE(tree->left->left->left->data == &leftdata);
+  ASSERT_TRUE(*(int*)tree->left->left->left->data == leftdata);
   EXPECT_EQ(tree->height, 4); // Height check
 
   // Delete node above newly inserted one
@@ -241,7 +241,7 @@ TEST_F(BST_balanced_fill, func_BST_delete_nonterminal_with_left_son) {
   // Node with key "a" should be gone
   EXPECT_TRUE(BST_get_data(tree, keya) == NULL);
   // It's place should be taken by newly inserted node
-  EXPECT_TRUE(tree->left->left->data == &leftdata);
+  EXPECT_TRUE(*(int*)tree->left->left->data == leftdata);
   // Height check
   EXPECT_EQ(tree->height, 3);
   EXPECT_EQ(tree->left->height, 2);
@@ -255,10 +255,10 @@ TEST_F(BST_balanced_fill, func_BST_delete_nonterminal_with_right_son) {
 
   char rightkey[] = "z";
   int rightdata = 20;
-  BST_insert(&tree, rightkey, &rightdata);
+  BST_insert(&tree, rightkey, &rightdata, sizeof(rightdata));
 
   // Check correct insertion
-  ASSERT_TRUE(tree->right->right->right->data == &rightdata);
+  ASSERT_TRUE(*(int*)tree->right->right->right->data == rightdata);
   EXPECT_EQ(tree->height, 4); // Height check
 
   // Delete node above newly inserted one
@@ -267,7 +267,7 @@ TEST_F(BST_balanced_fill, func_BST_delete_nonterminal_with_right_son) {
   // Node with key "g" should be gone
   EXPECT_TRUE(BST_get_data(tree, keyg) == NULL);
   // It's place should be taken by newly inserted node
-  EXPECT_TRUE(tree->right->right->data == &rightdata);
+  EXPECT_TRUE(*(int*)tree->right->right->data == rightdata);
   // Height check
   EXPECT_EQ(tree->height, 3);
   EXPECT_EQ(tree->right->height, 2);
@@ -305,9 +305,9 @@ TEST_F(BST_balanced_fill, func_BST_delete_complex) {
   // Insert another carefully placed node
   int data_s = 67;
   char key_s[3] = "bm";
-  BST_insert(&tree, key_s, &data_s);
+  BST_insert(&tree, key_s, &data_s, sizeof(data_s));
   // Check insertion
-  ASSERT_TRUE(tree->left->right->left->data == &data_s);
+  ASSERT_TRUE(*(int*)tree->left->right->left->data == data_s);
   EXPECT_EQ(tree->height, 4); // Height check
 
   // Delete node with two sons
@@ -337,18 +337,18 @@ TEST(BST_unbalanced, insert_LL) {
   char keye[2] = "e";
 
   // Inserting only on left side
-  BST_insert(&tree, keye, &data[0]);
-  BST_insert(&tree, keyd, &data[1]);
+  BST_insert(&tree, keye, &data[0], sizeof(data[0]));
+  BST_insert(&tree, keyd, &data[1], sizeof(data[0]));
   // No rotation yet
-  ASSERT_TRUE(tree->data == &data[0]);
-  ASSERT_TRUE(tree->left->data == &data[1]);
+  ASSERT_TRUE(*(int*)tree->data == data[0]);
+  ASSERT_TRUE(*(int*)tree->left->data == data[1]);
 
   // This will cause LL imbalance
-  BST_insert(&tree, keyc, &data[2]);
+  BST_insert(&tree, keyc, &data[2], sizeof(data[0]));
   // Check correct rotation
-  EXPECT_TRUE(tree->data == &data[1]);
-  EXPECT_TRUE(tree->left->data == &data[2]);
-  EXPECT_TRUE(tree->right->data == &data[0]);
+  EXPECT_TRUE(*(int*)tree->data == data[1]);
+  EXPECT_TRUE(*(int*)tree->left->data == data[2]);
+  EXPECT_TRUE(*(int*)tree->right->data == data[0]);
   // Check height
   EXPECT_TRUE(tree->height == 2);
   EXPECT_TRUE(tree->left->height == 1);
@@ -365,12 +365,12 @@ TEST(BST_unbalanced, insert_LL) {
   char keya[] = "a";
   char keyb[] = "b";
 
-  BST_insert(&tree, keyb, &data_more[0]);
-  BST_insert(&tree, keya, &data_more[1]);
+  BST_insert(&tree, keyb, &data_more[0], sizeof(data_more[0]));
+  BST_insert(&tree, keya, &data_more[1], sizeof(data_more[0]));
 
-  EXPECT_TRUE(tree->left->data == &data_more[0]);       // b
-  EXPECT_TRUE(tree->left->left->data == &data_more[1]); // a
-  EXPECT_TRUE(tree->left->right->data == &data[2]);     // c
+  EXPECT_TRUE(*(int*)tree->left->data == data_more[0]);       // b
+  EXPECT_TRUE(*(int*)tree->left->left->data == data_more[1]); // a
+  EXPECT_TRUE(*(int*)tree->left->right->data == data[2]);     // c
   // Height
   EXPECT_TRUE(tree->height == 3);
   EXPECT_TRUE(tree->right->height == 1);
@@ -389,18 +389,18 @@ TEST(BST_unbalanced, insert_RR) {
   char keyc[2] = "c";
 
   // Inserting only on right side
-  BST_insert(&tree, keya, &data[0]);
-  BST_insert(&tree, keyb, &data[1]);
+  BST_insert(&tree, keya, &data[0], sizeof(data[0]));
+  BST_insert(&tree, keyb, &data[1], sizeof(data[0]));
   // No rotation yet
-  ASSERT_TRUE(tree->data == &data[0]);
-  ASSERT_TRUE(tree->right->data == &data[1]);
+  ASSERT_TRUE(*(int*)tree->data == data[0]);
+  ASSERT_TRUE(*(int*)tree->right->data == data[1]);
 
   // This will cause RR imbalance
-  BST_insert(&tree, keyc, &data[2]);
+  BST_insert(&tree, keyc, &data[2], sizeof(data[0]));
   // Check correct rotation
-  EXPECT_TRUE(tree->data == &data[1]);
-  EXPECT_TRUE(tree->left->data == &data[0]);
-  EXPECT_TRUE(tree->right->data == &data[2]);
+  EXPECT_TRUE(*(int*)tree->data == data[1]);
+  EXPECT_TRUE(*(int*)tree->left->data == data[0]);
+  EXPECT_TRUE(*(int*)tree->right->data == data[2]);
   // Check height
   EXPECT_TRUE(tree->height == 2);
   EXPECT_TRUE(tree->left->height == 1);
@@ -417,12 +417,12 @@ TEST(BST_unbalanced, insert_RR) {
   char keyd[] = "d";
   char keye[] = "e";
 
-  BST_insert(&tree, keyd, &data_more[0]);
-  BST_insert(&tree, keye, &data_more[1]);
+  BST_insert(&tree, keyd, &data_more[0], sizeof(data[0]));
+  BST_insert(&tree, keye, &data_more[1], sizeof(data[0]));
 
-  EXPECT_TRUE(tree->right->data == &data_more[0]);        // d
-  EXPECT_TRUE(tree->right->left->data == &data[2]);       // c
-  EXPECT_TRUE(tree->right->right->data == &data_more[1]); // e
+  EXPECT_TRUE(*(int*)tree->right->data == data_more[0]);        // d
+  EXPECT_TRUE(*(int*)tree->right->left->data == data[2]);       // c
+  EXPECT_TRUE(*(int*)tree->right->right->data == data_more[1]); // e
   // Height
   EXPECT_TRUE(tree->height == 3);
   EXPECT_TRUE(tree->left->height == 1);
@@ -449,13 +449,13 @@ protected:
     // Insert data
     // We insert data in a way so there's no need for internal rebalancing
     // However we expect correct sorting
-    BST_insert(&tree, keyk, &data[0]);
+    BST_insert(&tree, keyk, &data[0], sizeof(data[0]));
 
-    BST_insert(&tree, keyg, &data[1]);
-    BST_insert(&tree, keym, &data[2]);
+    BST_insert(&tree, keyg, &data[1], sizeof(data[0]));
+    BST_insert(&tree, keym, &data[2], sizeof(data[0]));
 
-    BST_insert(&tree, keye, &data[3]);
-    BST_insert(&tree, keyi, &data[4]);
+    BST_insert(&tree, keye, &data[3], sizeof(data[0]));
+    BST_insert(&tree, keyi, &data[4], sizeof(data[0]));
 
     /*  Scheme of created tree (with keys as nodes):
 
@@ -497,7 +497,7 @@ TEST_F(BST_left_heavy_fill, insert_LR_1) {
   char keyj[2] = "j";
 
   // This will cause LR rotation
-  BST_insert(&tree, keyj, &lrdata);
+  BST_insert(&tree, keyj, &lrdata, sizeof(lrdata));
 
   // Check each node
   EXPECT_TRUE(strcmp(tree->key, "i") == 0);
@@ -522,7 +522,7 @@ TEST_F(BST_left_heavy_fill, insert_LR_2) {
   char keyh[2] = "h";
 
   // This will cause LR rotation
-  BST_insert(&tree, keyh, &lrdata);
+  BST_insert(&tree, keyh, &lrdata, sizeof(lrdata));
 
   // Check each node
   EXPECT_TRUE(strcmp(tree->key, "i") == 0);
@@ -621,13 +621,13 @@ protected:
     // Insert data
     // We insert data in a way so there's no need for internal rebalancing
     // However we expect correct sorting
-    BST_insert(&tree, keyg, &data[1]);
+    BST_insert(&tree, keyg, &data[1], sizeof(data[0]));
 
-    BST_insert(&tree, keye, &data[3]);
-    BST_insert(&tree, keyk, &data[0]);
+    BST_insert(&tree, keye, &data[3], sizeof(data[0]));
+    BST_insert(&tree, keyk, &data[0], sizeof(data[0]));
     
-    BST_insert(&tree, keym, &data[2]);
-    BST_insert(&tree, keyi, &data[4]);
+    BST_insert(&tree, keym, &data[2], sizeof(data[0]));
+    BST_insert(&tree, keyi, &data[4], sizeof(data[0]));
 
     /*  Scheme of created tree (with keys as nodes):
 
@@ -669,7 +669,7 @@ TEST_F(BST_right_heavy_fill, insert_RL_1) {
   char keyh[2] = "h";
 
   // This will cause RL rotation
-  BST_insert(&tree, keyh, &rldata);
+  BST_insert(&tree, keyh, &rldata, sizeof(rldata));
 
   // Check each node
   EXPECT_TRUE(strcmp(tree->key, "i") == 0);
@@ -694,7 +694,7 @@ TEST_F(BST_right_heavy_fill, insert_RL_2) {
   char keyj[2] = "j";
 
   // This will cause RL rotation
-  BST_insert(&tree, keyj, &lrdata);
+  BST_insert(&tree, keyj, &lrdata, sizeof(lrdata));
 
   // Check each node
   EXPECT_TRUE(strcmp(tree->key, "i") == 0);
