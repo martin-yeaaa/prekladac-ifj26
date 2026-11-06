@@ -5,6 +5,7 @@
 // Header file for height-balanced binary search tree implementation
 
 #include <stdbool.h>
+#include <stddef.h>
 
 // The tree uses strings as keys
 typedef char *BSTKey;
@@ -26,13 +27,14 @@ BSTNode BST_new();
  * If a node with the same `key` already exists, the data gets overwritten.
  * @param root Pointer(!) to BST root.
  * @param key Key of the inserted node, must not be `NULL`.
- * @param data Data of the inserted node.
+ * @param data Pointer to data of the inserted node.
+ * @param data_size sizeof(data)
  *
  * @return `true` if insertion is succesful.
  * @return If memory allocation fails, writes an error to `stderr` and returns
  * `false`.
  */
-bool BST_insert(BSTNode *root, BSTKey key, BSTData data);
+bool BST_insert(BSTNode *root, BSTKey key, BSTData data, size_t data_size);
 
 /**
  * Deletes a node with matching `key`, balances tree height if needed.

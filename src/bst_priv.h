@@ -34,17 +34,20 @@ int compare_keys(BSTKey searched_key, BSTKey node_key);
  * @param root BST node.
  * @param key Key of the inserted node, must not be `NULL`.
  * @param data Data of the inserted node.
+ * @param data_size sizeof(data)
  * @return `root`, or a new node.
  */
-BSTNode insert_recursive(BSTNode root, BSTKey key, BSTData data);
+BSTNode insert_recursive(BSTNode root, BSTKey key, BSTData data,
+                         size_t data_size);
 
 /**
  * Creates a new node.
  * @param key Key of created node. Must not be `NULL`.
  * @param data Data of created node.
+ * @param data_size sizeof(data)
  * @return Pointer to newly created node. If creation fails, returns `NULL`.
  */
-BSTNode create_node(BSTKey key, BSTData data);
+BSTNode create_node(BSTKey key, BSTData data, size_t data_size);
 
 /**
  * Goes through tree recursively, deletes a node.

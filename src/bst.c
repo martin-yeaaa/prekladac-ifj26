@@ -8,6 +8,7 @@
 #include "bst_priv.h"
 #include <assert.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,7 +23,7 @@ static bool error_flag = false;
 // replacement node further down the tree, we cannot free the key, because it
 // would break the node we replaced above. This variable lets us know if a
 // replacement has happened, so we know whether to free the key string or not
-static bool key_used_in_replacement = false;
+static bool node_used_in_replacement = false;
 
 BSTNode BST_new() {
 
@@ -30,13 +31,13 @@ BSTNode BST_new() {
   return NULL;
 }
 
-bool BST_insert(BSTNode *root, BSTKey key, BSTData data) {
+bool BST_insert(BSTNode *root, BSTKey key, BSTData data, size_t data_size) {
 
   // Key must not be NULL
   assert(key != NULL);
 
   // Call function for recursive insertion, sets error_flag
-  *root = insert_recursive(*root, key, data);
+  *root = insert_recursive(*root, key, data, data_size);
 
   if (error_flag == true) {
     fprintf(stderr, "Error: Failed to insert new node!\n");
@@ -46,12 +47,13 @@ bool BST_insert(BSTNode *root, BSTKey key, BSTData data) {
   }
 }
 
-BSTNode insert_recursive(BSTNode root, BSTKey key, BSTData data) {
+BSTNode insert_recursive(BSTNode root, BSTKey key, BSTData data,
+                         size_t data_size) {
 
   // Empty tree
   if (root == NULL) {
 
-    root = create_node(key, data);
+    root = create_node(key, data, data_size);
 
     // Check if creation succeeded
     if (root == NULL) {
@@ -72,11 +74,11 @@ BSTNode insert_recursive(BSTNode root, BSTKey key, BSTData data) {
 
     // less than 0 -> left son
     else if (key_comparison < 0) {
-      root->left = insert_recursive(root->left, key, data);
+      root->left = insert_recursive(root->left, key, data, data_size);
     }
     // more than 0 -> right son
     else { // key_comparison > 0
-      root->right = insert_recursive(root->right, key, data);
+      root->right = insert_recursive(root->right, key, data, data_size);
     }
   }
 
@@ -88,7 +90,7 @@ BSTNode insert_recursive(BSTNode root, BSTKey key, BSTData data) {
   return root;
 }
 
-BSTNode create_node(BSTKey key, BSTData data) {
+BSTNode create_node(BSTKey key, BSTData data, size_t data_size) {
 
   // Key must not be NULL
   assert(key != NULL);
@@ -106,13 +108,23 @@ BSTNode create_node(BSTKey key, BSTData data) {
     free(new_node);
     return NULL;
   }
-
   // Copy string
   strcpy(key_copy, key);
 
+  // Allocate memory for data
+  void *data_copy = malloc(data_size);
+  // Check allocation success
+  if (data_copy == NULL) {
+    free(key_copy);
+    free(new_node);
+    return NULL;
+  }
+  // Copy data
+  memcpy(data_copy, data, data_size);
+
   // Initialize new node
   new_node->key = key_copy;
-  new_node->data = data;
+  new_node->data = data_copy;
   new_node->height = 1;
   new_node->left = NULL;
   new_node->right = NULL;
@@ -171,11 +183,13 @@ BSTNode delete_node(BSTNode node) {
   // Node must not be NULL
   assert(node != NULL);
 
-  // Free node key string memory, only when it's not used elsewhere
-  if (key_used_in_replacement == false)
+  // Free void* memory, only when it's not used elsewhere
+  if (node_used_in_replacement == false) {
     free(node->key);
+    free(node->data);
+  }
 
-  key_used_in_replacement = false; // After checking, we can set it back
+  node_used_in_replacement = false; // After checking, we can set it back
 
   // Terminal node without sons
   if (node->left == NULL && node->right == NULL) {
@@ -201,8 +215,8 @@ BSTNode delete_node(BSTNode node) {
     BSTNode replacement = get_right_most_son(node->left);
 
     node->key = replacement->key;
-    key_used_in_replacement = true; // So we know not to free(key)
     node->data = replacement->data;
+    node_used_in_replacement = true; // So we know not to free(key)/free(data)
 
     // INDIRECT RECURSION!! But we need to delete replacement from left subtree
     node->left = delete_recursive(node->left, replacement->key);
