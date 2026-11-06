@@ -3,6 +3,8 @@
 // Author: Martin Vaško (xvaskom00)
 
 #include <stdio.h>
+#include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 #include "../../src/bst.h"
 
@@ -16,6 +18,29 @@ typedef enum example_enum {
 
 #define ARRAY_LEN 5
 
+BSTNode fill_tree(BSTNode tree) {
+
+    // Make arrays of data to put in:
+    // Tree makes its own copies of keys, you can free this from memory
+    char *keys[ARRAY_LEN] = {"id", "int", "double", "str", "bool"};
+
+    // Tree makes its own copies of data, you can free this too :DDD
+    example_enum_t data[ARRAY_LEN] = {IDENTIFIER, INT, DOUBLE, STRING, BOOL};
+
+    for (int i = 0; i < ARRAY_LEN; i++) {
+
+        // Notice the & before &tree and &data
+        // We must check if insertion succeeded! during insertion, malloc may fail!
+        bool success = BST_insert(&tree, keys[i], &data[i], sizeof(data));
+        if (success == false) {
+            exit(1);
+        }
+    }
+
+    // After we return from function, arrays of keys and data will be gone from memory, but its ok because tree makes its own copies
+    return tree;
+}
+
 int main()
 {
     // Filling tree example
@@ -23,22 +48,11 @@ int main()
     // Create new tree
     BSTNode tree = BST_new();
 
-    // Make arrays of data to put in:
-
-    // Tree makes its own copies of keys, you can free this from memory
-    char *keys[ARRAY_LEN] = {"id", "int", "double", "str", "bool"};
-
-    // Tree does NOT make its own copies of data, it only keeps pointers!!
-    example_enum_t data[ARRAY_LEN] = {IDENTIFIER, INT, DOUBLE, STRING, BOOL};
-
-    for (int i = 0; i < ARRAY_LEN; i++) {
-
-        // Notice the & before &tree and &data
-        BST_insert(&tree, keys[i], &data[i]);
-    }
+    // You can fill the tree in a separate funcion
+    tree = fill_tree(tree);
 
     // BST_get_data returns pointer if data is found, or NULL otherwise
-    example_enum_t *val = BST_get_data(tree, keys[2]);
+    example_enum_t *val = BST_get_data(tree, "double");
 
     printf("first case: ");
     // Check if NULL
@@ -49,10 +63,10 @@ int main()
     }
     
     // Now we delete that node
-    BST_delete(&tree, keys[2]);
+    BST_delete(&tree, "double");
 
     // Update val
-    val = BST_get_data(tree, keys[2]);
+    val = BST_get_data(tree, "double");
 
     printf("second case: ");
     // Check if NULL
