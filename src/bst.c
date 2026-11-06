@@ -248,6 +248,7 @@ void BST_destroy_tree(BSTNode root) {
 
   // After subtrees are destroyed, we free the memory of the current node
   free(root->key);
+  free(root->data);
   free(root);
 }
 
