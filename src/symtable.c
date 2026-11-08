@@ -6,8 +6,8 @@
 
 #include "symtable.h"
 #include "bst.h"
-#include <stdbool.h>
 #include <assert.h>
+#include <stdbool.h>
 
 SymbTables ST_new() {
 
@@ -20,7 +20,7 @@ SymbTables ST_new() {
   return new_tables;
 }
 
-bool enter_scope(SymbTables *tables) {
+bool ST_enter_scope(SymbTables *tables) {
 
   // New BST table
   BSTNode new_table = BST_new();
@@ -38,7 +38,6 @@ bool enter_scope(SymbTables *tables) {
   linked_node->next_node = NULL;
   // Stack pointer
   linked_node->prev_scope = tables->stack_top;
-
 
   // Insert node into main struct
   // Check if it's the first node

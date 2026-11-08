@@ -45,7 +45,7 @@ struct linked_node_struct {
   // Next node in linked list (to keep reference)
   struct linked_node_struct *next_node;
   // Node on stack right below this node
-  struct linked_node_struct *prev_scope; 
+  struct linked_node_struct *prev_scope;
 };
 typedef struct linked_node_struct *LNode;
 
@@ -72,9 +72,9 @@ SymbTables ST_new();
  * @param tables Pointer to `SymbTables` structure.
  * @return `true` if memory allocation succeeds, otherwise false.
  */
-bool enter_scope(SymbTables *tables);
+bool ST_enter_scope(SymbTables *tables);
 
-Symbol create_symbol(SymbType s, DataType d);
+Symbol ST_create_symbol(SymbType s, DataType d);
 
 Symbol ST_get_symbol(BSTKey id);
 // if token is kw_val or kw_var, we are initializing a new variable/const
