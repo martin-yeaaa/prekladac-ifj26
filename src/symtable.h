@@ -38,9 +38,9 @@ struct symbol_draft_struct {
   BSTKey identifier; // String
   SymbType symb_type;
   DataType data_type;
-  int list_size;        // If the symbol is a list, set the size
-  int param_count;      // If the symbol is a function, set parameter count
-  DataType *param_type; // Array of parameter types (if symbol is function)
+  int list_size;            // If the symbol is a list, set the size
+  int param_count;          // If the symbol is a function, set parameter count
+  DataType *param_type_arr; // Array of parameter types (if symbol is function)
 };
 typedef struct symbol_draft_struct SymbDraft;
 
@@ -58,18 +58,14 @@ SymbTables ST_new();
  */
 bool ST_enter_scope(SymbTables *tables);
 
-Symbol ST_get_symbol(BSTKey id);
-// if token is kw_val or kw_var, we are initializing a new variable/const
-bool ST_add_local_symbol(BSTKey id, Symbol symb);
+/*
+When defining symbol, you need to know the amount of parameters because of
+flexible array member in `Symbol`. This implies that the struct `Symbol` cannot
+be used until the entire symbol definition was parsed.
 
-bool ST_add_global_symbol(BSTKey id, Symbol symb);
-
-/**
- * Removes all tables from memory. After this, `tables` becomes unusable.
- * @param tables Pointer to `SymbTables` structure.
- */
-void ST_destroy(SymbTables *tables);
-
+First we make AST with identifier strings, and at that point we
+know everything about the symbol, probably, we just read the nodes i think
+*/
 /**
  * Creates a new entry in the symbol table on the top of stack.
  * @param tables Pointer to `SymbTables` structure.
@@ -80,12 +76,10 @@ void ST_destroy(SymbTables *tables);
  */
 int ST_define_symbol(SymbTables *tables, SymbDraft *new_symbol);
 
-/*
-When defining symbol, you need to know the amount of parameters because of
-flexible array member in `Symbol`. This implies that the struct `Symbol` cannot
-be used until the entire symbol definition was parsed.
+Symbol ST_get_symbol(SymbTables *tables, BSTKey id);
 
-First we make AST with identifier strings, and at that point we
-know everything about the symbol, probably, we just read the nodes i think
-
-*/
+/**
+ * Removes all tables from memory. After this, `tables` becomes unusable.
+ * @param tables Pointer to `SymbTables` structure.
+ */
+void ST_destroy(SymbTables *tables);

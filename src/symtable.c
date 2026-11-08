@@ -61,6 +61,8 @@ SymbTables ST_new() {
 
 bool ST_enter_scope(SymbTables *tables) {
 
+  assert(tables != NULL);
+
   // New BST table
   BSTNode new_table = BST_new();
 
@@ -95,7 +97,22 @@ bool ST_enter_scope(SymbTables *tables) {
   return true;
 }
 
+int ST_define_symbol(SymbTables *tables, SymbDraft *new_symbol) {
+
+  // Assertions to prevent bugs
+  assert(tables != NULL);
+  assert(new_symbol != NULL);
+  assert(new_symbol->identifier != NULL);
+  if (new_symbol->param_count > 0) {
+    assert(new_symbol->param_type_arr);
+  }
+
+  // Check if symbol is already defined
+}
+
 void ST_destroy(SymbTables *tables) {
+
+  assert(tables != NULL);
 
   // Keep a pointer to next undeleted node with table
   LNode next_to_del = tables->list_first;
@@ -109,6 +126,7 @@ void ST_destroy(SymbTables *tables) {
     // Set next undeleted node while we have the pointer
     next_to_del = next_to_del->next_node;
 
+    // Free memory
     BST_destroy_tree(del_now->table);
     free(del_now);
   }
