@@ -4,6 +4,7 @@
 
 // Symbol table interface
 
+#include "bst.h"
 #include <stdbool.h>
 
 // Enum for different types of symbols
@@ -24,18 +25,50 @@ typedef enum data_type_enum {
   DT_UNDEF
 } DataType;
 
-typedef struct symbol_struct {
+// Structure for symbols
+struct symbol_struct {
 
   SymbType symb_type;
   DataType data_type;
-  bool modifiable;
-  bool was_defined;
+  int id;
   int param_count;
-  DataType param_type[];
+  DataType param_type[]; // Flexible array member
+};
+typedef struct symbol_struct *Symbol;
 
-} Symbol;
+// Structure for tables, with pointer to another table
+struct linked_table_struct {
+  BSTNode table;
+  struct linked_table_struct *next;
+};
+typedef struct linked_table_struct *LTable;
 
-void ST_new();
+// List of all tables, only serves to keep a reference ptr to all tables
+struct tables_list_struct {
+  LTable first;
+  LTable last;
+};
+typedef struct tables_list_struct *STList;
 
+// Stack of tables, used for correct shadowing behavior
+struct tables_stack_struct {
+  LTable top;
+};
+typedef struct tables_stack_struct *STStack;
+
+// Structure for complete symbol tables
+struct symbol_tables_struct {
+  STList st_list;
+  STStack st_stack;
+};
+typedef struct symbol_tables_struct SymbTable;
+
+SymbTable ST_new();
+
+Symbol create_symbol(SymbType s, DataType d);
+
+Symbol ST_get_symbol(BSTKey id);
 // if token is kw_val or kw_var, we are initializing a new variable/const
-void ST_add_symbol(char *symbol);
+bool ST_add_local_symbol(BSTKey id, Symbol symb);
+
+bool ST_add_global_symbol(BSTKey id, Symbol symb);
