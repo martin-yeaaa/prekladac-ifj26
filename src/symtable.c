@@ -12,17 +12,6 @@
 
 // Private structure declarations
 
-// Structure for symbols
-struct symbol_struct {
-
-  SymbType symb_type;
-  DataType data_type;
-  int id;
-  int list_size;
-  int param_count;
-  DataType param_type[]; // Flexible array member
-};
-
 // Structure for tables, with pointers to other tables
 struct linked_node_struct {
 
@@ -108,6 +97,28 @@ int ST_define_symbol(SymbTables *tables, SymbDraft *new_symbol) {
   }
 
   // Check if symbol is already defined
+}
+
+Symbol *ST_get_symbol(SymbTables *tables, BSTKey id) {
+
+  assert(tables != NULL);
+  assert(id != NULL);
+
+  // Check stack of symbol tables
+  LNode closest_node = tables->stack_top;
+  Symbol *defined_symbol = NULL;
+
+  // Look for symbol until it's found or until
+  // we run out of tables on the stack
+  while (defined_symbol == NULL && closest_node != NULL) {
+
+    // Search for symbol
+    defined_symbol = BST_get_data(closest_node->table, id);
+    // Move up the stack
+    closest_node = closest_node->prev_scope;
+  }
+
+  return defined_symbol;
 }
 
 void ST_destroy(SymbTables *tables) {

@@ -26,7 +26,16 @@ typedef enum data_type_enum {
   DT_UNDEF
 } DataType;
 
-// Symbol typedef, private structure
+// Structure for symbols
+struct symbol_struct {
+
+  SymbType symb_type;
+  DataType data_type;
+  int id;
+  int list_size;
+  int param_count;
+  DataType param_type[]; // Flexible array member
+};
 typedef struct symbol_struct Symbol;
 
 // Symbol tables typedef, private structure
@@ -76,7 +85,13 @@ know everything about the symbol, probably, we just read the nodes i think
  */
 int ST_define_symbol(SymbTables *tables, SymbDraft *new_symbol);
 
-Symbol ST_get_symbol(SymbTables *tables, BSTKey id);
+/**
+ * Finds the symbol closest to the top of symbol table stack.
+ * @param tables Pointer to `SymbTables` structure.
+ * @param id String identifier of symbol.
+ * @return Pointer to `Symbol` if symbol is defined, otherwise `NULL`.
+ */
+Symbol *ST_get_symbol(SymbTables *tables, BSTKey id);
 
 /**
  * Removes all tables from memory. After this, `tables` becomes unusable.
