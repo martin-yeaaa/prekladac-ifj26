@@ -34,36 +34,45 @@ struct symbol_struct {
   int param_count;
   DataType param_type[]; // Flexible array member
 };
-typedef struct symbol_struct *Symbol;
+typedef struct symbol_struct Symbol;
 
-// Structure for tables, with pointer to another table
-struct linked_table_struct {
-  BSTNode table;
-  struct linked_table_struct *next;
-};
-typedef struct linked_table_struct *LTable;
+// Structure for tables, with pointers to other tables
+struct linked_node_struct {
 
-// List of all tables, only serves to keep a reference ptr to all tables
-struct tables_list_struct {
-  LTable first;
-  LTable last;
-};
-typedef struct tables_list_struct *STList;
+  BSTNode table; // The table itself is a binary search tree
 
-// Stack of tables, used for correct shadowing behavior
-struct tables_stack_struct {
-  LTable top;
+  // Pointers to other nodes
+  // Next node in linked list (to keep reference)
+  struct linked_node_struct *next_node;
+  // Node on stack right below this node
+  struct linked_node_struct *prev_scope; 
 };
-typedef struct tables_stack_struct *STStack;
+typedef struct linked_node_struct *LNode;
 
 // Structure for complete symbol tables
 struct symbol_tables_struct {
-  STList st_list;
-  STStack st_stack;
+  // There are 2 data structures
+  // A linked list to keep a ptr to all tables
+  LNode list_first;
+  LNode list_last;
+  // A stack to have correct shadowing behavior
+  LNode stack_top;
 };
-typedef struct symbol_tables_struct SymbTable;
+typedef struct symbol_tables_struct SymbTables;
 
-SymbTable ST_new();
+/**
+ * Creates a new structure for symbol tables.
+ * @return Empty symbol table structure.
+ */
+SymbTables ST_new();
+
+/**
+ * Creates a new table. Call this after creating a new SymbTables structure or
+ * when entering a new indented block.
+ * @param tables Pointer to `SymbTables` structure.
+ * @return `true` if memory allocation succeeds, otherwise false.
+ */
+bool enter_scope(SymbTables *tables);
 
 Symbol create_symbol(SymbType s, DataType d);
 
