@@ -81,3 +81,9 @@ Symbol ST_get_symbol(BSTKey id);
 bool ST_add_local_symbol(BSTKey id, Symbol symb);
 
 bool ST_add_global_symbol(BSTKey id, Symbol symb);
+
+/**
+ * Removes all tables from memory. After this, `tables` becomes unusable.
+ * @param tables Pointer to `SymbTables` structure.
+ */
+void ST_destroy(SymbTables *tables);

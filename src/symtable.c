@@ -8,6 +8,7 @@
 #include "bst.h"
 #include <assert.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 SymbTables ST_new() {
 
@@ -54,4 +55,23 @@ bool ST_enter_scope(SymbTables *tables) {
   tables->stack_top = linked_node;
 
   return true;
+}
+
+void ST_destroy(SymbTables *tables) {
+
+  // Keep a pointer to next undeleted node with table
+  LNode next_to_del = tables->list_first;
+
+  // While tables exist, keep freeing memory
+  while (next_to_del != NULL) {
+
+    // Save the pointer to the node to delete now
+    LNode del_now = next_to_del;
+
+    // Set next undeleted node while we have the pointer
+    next_to_del = next_to_del->next_node;
+
+    BST_destroy_tree(del_now->table);
+    free(del_now);
+  }
 }
