@@ -10,6 +10,44 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+// Private structure declarations
+
+// Structure for symbols
+struct symbol_struct {
+
+  SymbType symb_type;
+  DataType data_type;
+  int id;
+  int list_size;
+  int param_count;
+  DataType param_type[]; // Flexible array member
+};
+
+// Structure for tables, with pointers to other tables
+struct linked_node_struct {
+
+  BSTNode table; // The table itself is a binary search tree
+
+  // Pointers to other nodes
+  // Next node in linked list (to keep reference)
+  struct linked_node_struct *next_node;
+  // Node on stack right below this node
+  struct linked_node_struct *prev_scope;
+};
+typedef struct linked_node_struct *LNode;
+
+// Structure for complete symbol tables
+struct symbol_tables_struct {
+  // There are 2 data structures
+  // A linked list to keep a ptr to all tables
+  LNode list_first;
+  LNode list_last;
+  // A stack to have correct shadowing behavior
+  LNode stack_top;
+};
+
+// Function implementations
+
 SymbTables ST_new() {
 
   SymbTables new_tables = {
