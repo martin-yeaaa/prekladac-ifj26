@@ -5,9 +5,7 @@
 
 extern "C" {
 #include "../../src/bst.h"
-
-// only for testing, dont include this in modules, just use symtable.h
-#include "../../src/symtable.c"
+#include "../../src/symtable.h"
 }
 
 // These tests don't check memory leaks, test separately!!
