@@ -68,3 +68,4 @@ typedef struct token
 
 token_t *lexer_parse(char *source);
 void lexer_push(token_type_t type, char *value);
+void fill_keyword_tree();

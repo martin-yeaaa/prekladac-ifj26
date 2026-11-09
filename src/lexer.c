@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <bst.h>
 
 
 static token_t *list;
@@ -17,6 +18,45 @@ void lexer_push(token_type_t type, char *value)
     list->next->value = value;
 
     list = list->next;
+}
+
+void fill_keyword_tree(BSTNode *keyword_tree)
+{
+    struct {
+        const char *str;
+        token_type_t type;
+    } keywords[] = {
+        { "def",     KW_DEF },
+        { "do",      KW_DO },
+        { "Double",  KW_DOUBLE },
+        { "else",    KW_ELSE },
+        { "if",      KW_IF },
+        { "import",  KW_IMPORT },
+        { "Int",     KW_INT },
+        { "return",  KW_RETURN },
+        { "String",  KW_STRING },
+        { "then",    KW_THEN },
+        { "Unit",    KW_UNIT },
+        { "val",     KW_VAL },
+        { "var",     KW_VAR },
+        { "while",   KW_WHILE },
+
+        { "Boolean",   KW_BOOLEAN },
+        { "case",      KW_CASE },
+        { "class",     KW_CLASS },
+        { "extension", KW_EXTENSION },
+        { "for",       KW_FOR },
+        { "List",      KW_LIST },
+        { "match",     KW_MATCH },
+        { "type",      KW_TYPE }
+    };
+
+    size_t count = sizeof(keywords) / sizeof(keywords[0]);
+
+    for (size_t i = 0; i < count; i++) {
+        token_type_t type = keywords[i].type;
+        BST_insert(keyword_tree, (char *)keywords[i].str, &type, sizeof(token_type_t));
+    }
 }
 
 token_t *lexer_parse(char *source)
