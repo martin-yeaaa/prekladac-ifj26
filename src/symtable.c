@@ -86,6 +86,17 @@ bool ST_enter_scope(SymbTables *tables) {
   return true;
 }
 
+void ST_exit_scope(SymbTables *tables) {
+
+  // Assertions
+  assert(tables != NULL);
+  // This really shouldn't be called on an empty stack
+  assert(tables->stack_top != NULL);
+
+  // Pop table from stack, keep it in list
+  tables->stack_top = tables->stack_top->prev_scope;
+}
+
 int ST_define_symbol(SymbTables *tables, SymbDraft *symbol_draft) {
 
   // Assertions to prevent bugs
