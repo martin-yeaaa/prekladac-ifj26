@@ -10,31 +10,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-// Private structure declarations
-
-// Structure for tables, with pointers to other tables
-struct linked_node_struct {
-
-  BSTNode table; // The table itself is a binary search tree
-
-  // Pointers to other nodes
-  // Next node in linked list (to keep reference)
-  struct linked_node_struct *next_node;
-  // Node on stack right below this node
-  struct linked_node_struct *prev_scope;
-};
-typedef struct linked_node_struct *LNode;
-
-// Structure for complete symbol tables
-struct symbol_tables_struct {
-  // There are 2 data structures
-  // A linked list to keep a ptr to all tables
-  LNode list_first;
-  LNode list_last;
-  // A stack to have correct shadowing behavior
-  LNode stack_top;
-};
-
 // Function implementations
 
 SymbTables ST_new() {
@@ -48,7 +23,7 @@ SymbTables ST_new() {
   return new_tables;
 }
 
-bool ST_enter_scope(SymbTables *tables) {
+int ST_enter_scope(SymbTables *tables) {
 
   assert(tables != NULL);
 
@@ -59,7 +34,7 @@ bool ST_enter_scope(SymbTables *tables) {
   LNode linked_node = malloc(sizeof(struct linked_node_struct));
   // Check memory allocation success
   if (linked_node == NULL) {
-    return false;
+    return 99;
   }
 
   // Initialize structure
@@ -83,7 +58,7 @@ bool ST_enter_scope(SymbTables *tables) {
   tables->list_last = linked_node;
   tables->stack_top = linked_node;
 
-  return true;
+  return 0;
 }
 
 void ST_exit_scope(SymbTables *tables) {
@@ -148,9 +123,8 @@ int ST_define_symbol(SymbTables *tables, SymbDraft *symbol_draft) {
   BSTNode current_scope = tables->stack_top->table;
   BSTKey identifier = symbol_draft->identifier;
   // Insert symbol into table
-  bool insertion =
-      BST_insert(current_scope, identifier, new_symbol, symbol_size);
-  if (insertion == false) {
+  bool insert = BST_insert(&current_scope, identifier, new_symbol, symbol_size);
+  if (insert == false) {
     // Insertion failed == memory allocation failed
     free(new_symbol);
     return 99;

@@ -26,23 +26,7 @@ typedef enum data_type_enum {
   DT_UNDEF
 } DataType;
 
-// Structure for symbols
-// Cannot be private because of type checking (probably)
-struct symbol_struct {
-
-  SymbType symb_type;
-  DataType data_type;
-  int id;
-  int list_size;
-  int param_count;
-  DataType param_type_arr[]; // Flexible array member
-};
-typedef struct symbol_struct Symbol;
-
-// Symbol tables typedef, private structure
-typedef struct symbol_tables_struct SymbTables;
-
-// Structure for incomplete symbols, public!
+// Structure for incomplete symbols
 struct symbol_draft_struct {
 
   BSTKey identifier; // String
@@ -54,6 +38,42 @@ struct symbol_draft_struct {
 };
 typedef struct symbol_draft_struct SymbDraft;
 
+// Structure for symbols
+struct symbol_struct {
+
+  SymbType symb_type;
+  DataType data_type;
+  int id;
+  int list_size;
+  int param_count;
+  DataType param_type_arr[]; // Flexible array member
+};
+typedef struct symbol_struct Symbol;
+
+// Structure for tables, with pointers to other tables
+struct linked_node_struct {
+
+  BSTNode table; // The table itself is a binary search tree
+
+  // Pointers to other nodes
+  // Next node in linked list (to keep reference)
+  struct linked_node_struct *next_node;
+  // Node on stack right below this node
+  struct linked_node_struct *prev_scope;
+};
+typedef struct linked_node_struct *LNode;
+
+// Structure for complete symbol tables
+struct symbol_tables_struct {
+  // There are 2 data structures
+  // A linked list to keep a ptr to all tables
+  LNode list_first;
+  LNode list_last;
+  // A stack to have correct shadowing behavior
+  LNode stack_top;
+};
+typedef struct symbol_tables_struct SymbTables;
+
 /**
  * Creates a new structure for symbol tables.
  * @return Empty symbol table structure.
@@ -64,9 +84,9 @@ SymbTables ST_new();
  * Creates a new table. Call this after creating a new SymbTables structure or
  * when entering a new indented block.
  * @param tables Pointer to `SymbTables` structure.
- * @return `true` if memory allocation succeeds, otherwise false.
+ * @return `0` if no errors occur, `99` if memory allocation fails.
  */
-bool ST_enter_scope(SymbTables *tables);
+int ST_enter_scope(SymbTables *tables);
 
 /**
  * Pops table from the top of symbol table stack. Call this when exiting an
@@ -98,14 +118,3 @@ Symbol *ST_get_symbol(SymbTables *tables, BSTKey id);
  * @param tables Pointer to `SymbTables` structure.
  */
 void ST_destroy(SymbTables *tables);
-
-/*
-My note:
-
-When defining symbol, you need to know the amount of parameters because of
-flexible array member in `Symbol`. This implies that the struct `Symbol` cannot
-be used until the entire symbol definition was parsed.
-
-First we make AST with identifier strings, and at that point we
-know everything about the symbol, probably, we just read the nodes i think
-*/
