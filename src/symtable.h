@@ -4,6 +4,9 @@
 
 // Symbol table interface
 
+#ifndef SYMTABLE_H
+#define SYMTABLE_H
+
 #include "bst.h"
 #include <stdbool.h>
 
@@ -118,3 +121,5 @@ Symbol *ST_get_symbol(SymbTables *tables, BSTKey id);
  * @param tables Pointer to `SymbTables` structure.
  */
 void ST_destroy(SymbTables *tables);
+
+#endif // SYMTABLE_H

@@ -84,7 +84,8 @@ int ST_define_symbol(SymbTables *tables, SymbDraft *symbol_draft) {
   }
 
   // Check if symbol is already defined
-  if (BST_get_data(tables->stack_top->table, symbol_draft->identifier) != NULL) {
+  if (BST_get_data(tables->stack_top->table, symbol_draft->identifier) !=
+      NULL) {
     // Error, symbol is already defined!!
     return 4;
   }

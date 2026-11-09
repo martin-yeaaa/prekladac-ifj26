@@ -4,6 +4,9 @@
 
 // Header file for private declarations only visible to bst.c
 
+#ifndef BST_PRIV_H
+#define BST_PRIV_H
+
 #include "bst.h"
 
 // Nodes of a binary tree store 2 pointers to children nodes
@@ -111,3 +114,5 @@ BSTNode node_right_rotation(BSTNode parent, BSTNode left_son);
  * @return Node that takes place of parent node.
  */
 BSTNode node_left_rotation(BSTNode parent, BSTNode right_son);
+
+#endif // BST_PRIV_H
