@@ -103,7 +103,8 @@ int ST_define_symbol(SymbTables *tables, SymbDraft *symbol_draft) {
   }
 
   // Allocate memory for symbol (it has flexible array member)
-  size_t symbol_size = sizeof(Symbol)+sizeof(DataType)*symbol_draft->param_count;
+  size_t symbol_size =
+      sizeof(Symbol) + sizeof(DataType) * symbol_draft->param_count;
   Symbol *new_symbol = malloc(symbol_size);
   // Check allocation success
   if (new_symbol == NULL) {
@@ -120,7 +121,7 @@ int ST_define_symbol(SymbTables *tables, SymbDraft *symbol_draft) {
   for (int i = 0; i < symbol_draft->param_count; i++) {
     new_symbol->param_type_arr[i] = symbol_draft->param_type_arr[i];
   }
-  
+
   // Static counter of inserted symbols used for setting unique ids
   static int symbol_counter = 0;
 
@@ -128,21 +129,24 @@ int ST_define_symbol(SymbTables *tables, SymbDraft *symbol_draft) {
   if (new_symbol->symb_type == S_MAIN_FUNC) {
     // id 0 is reserved for main function
     new_symbol->id = 0;
-  }
-  else {
+  } else {
     new_symbol->id = symbol_counter + 1;
     symbol_counter += 1; // Increment counter
   }
-  
+
   BSTNode current_scope = tables->stack_top->table;
   BSTKey identifier = symbol_draft->identifier;
   // Insert symbol into table
-  bool insertion = BST_insert(current_scope, identifier, new_symbol, symbol_size);
+  bool insertion =
+      BST_insert(current_scope, identifier, new_symbol, symbol_size);
   if (insertion == false) {
     // Insertion failed == memory allocation failed
     free(new_symbol);
     return 99;
   }
+
+  // Tree makes its own copy of data, we can free this
+  free(new_symbol);
 
   // Success :3
   return 0;

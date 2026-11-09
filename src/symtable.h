@@ -68,6 +68,12 @@ SymbTables ST_new();
  */
 bool ST_enter_scope(SymbTables *tables);
 
+/**
+ * Pops table from the top of symbol table stack. Call this when exiting an
+ * indented block.
+ * @param tables Pointer to `SymbTables` structure.
+ */
+void ST_exit_scope(SymbTables *tables);
 
 /**
  * Creates a new entry in the symbol table on the top of stack.
@@ -92,7 +98,6 @@ Symbol *ST_get_symbol(SymbTables *tables, BSTKey id);
  * @param tables Pointer to `SymbTables` structure.
  */
 void ST_destroy(SymbTables *tables);
-
 
 /*
 My note:
