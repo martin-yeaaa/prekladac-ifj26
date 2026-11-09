@@ -18,11 +18,11 @@ static bool error_flag = false;
 
 // When deleting a node with two sons, the node gets replaced with another node
 // further down the tree, which actually gets deleted. When replacing, we can
-// replace key with another key. However, key is a pointer to a string. Now we
-// have the same key -> the same pointer in two places. When deleting the
-// replacement node further down the tree, we cannot free the key, because it
-// would break the node we replaced above. This variable lets us know if a
-// replacement has happened, so we know whether to free the key string or not
+// replace data with another data. However, data is a pointer to a place in
+// memory. Now we have the same data -> the same pointer in two places. When
+// deleting the replacement node further down the tree, we cannot free the data,
+// because it would break the node we replaced above. This variable lets us know
+// if a replacement has happened, so we know if we can free the pointer or not.
 static bool node_used_in_replacement = false;
 
 BSTNode BST_new() {
