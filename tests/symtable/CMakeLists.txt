@@ -49,5 +49,8 @@ target_link_libraries(
 include(GoogleTest)
 gtest_discover_tests(symtable_test)
 
-# conversion of void pointers is ok!
-target_compile_options(symtable_test PRIVATE -fpermissive)
+# C compatibility with C++ tests
+# allows implicit conversion of void pointers
+target_compile_options(symtable_test PRIVATE -fpermissive -w)
+# allows string literal in char *
+target_compile_options(symtable_test PRIVATE -Wno-write-strings)

@@ -179,3 +179,116 @@ TEST(symbol_tables, destroy_table){
   // Run separate memory leak tests!
   ST_destroy(&st);
 }
+
+
+class symbol_definitions : public testing::Test {
+protected:
+
+  SymbTables st;
+  SymbDraft x_val_int;
+  SymbDraft x_var_double;
+  SymbDraft y_var_string;
+  SymbDraft z_var_bool;
+  SymbDraft smol_val_unit; // could also be var
+
+  SymbDraft foo_func; // returns double, has 2 parameters w types int, double
+  DataType param_arr[2] = {DT_INTEGER, DT_DOUBLE};
+
+  SymbDraft foo_main_func;
+  SymbDraft big_list_symbol; // list of 11 ddoouubblleess
+
+  symbol_definitions() {
+
+    st = ST_new();
+    
+    // Initialize symbol drafts
+    x_val_int = {
+      .identifier = "x",
+      .symb_type = SB_VAL,
+      .data_type = DT_INTEGER,
+    };
+
+    x_var_double = {
+      .identifier = "x",
+      .symb_type = SB_VAR,
+      .data_type = DT_DOUBLE,
+    };
+
+    y_var_string = {
+      .identifier = "y",
+      .symb_type = SB_VAR,
+      .data_type = DT_DOUBLE,
+    };
+
+    z_var_bool = {
+      .identifier = "z",
+      .symb_type = SB_VAR,
+      .data_type = DT_BOOL,
+    };
+
+    smol_val_unit = {
+      .identifier = "smol",
+      .symb_type = SB_VAL,
+      .data_type = DT_UNIT,
+    };
+
+    foo_func = {
+      .identifier = "foo",
+      .symb_type = SB_FUNC,
+      .data_type = DT_INTEGER,
+      .param_count = 2,
+      .param_type_arr = param_arr,
+    };
+
+    foo_main_func = {
+      .identifier = "foo_main",
+      .symb_type = SB_MAIN_FUNC, // special symbol type
+      .data_type = DT_UNIT, // must be unit
+      .param_count = 0, // must have no parameters
+    };
+
+    big_list_symbol = {
+      .identifier = "BIG",
+      .symb_type = SB_LIST,
+      .data_type = DT_DOUBLE,
+      .list_size = 11,
+    };
+  }
+};
+
+TEST_F(symbol_definitions, fixture_test) {
+
+  // Initialized symbol table
+  EXPECT_TRUE(st.list_first == NULL);
+  EXPECT_TRUE(st.list_last == NULL);
+  EXPECT_TRUE(st.stack_top == NULL);
+
+  // Check random parts of symbols to see if they are real
+  EXPECT_TRUE(x_val_int.identifier[0] == 'x');
+  EXPECT_TRUE(x_var_double.symb_type == SB_VAR);
+  EXPECT_TRUE(smol_val_unit.data_type == DT_UNIT);
+  EXPECT_TRUE(foo_func.param_type_arr[1] == DT_DOUBLE);
+  EXPECT_TRUE(big_list_symbol.list_size == 11);
+}
+
+TEST_F(symbol_definitions, define_symbol) {
+
+  int ret = ST_enter_scope(&st);
+  ASSERT_TRUE(ret == 0);
+
+  // Insert symbol
+  ret = ST_define_symbol(&st, &foo_main_func);
+  ASSERT_TRUE(ret == 0);
+
+  // Go deeper
+  ret = ST_enter_scope(&st);
+  ASSERT_TRUE(ret == 0);
+
+  // Insert another symbol
+  ret = ST_define_symbol(&st, &x_val_int);
+  ASSERT_TRUE(ret == 0);
+
+  // Attempt redefinition
+  ret = ST_define_symbol(&st, &x_var_double);
+  ASSERT_TRUE(ret == 4);
+}
