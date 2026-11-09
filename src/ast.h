@@ -1,14 +1,21 @@
 #ifndef AST_H
 #define AST_H
 
+#include "symtable.h"
 #include <stdbool.h>
 #include <stddef.h>
 
 // Basic node types for AST
 typedef enum {
+
+  // Probably wrong
   NODE_INT,
   NODE_DOUBLE,
   NODE_STRING,
+
+  NODE_IDENTIFIER,
+  NODE_CONST,
+
   NODE_ADD,
   NODE_SUB,
   NODE_MUL,
@@ -41,14 +48,26 @@ typedef enum {
   NODE_LIST_CONCAT  // ++ for joining lists together
 } NodeType;
 
-// Structure for one AST node
-typedef struct ASTNode {
-  NodeType type;
+// Union for AST node data
+union Data {
   int int_val;
   double double_val;
   char *string_val;
-  char *name;
+  bool bool_val;
+};
 
+// Structure for one AST node
+typedef struct ast_node_struct {
+
+  NodeType type;
+
+  Data node_val;
+
+  Symbol *symbol_ptr;
+
+  struct ast_node_struct **son_array;
+
+  /*
   struct ASTNode *left;
   struct ASTNode *right;
 
@@ -60,10 +79,11 @@ typedef struct ASTNode {
   bool bool_val;          // value for NODE_BOOL
   struct ASTNode *args;   // arguments when calling a function
   struct ASTNode *params; // parameters when creating a function
-} ASTNode;
+  */
+} *ASTNode;
 
 // function to create a node so we don't have to write malloc everywhere
-ASTNode *create_node(NodeType type);
+ASTNode create_node(NodeType type);
 
 //  ASTNode *cislo1 = create_node(NODE_INT);
 //  cislo1->int_val = 5;
