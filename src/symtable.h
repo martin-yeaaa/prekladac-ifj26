@@ -43,7 +43,7 @@ struct symbol_struct {
 
   SymbType symb_type;
   DataType data_type;
-  int id;
+  int uniq_id;
   int list_size;
   int param_count;
   DataType param_type_arr[]; // Flexible array member

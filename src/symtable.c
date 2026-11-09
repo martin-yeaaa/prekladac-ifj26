@@ -84,7 +84,7 @@ int ST_define_symbol(SymbTables *tables, SymbDraft *symbol_draft) {
   }
 
   // Check if symbol is already defined
-  if (ST_get_symbol(tables, symbol_draft->identifier) != NULL) {
+  if (BST_get_data(tables->stack_top->table, symbol_draft->identifier) != NULL) {
     // Error, symbol is already defined!!
     return 4;
   }
@@ -115,9 +115,9 @@ int ST_define_symbol(SymbTables *tables, SymbDraft *symbol_draft) {
   // Set unique integer id for code generator
   if (new_symbol->symb_type == SB_MAIN_FUNC) {
     // id 0 is reserved for main function
-    new_symbol->id = 0;
+    new_symbol->uniq_id = 0;
   } else {
-    new_symbol->id = symbol_counter + 1;
+    new_symbol->uniq_id = symbol_counter + 1;
     symbol_counter += 1; // Increment counter
   }
 
