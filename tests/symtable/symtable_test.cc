@@ -291,4 +291,79 @@ TEST_F(symbol_definitions, define_symbol) {
   // Attempt redefinition
   ret = ST_define_symbol(&st, &x_var_double);
   ASSERT_TRUE(ret == 4);
+
+  // Shadowing
+  ret = ST_enter_scope(&st);
+  ASSERT_TRUE(ret == 0);
+  ret = ST_define_symbol(&st, &x_var_double);
+  ASSERT_TRUE(ret == 0);
+}
+
+TEST_F(symbol_definitions, get_symbol) {
+
+  int ret = ST_enter_scope(&st);
+  ASSERT_TRUE(ret == 0);
+  ret = ST_define_symbol(&st, &foo_func);
+  ASSERT_TRUE(ret == 0);
+
+  // Get symbol
+  Symbol * sb = ST_get_symbol(&st, foo_func.identifier);
+  ASSERT_TRUE(sb != NULL);
+  // Check uniq_id
+  EXPECT_TRUE(sb->uniq_id == 1);
+
+  // Main func
+  ret = ST_define_symbol(&st, &foo_main_func);
+  ASSERT_TRUE(ret == 0);
+
+  sb = ST_get_symbol(&st, foo_main_func.identifier);
+  ASSERT_TRUE(sb != NULL);
+  // Check uniq_id - main must have uniq_id 0
+  EXPECT_TRUE(sb->uniq_id == 0);
+
+  // New block
+  ret = ST_enter_scope(&st);
+  ASSERT_TRUE(ret == 0);
+  ret = ST_define_symbol(&st, &x_val_int);
+  ASSERT_TRUE(ret == 0);
+
+  // Get symbol
+  sb = ST_get_symbol(&st, x_val_int.identifier);
+  ASSERT_TRUE(sb != NULL);
+  // Check uniq_id
+  EXPECT_TRUE(sb->uniq_id == 2);
+
+  // New block
+  ret = ST_enter_scope(&st);
+  ASSERT_TRUE(ret == 0);
+  // Try shadowing
+  ret = ST_define_symbol(&st, &x_val_int);
+  ASSERT_TRUE(ret == 0);
+
+  // Get symbol
+  sb = ST_get_symbol(&st, x_val_int.identifier);
+  ASSERT_TRUE(sb != NULL);
+  // Check uniq_id
+  EXPECT_TRUE(sb->uniq_id == 3);
+
+  // We can access symbols further up the stack
+  // Get symbol
+  sb = ST_get_symbol(&st, foo_func.identifier);
+  ASSERT_TRUE(sb != NULL);
+  // Check uniq_id
+  EXPECT_TRUE(sb->uniq_id == 1);
+
+  // Try getting non-existent symbol
+  sb = ST_get_symbol(&st, "blabla");
+  ASSERT_TRUE(sb == NULL);
+
+  // Exit block
+  ST_exit_scope(&st);
+
+  // Get symbol
+  sb = ST_get_symbol(&st, x_val_int.identifier);
+  ASSERT_TRUE(sb != NULL);
+  // Check uniq_id - this should be the first "x"
+  EXPECT_TRUE(sb->uniq_id == 2);
+
 }
