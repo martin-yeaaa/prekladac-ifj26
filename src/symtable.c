@@ -120,10 +120,10 @@ int ST_define_symbol(SymbTables *tables, SymbDraft *symbol_draft) {
     symbol_counter += 1; // Increment counter
   }
 
-  BSTNode current_scope = tables->stack_top->table;
+  BSTNode *current_scope = &tables->stack_top->table;
   BSTKey identifier = symbol_draft->identifier;
   // Insert symbol into table
-  bool insert = BST_insert(&current_scope, identifier, new_symbol, symbol_size);
+  bool insert = BST_insert(current_scope, identifier, new_symbol, symbol_size);
   if (insert == false) {
     // Insertion failed == memory allocation failed
     free(new_symbol);
