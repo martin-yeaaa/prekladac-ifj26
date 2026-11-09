@@ -249,16 +249,22 @@ token_t *lexer_parse(char *source)
                 lexer_push(VAL_STRING, value);
             }
         }
-        else if (current == '_') {
-            if ((i+1 < length && ((source[i+1] > 64 && source[i+1] < 91) || (source[i+1] > 97 && source[i+1] < 123)))){
+        else if ((current == '_' || (current > 64 && current < 91) || (current > 97 && current < 123))) {
+            int identifier_start = i;
+            while (i+1 < length && (source[i+1] == '_' || ((source[i+1] > 64 && source[i+1] < 91) || (source[i+1] > 97 && source[i+1] < 123)))){
+                i++;
+            }
+            int identifier_end = i;
+            size_t identifier_length = identifier_end - (identifier_start+1);
+            char *value = malloc(identifier_length + 1);
+            memcpy(value, source + identifier_start, identifier_length);
+            value[identifier_length] = '\0';
+            if (identifier_lenght == 1 && value[0] == '_'){
                 exit(1);
             }
-        }
-        else if (((current > 64 && current < 91) || (current > 97 && current < 123))) {
-            while (i+1 < length && ((source[i+1] > 64 && source[i+1] < 91) || (source[i+1] > 97 && source[i+1] < 123))){
 
-                
-            }
+            // checking for keywords
+            
         }
     }
 }
