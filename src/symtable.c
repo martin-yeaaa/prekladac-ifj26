@@ -76,6 +76,7 @@ int ST_define_symbol(SymbTables *tables, SymbDraft *symbol_draft) {
 
   // Assertions to prevent bugs
   assert(tables != NULL);
+  assert(tables->stack_top != NULL); // must be in some scope!
   assert(symbol_draft != NULL);
   assert(symbol_draft->identifier != NULL);
   if (symbol_draft->param_count > 0) {
