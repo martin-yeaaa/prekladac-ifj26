@@ -9,11 +9,11 @@
 
 // Enum for different types of symbols
 typedef enum symbol_type_enum {
-  S_VAR,
-  S_VAL,
-  S_FUNC,
-  S_MAIN_FUNC, // Use for function with @main
-  S_LIST,
+  SB_VAR,
+  SB_VAL,
+  SB_FUNC,
+  SB_MAIN_FUNC, // Use for function with @main
+  SB_LIST,
 } SymbType;
 
 // Enum for data type of symbol or of function return value

@@ -112,7 +112,7 @@ int ST_define_symbol(SymbTables *tables, SymbDraft *symbol_draft) {
   static int symbol_counter = 0;
 
   // Set unique integer id for code generator
-  if (new_symbol->symb_type == S_MAIN_FUNC) {
+  if (new_symbol->symb_type == SB_MAIN_FUNC) {
     // id 0 is reserved for main function
     new_symbol->id = 0;
   } else {
