@@ -86,17 +86,66 @@ bool ST_enter_scope(SymbTables *tables) {
   return true;
 }
 
-int ST_define_symbol(SymbTables *tables, SymbDraft *new_symbol) {
+int ST_define_symbol(SymbTables *tables, SymbDraft *symbol_draft) {
 
   // Assertions to prevent bugs
   assert(tables != NULL);
-  assert(new_symbol != NULL);
-  assert(new_symbol->identifier != NULL);
-  if (new_symbol->param_count > 0) {
-    assert(new_symbol->param_type_arr);
+  assert(symbol_draft != NULL);
+  assert(symbol_draft->identifier != NULL);
+  if (symbol_draft->param_count > 0) {
+    assert(symbol_draft->param_type_arr);
   }
 
   // Check if symbol is already defined
+  if (ST_get_symbol(tables, symbol_draft->identifier) != NULL) {
+    // Error, symbol is already defined!!
+    return 4;
+  }
+
+  // Allocate memory for symbol (it has flexible array member)
+  size_t symbol_size = sizeof(Symbol)+sizeof(DataType)*symbol_draft->param_count;
+  Symbol *new_symbol = malloc(symbol_size);
+  // Check allocation success
+  if (new_symbol == NULL) {
+    // Allocation failed :(
+    return 99;
+  }
+
+  // Initialize symbol
+  new_symbol->symb_type = symbol_draft->symb_type;
+  new_symbol->data_type = symbol_draft->data_type;
+  new_symbol->list_size = symbol_draft->list_size;
+  new_symbol->param_count = symbol_draft->param_count;
+  // Copy parameter array
+  for (int i = 0; i < symbol_draft->param_count; i++) {
+    new_symbol->param_type_arr[i] = symbol_draft->param_type_arr[i];
+  }
+  
+  // Static counter of inserted symbols used for setting unique ids
+  static int symbol_counter = 0;
+
+  // Set unique integer id for code generator
+  if (new_symbol->symb_type == S_MAIN_FUNC) {
+    // id 0 is reserved for main function
+    new_symbol->id = 0;
+  }
+  else {
+    new_symbol->id = symbol_counter + 1;
+    symbol_counter += 1; // Increment counter
+  }
+  
+  BSTNode current_scope = tables->stack_top->table;
+  BSTKey identifier = symbol_draft->identifier;
+  // Insert symbol into table
+  bool insertion = BST_insert(current_scope, identifier, new_symbol, symbol_size);
+  if (insertion == false) {
+    // Insertion failed == memory allocation failed
+    free(new_symbol);
+    return 99;
+  }
+
+  // Success :3
+  return 0;
 }
 
 Symbol *ST_get_symbol(SymbTables *tables, BSTKey id) {

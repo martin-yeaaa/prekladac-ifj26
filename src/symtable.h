@@ -27,6 +27,7 @@ typedef enum data_type_enum {
 } DataType;
 
 // Structure for symbols
+// Cannot be private because of type checking (probably)
 struct symbol_struct {
 
   SymbType symb_type;
@@ -34,7 +35,7 @@ struct symbol_struct {
   int id;
   int list_size;
   int param_count;
-  DataType param_type[]; // Flexible array member
+  DataType param_type_arr[]; // Flexible array member
 };
 typedef struct symbol_struct Symbol;
 
@@ -67,23 +68,16 @@ SymbTables ST_new();
  */
 bool ST_enter_scope(SymbTables *tables);
 
-/*
-When defining symbol, you need to know the amount of parameters because of
-flexible array member in `Symbol`. This implies that the struct `Symbol` cannot
-be used until the entire symbol definition was parsed.
 
-First we make AST with identifier strings, and at that point we
-know everything about the symbol, probably, we just read the nodes i think
-*/
 /**
  * Creates a new entry in the symbol table on the top of stack.
  * @param tables Pointer to `SymbTables` structure.
- * @param new_symbol Pointer to symbol draft structure. This structure must be
+ * @param symbol_draft Pointer to symbol draft structure. This structure must be
  * properly initialized manually before calling this function.
  * @return `0` if no errors occur, `4` if symbol is already defined,
  * `99` if memory allocation fails.
  */
-int ST_define_symbol(SymbTables *tables, SymbDraft *new_symbol);
+int ST_define_symbol(SymbTables *tables, SymbDraft *symbol_draft);
 
 /**
  * Finds the symbol closest to the top of symbol table stack.
@@ -98,3 +92,15 @@ Symbol *ST_get_symbol(SymbTables *tables, BSTKey id);
  * @param tables Pointer to `SymbTables` structure.
  */
 void ST_destroy(SymbTables *tables);
+
+
+/*
+My note:
+
+When defining symbol, you need to know the amount of parameters because of
+flexible array member in `Symbol`. This implies that the struct `Symbol` cannot
+be used until the entire symbol definition was parsed.
+
+First we make AST with identifier strings, and at that point we
+know everything about the symbol, probably, we just read the nodes i think
+*/
