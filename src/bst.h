@@ -4,6 +4,9 @@
 
 // Header file for height-balanced binary search tree implementation
 
+#ifndef BST_H
+#define BST_H
+
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -58,3 +61,5 @@ BSTData BST_get_data(BSTNode root, BSTKey key);
  * @param root BST root. After performing this, `root` becomes unusable!
  */
 void BST_destroy_tree(BSTNode root);
+
+#endif // BST_H
