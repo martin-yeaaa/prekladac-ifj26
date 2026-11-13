@@ -1,3 +1,15 @@
+// Project: prekladac-ifj26
+// File: lexer.h
+// Author: Michal Bína (xbinami00), Jiří Švec (xsvecji00)
+
+// Header for lexer
+
+#ifndef LEXER_H
+#define LEXER_H
+
+#include <stddef.h>
+#include "bst.h"
+
 typedef enum token_type{
     IDENTIFIER,
 
@@ -68,4 +80,6 @@ typedef struct token
 
 token_t *lexer_parse(char *source);
 void lexer_push(token_type_t type, char *value);
-void fill_keyword_tree();
+void fill_keyword_tree(BSTNode *keyword_tree);
+
+#endif // LEXER_H
