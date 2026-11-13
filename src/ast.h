@@ -1,3 +1,9 @@
+// Project: prekladac-ifj26
+// File: ast.h
+// Authors:
+// - Martin Vaško (vaskom00)
+// - Lukáš Dvořák (xdvoral00)
+
 #ifndef AST_H
 #define AST_H
 
@@ -5,94 +11,98 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-// Basic node types for AST
+// Node types for AST nodes
 typedef enum {
 
-  // Probably wrong
+  // Root node of the AST
+  NODE_PROGRAM,
+
+  // Node types for constants
   NODE_INT,
   NODE_DOUBLE,
   NODE_STRING,
+  NODE_UNIT,
 
   NODE_IDENTIFIER,
-  NODE_CONST,
+  NODE_ASSIGN,
 
+  // Operators
+  // Unary operators
+  NODE_UN_PLUS,
+  NODE_UN_MINUS,
+
+  // Binary operators
   NODE_ADD,
   NODE_SUB,
   NODE_MUL,
   NODE_DIV,
-  NODE_EQ, // equals (==)
-  NODE_LT, // less than (<)
-  NODE_GT, // greater than (>)
-  NODE_WRITE,
-  NODE_VAR_DECL, // variable declaration
-  NODE_ASSIGN,   // variable assignment (=)
-  NODE_VAR,      // variable usage
+  // Binary relation operators
+  NODE_EQ,     // equals (==)
+  NODE_NOT_EQ, // not equal (!=)
+  NODE_LT,     // less than (<)
+  NODE_LT_EQ,  // less or equal (<=)
+  NODE_GT,     // greater than (>)
+  NODE_GT_EQ,  // greater or equal (<=)
+
+  // Different kinds of definitions
+  NODE_VAR_DEF,
+  NODE_VAL_DEF,
+  NODE_FUNC_DEF,
+  NODE_MAIN_FUNC_DEF,
+
   NODE_IF,
   NODE_WHILE,
 
+  NODE_WRITE,
+
+  NODE_FUNC_CALL, // call a function
+  NODE_RETURN,    // return from function
+
+  /* TODO delete if BOOLTHEN unsupported
   NODE_BOOL, // true or false value
   NODE_AND,  // logical and (&&)
   NODE_OR,   // logical or (||)
   NODE_NOT,  // logical not (!)
-  NODE_LEQ,  // less or equal (<=)
-  NODE_GEQ,  // greater or equal (>=)
-  NODE_NEQ,  // not equal (!=)
+*/
 
-  NODE_FUNC_DEF,  // create a new function (def)
-  NODE_FUNC_CALL, // call a function
-  NODE_RETURN,    // return from function
-
-  NODE_PROGRAM,     // main root of the whole code
+  /* TODO delete if LISTS unsupported
   NODE_LIST_CREATE, // make new list (e.g. List(1, 2))
   NODE_LIST_METHOD, // list.head, list.tail, etc.
-  NODE_LIST_CONCAT  // ++ for joining lists together
+  NODE_LIST_CONCAT,  // ++ for joining lists together
+  */
+
 } NodeType;
 
 // Union for AST node data
-union Data {
+union NodeData {
   int int_val;
   double double_val;
   char *string_val;
+  // Bool must exist internally even without BOOLTHEN
   bool bool_val;
 };
 
 // Structure for one AST node
 typedef struct ast_node_struct {
 
+  // Type matching syntax rule i guess TODO
   NodeType type;
 
-  Data node_val;
+  // This can be a value of a constant, or idnetifier name, or other maybe TODO
+  NodeData node_val;
 
+  // If node has identifier, this points to matching symbol in symtable
   Symbol *symbol_ptr;
 
-  struct ast_node_struct **son_array;
+  // Son nodes, there can be many
+  int son_node_count;
+  struct ast_node_struct **son_node_arr;
 
-  /*
-  struct ASTNode *left;
-  struct ASTNode *right;
-
-  struct ASTNode *if_body;   // commands inside IF or WHILE
-  struct ASTNode *else_body; // commands inside ELSE branch
-
-  struct ASTNode *next; // next statement in sequence
-
-  bool bool_val;          // value for NODE_BOOL
-  struct ASTNode *args;   // arguments when calling a function
-  struct ASTNode *params; // parameters when creating a function
-  */
 } *ASTNode;
 
-// function to create a node so we don't have to write malloc everywhere
+/**
+ * bruh
+ */
 ASTNode create_node(NodeType type);
-
-//  ASTNode *cislo1 = create_node(NODE_INT);
-//  cislo1->int_val = 5;
-
-//  ASTNode *cislo2 = create_node(NODE_INT);
-//  cislo2->int_val = 10;
-
-//  ASTNode *plus = create_node(NODE_ADD);
-//  plus->left = cislo1;
-//  plus->right = cislo2;
 
 #endif
