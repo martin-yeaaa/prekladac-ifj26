@@ -25,118 +25,129 @@ int ST_init(SymbTables *tables) {
   // Enter global scope
   int err = ST_enter_scope(tables);
   // Check success
-  if (err == 99) return err;
+  if (err == 99)
+    return err;
 
   // Now we need to define symbols for built-in functions
   // Make drafts for each symbol
   DataType s_print_arr[] = {DT_ANY};
   SymbDraft s_print = {
-    .identifier = "print",
-    .symb_type = SB_BUILTIN,
-    .data_type = DT_UNIT,
-    .param_count = 1,
-    .param_type_arr = s_print_arr,
+      .identifier = "print",
+      .symb_type = SB_BUILTIN,
+      .data_type = DT_UNIT,
+      .param_count = 1,
+      .param_type_arr = s_print_arr,
   };
 
   SymbDraft s_readline = {
-    .identifier = "readLine",
-    .symb_type = SB_BUILTIN,
-    .data_type = DT_STRING,
-    .param_count = 0,
-    .param_type_arr = NULL,
+      .identifier = "readLine",
+      .symb_type = SB_BUILTIN,
+      .data_type = DT_STRING,
+      .param_count = 0,
+      .param_type_arr = NULL,
   };
 
   SymbDraft s_readint = {
-    .identifier = "readInt",
-    .symb_type = SB_BUILTIN,
-    .data_type = DT_INTEGER,
-    .param_count = 0,
-    .param_type_arr = NULL,
+      .identifier = "readInt",
+      .symb_type = SB_BUILTIN,
+      .data_type = DT_INTEGER,
+      .param_count = 0,
+      .param_type_arr = NULL,
   };
 
   SymbDraft s_readdouble = {
-    .identifier = "readDouble",
-    .symb_type = SB_BUILTIN,
-    .data_type = DT_DOUBLE,
-    .param_count = 0,
-    .param_type_arr = NULL,
+      .identifier = "readDouble",
+      .symb_type = SB_BUILTIN,
+      .data_type = DT_DOUBLE,
+      .param_count = 0,
+      .param_type_arr = NULL,
   };
 
   DataType s_tostr_arr[] = {DT_ANY};
   SymbDraft s_tostr = {
-    .identifier = "toStr",
-    .symb_type = SB_BUILTIN,
-    .data_type = DT_STRING,
-    .param_count = 1,
-    .param_type_arr = s_tostr_arr,
+      .identifier = "toStr",
+      .symb_type = SB_BUILTIN,
+      .data_type = DT_STRING,
+      .param_count = 1,
+      .param_type_arr = s_tostr_arr,
   };
 
   DataType s_toint_arr[] = {DT_DOUBLE};
   SymbDraft s_toint = {
-    .identifier = "toInt",
-    .symb_type = SB_BUILTIN,
-    .data_type = DT_INTEGER,
-    .param_count = 1,
-    .param_type_arr = s_toint_arr,
+      .identifier = "toInt",
+      .symb_type = SB_BUILTIN,
+      .data_type = DT_INTEGER,
+      .param_count = 1,
+      .param_type_arr = s_toint_arr,
   };
 
   DataType s_strlength_arr[] = {DT_STRING};
   SymbDraft s_strlength = {
-    .identifier = "strLength",
-    .symb_type = SB_BUILTIN,
-    .data_type = DT_INTEGER,
-    .param_count = 1,
-    .param_type_arr = s_strlength_arr,
+      .identifier = "strLength",
+      .symb_type = SB_BUILTIN,
+      .data_type = DT_INTEGER,
+      .param_count = 1,
+      .param_type_arr = s_strlength_arr,
   };
 
   DataType s_substr_arr[] = {DT_STRING, DT_INTEGER, DT_INTEGER};
   SymbDraft s_substr = {
-    .identifier = "subStr",
-    .symb_type = SB_BUILTIN,
-    .data_type = DT_STRING,
-    .param_count = 3,
-    .param_type_arr = s_substr_arr,
+      .identifier = "subStr",
+      .symb_type = SB_BUILTIN,
+      .data_type = DT_STRING,
+      .param_count = 3,
+      .param_type_arr = s_substr_arr,
   };
 
   DataType s_ord_arr[] = {DT_STRING, DT_INTEGER};
   SymbDraft s_ord = {
-    .identifier = "ord",
-    .symb_type = SB_BUILTIN,
-    .data_type = DT_INTEGER,
-    .param_count = 2,
-    .param_type_arr = s_ord_arr,
+      .identifier = "ord",
+      .symb_type = SB_BUILTIN,
+      .data_type = DT_INTEGER,
+      .param_count = 2,
+      .param_type_arr = s_ord_arr,
   };
 
   DataType s_chr_arr[] = {DT_INTEGER};
   SymbDraft s_chr = {
-    .identifier = "chr",
-    .symb_type = SB_BUILTIN,
-    .data_type = DT_STRING,
-    .param_count = 1,
-    .param_type_arr = s_chr_arr,
+      .identifier = "chr",
+      .symb_type = SB_BUILTIN,
+      .data_type = DT_STRING,
+      .param_count = 1,
+      .param_type_arr = s_chr_arr,
   };
 
   // define symbols and check for errors
   err = ST_define_symbol(tables, &s_print);
-  if (err != 0) return err;
+  if (err != 0)
+    return err;
   err = ST_define_symbol(tables, &s_readline);
-  if (err != 0) return err;
+  if (err != 0)
+    return err;
   err = ST_define_symbol(tables, &s_readint);
-  if (err != 0) return err;
+  if (err != 0)
+    return err;
   err = ST_define_symbol(tables, &s_readdouble);
-  if (err != 0) return err;
+  if (err != 0)
+    return err;
   err = ST_define_symbol(tables, &s_tostr);
-  if (err != 0) return err;
+  if (err != 0)
+    return err;
   err = ST_define_symbol(tables, &s_toint);
-  if (err != 0) return err;
+  if (err != 0)
+    return err;
   err = ST_define_symbol(tables, &s_strlength);
-  if (err != 0) return err;
+  if (err != 0)
+    return err;
   err = ST_define_symbol(tables, &s_substr);
-  if (err != 0) return err;
+  if (err != 0)
+    return err;
   err = ST_define_symbol(tables, &s_ord);
-  if (err != 0) return err;
+  if (err != 0)
+    return err;
   err = ST_define_symbol(tables, &s_chr);
-  if (err != 0) return err;
+  if (err != 0)
+    return err;
 
   // return no errors
   return 0;

@@ -16,7 +16,7 @@ typedef enum symbol_type_enum {
   SB_VAL,
   SB_FUNC,
   SB_MAIN_FUNC, // Use for function with @main
-  SB_BUILTIN, // Built-in functions
+  SB_BUILTIN,   // Built-in functions
 } SymbType;
 
 // Enum for data type of symbol or of function return value
@@ -26,7 +26,7 @@ typedef enum data_type_enum {
   DT_STRING,
   DT_UNIT,
   DT_BOOL,
-  DT_ANY, // ONLY FOR BUILT-IN FUNCTIONS!
+  DT_ANY,  // ONLY FOR BUILT-IN FUNCTIONS!
   DT_UNDEF // Probably useless TODO
 } DataType;
 
