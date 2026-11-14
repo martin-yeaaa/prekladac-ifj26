@@ -23,20 +23,22 @@ know everything about the symbol, probably, we just read the nodes i think
 // Global symbol table structure
 SymbTables symbol_table;
 
-void init_st() {
-    symbol_table = ST_new();
-}
 
 int main()
 {
 
-    // New table
-    init_st();
-    // Enter global scope
-    int err = ST_enter_scope(&symbol_table);
-    // Check success
+    // Initialize table
+    int err = ST_init(&symbol_table);
     if (err == 99) exit(err);
 
+    // Global scope is already entered !
+    
+    // DONT DO THIS:
+    // err = ST_enter_scope(&symbol_table);
+    // Check success
+    // if (err == 99) exit(err);
+
+    
     // Copied structures from symtable_test.cc
 
     // Main function
