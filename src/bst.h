@@ -31,7 +31,8 @@ BSTNode BST_new();
  * @param root Pointer(!) to BST root.
  * @param key Key of the inserted node, must not be `NULL`.
  * @param data Pointer to data of the inserted node.
- * @param data_size sizeof(data)
+ * @param data_size sizeof() of data type of inserted data. 
+ * In other words, the amount of bytes to allocate for inserted data.
  *
  * @return `true` if insertion is succesful.
  * @return If memory allocation fails, writes an error to `stderr` and returns
