@@ -210,7 +210,7 @@ int ST_define_symbol(SymbTables *tables, SymbDraft *symbol_draft) {
   assert(symbol_draft != NULL);
   assert(symbol_draft->identifier != NULL);
   if (symbol_draft->param_count > 0) {
-    assert(symbol_draft->param_type_arr);
+    assert(symbol_draft->param_type_arr != NULL);
   }
 
   // Check if symbol is already defined
