@@ -20,27 +20,107 @@ static token_t *list_head;
 static token_t *next_token;
 static BSTNode keyword_tree;
 
-// TODO create token returning function
-
-void lexer_push(token_type_t type, char *value)
+char *read_stdin(void)
 {
-    list->next =(token_t *) malloc(sizeof(token_t));
-    list->next->type = type;
-    list->next->value = value;
+    size_t capacity = 4096;
+    size_t size = 0;
 
-    list = list->next;
+    char *buffer = malloc(capacity);
+    if (buffer == NULL)
+        lexer_error(99, "memory allocation failed");
+
+    int c;
+    while ((c = getchar()) != EOF) {
+        if (size + 1 >= capacity) {
+            capacity *= 2;
+            char *tmp = realloc(buffer, capacity);
+            if (tmp == NULL) {
+                free(buffer);
+                lexer_error(99, "memory allocation failed");
+            }
+            buffer = tmp;
+        }
+
+        buffer[size++] = (char)c;
+    }
+
+    if (ferror(stdin)) {
+        free(buffer);
+        lexer_error(99, "reading from stdin failed");
+    }
+
+    buffer[size] = '\0';
+    return buffer;
 }
 
+token_t *get_next_token(void)
+{
+    token_t *token = next_token;
 
+    if (token != NULL && token->next != NULL)
+        next_token = token->next;
+
+    return token;
+}
+
+void lexer_push(token_type_t type, const char *value)
+{
+    token_t *token = calloc(1, sizeof(token_t));
+    if (token == NULL)
+        lexer_error(99, "memory allocation failed");
+
+    token->type = type;
+    token->value = copy_string(value, strlen(value));
+
+    list->next = token;
+    list = token;
+}
+
+void lexer_free_tokens(token_t *head)
+{
+    next_token = NULL;
+
+    while (head != NULL) {
+        token_t *next = head->next;
+        free(head->value);
+        free(head);
+        head = next;
+    }
+}
+
+/**
+ * @brief Frees token list and keyword tree.
+ */
+static void lexer_cleanup(void)
+{
+    lexer_free_tokens(list_head);
+    list_head = NULL;
+    list = NULL;
+
+    if (keyword_tree != NULL) {
+        BST_destroy_tree(keyword_tree);
+        keyword_tree = NULL;
+    }
+}
+
+/**
+ * @brief Prints an error to stderr, frees memory and exits.
+ * @param code Exit code (1 = lexical error, 99 = internal error).
+ * @param message Error description.
+ */
 static void lexer_error(int code, const char *message)
 {
     fprintf(stderr, "Lexer error: %s\n", message);
-    
-    // TODO clean allocated memory
-
+    lexer_cleanup();
     exit(code);
 }
 
+/**
+ * @brief Creates a copy of part of a string.
+ * @param src Start of the copied text.
+ * @param length Number of copied characters.
+ * @return New copy of string.
+ */
 static char *copy_string(const char *src, size_t length)
 {
     char *copy = malloc(length + 1);
@@ -52,17 +132,31 @@ static char *copy_string(const char *src, size_t length)
     return copy;
 }
 
+/**
+ * @brief Checks whether character is a decimal digit.
+ * @param c Character to check.
+ * @return `true` for '0'-'9'.
+ */
 static bool is_digit(char c)
 {
     return c >= '0' && c <= '9';
 }
 
+/**
+ * @brief Checks if a character is in English alphabet.
+ * @param c Character to check.
+ * @return `true` for 'a'-'z' and 'A'-'Z'.
+ */
 static bool is_alpha(char c)
 {
     return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
 }
 
-
+/**
+ * @brief Translates the character after a backslash.
+ * @param c Character following the backslash.
+ * @return Decoded character or -1 if invalid.
+ */
 static int decode_escape(char c)
 {
     switch (c) {
@@ -75,6 +169,13 @@ static int decode_escape(char c)
     }
 }
 
+/**
+ * @brief Skips digits with optional underscores between them.
+ * @param source Source code.
+ * @param length Length of the source.
+ * @param i Position of the first digit.
+ * @return Position after the last digit.
+ */
 static size_t skip_digits(const char *source, size_t length, size_t i)
 {
     if (i >= length || !is_digit(source[i]))
@@ -490,5 +591,14 @@ token_t *lexer_parse(char *source)
 
     lexer_push(END_OF_FILE, "");
 
-    return // TODO free allocated memory
+    BST_destroy_tree(keyword_tree);
+    keyword_tree = NULL;
+
+    token_t *first = list_head->next;
+    free(list_head);
+    list_head = NULL;
+    list = NULL;
+
+    next_token = first;
+    return first;
 }

@@ -74,12 +74,46 @@ typedef enum token_type{
 typedef struct token
 {
     token_type_t type;
-    char * value;
-    token_type_t * next;
-}token_t;
+    char *value;
+    struct token *next;
+} token_t;
 
-token_t *lexer_parse(char *source);
-void lexer_push(token_type_t type, char *value);
+/**
+ * @brief Reads whole standard input and stores it in newly allocated string.
+ * @return Newly allocated string with the input.
+ */
+char *read_stdin(void);
+
+/**
+ * @brief Returns next token from the list created by lexer_parse().
+ * @return Next token, END_OF_FILE token repeatedly at the end, `NULL` if there is no list.
+ */
+token_t *get_next_token(void);
+
+/**
+ * @brief Appends new token to the end of token list.
+ * @param type Type of token.
+ * @param value Value of token, the function stores its own copy.
+ */
+void lexer_push(token_type_t type, const char *value);
+
+/**
+ * @brief Frees the whole token list.
+ * @param head Pointer to first token of the list.
+ */
+void lexer_free_tokens(token_t *head);
+
+/**
+ * @brief Inserts all keywords into the tree.
+ * @param keyword_tree Pointer to the tree root.
+ */
 void fill_keyword_tree(BSTNode *keyword_tree);
+
+/**
+ * @brief Splits the source code into list of tokens.
+ * @param source String containing source code.
+ * @return First token of the list, last one is END_OF_FILE.
+ */
+token_t *lexer_parse(char *source);
 
 #endif // LEXER_H
