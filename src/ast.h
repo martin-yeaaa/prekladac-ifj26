@@ -4,6 +4,8 @@
 // - Martin Vaško (vaskom00)
 // - Lukáš Dvořák (xdvoral00)
 
+// Header file for abstract syntax tree = AST
+
 #ifndef AST_H
 #define AST_H
 
@@ -24,7 +26,7 @@ typedef enum {
   NODE_UNIT,
 
   NODE_IDENTIFIER,
-  NODE_ASSIGN,
+  NODE_ASSIGNMENT,
 
   // Operators
   // Unary operators
@@ -53,23 +55,10 @@ typedef enum {
   NODE_IF,
   NODE_WHILE,
 
-  NODE_WRITE,
+  NODE_WRITE, // TODO WHAT IS THIS
 
   NODE_FUNC_CALL, // call a function
   NODE_RETURN,    // return from function
-
-  /* TODO delete if BOOLTHEN unsupported
-  NODE_BOOL, // true or false value
-  NODE_AND,  // logical and (&&)
-  NODE_OR,   // logical or (||)
-  NODE_NOT,  // logical not (!)
-*/
-
-  /* TODO delete if LISTS unsupported
-  NODE_LIST_CREATE, // make new list (e.g. List(1, 2))
-  NODE_LIST_METHOD, // list.head, list.tail, etc.
-  NODE_LIST_CONCAT,  // ++ for joining lists together
-  */
 
 } NodeType;
 
@@ -88,21 +77,35 @@ typedef struct ast_node_struct {
   // Type matching syntax rule i guess TODO
   NodeType type;
 
-  // This can be a value of a constant, or idnetifier name, or other maybe TODO
+  // This can be a value of a constant, or identifier name, or other maybe TODO
   NodeData node_val;
 
   // If node has identifier, this points to matching symbol in symtable
   Symbol *symbol_ptr;
 
-  // Son nodes, there can be many
-  int son_node_count;
-  struct ast_node_struct **son_node_arr;
+  // Children nodes, there can be many
+  int child_node_count;
+  struct ast_node_struct **child_node_arr;
 
 } *ASTNode;
 
 /**
- * bruh
+ * Creates a new node for AST.
+ * @param node_type Type of action or "thing" this node should hold.
+ * @param data_type Type of data this node holds.
+ * @param node_data Value of literal, or identifier string.
+ * @return New node, or `NULL` if creation fails.
  */
-ASTNode create_node(NodeType type);
+ASTNode AST_create_node(NodeType node_type, DataType data_type,
+                        NodeData node_data);
+
+/**
+ * Creates a tree from a parent node and children nodes.
+ * @param parent AST node that should be the parent.
+ * @param child_count Amount of children nodes.
+ * @param child_arr Array of children nodes.
+ * @return Parent node, or `NULL` if creation fails.
+ */
+ASTNode AST_create_tree(ASTNode parent, int child_count, ASTNode *child_arr);
 
 #endif
