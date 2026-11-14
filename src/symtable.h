@@ -20,6 +20,7 @@ typedef enum symbol_type_enum {
 } SymbType;
 
 // Enum for data type of symbol or of function return value
+// This enum is also used by AST
 typedef enum data_type_enum {
   DT_INTEGER,
   DT_DOUBLE,
@@ -27,7 +28,7 @@ typedef enum data_type_enum {
   DT_UNIT,
   DT_BOOL,
   DT_ANY,  // ONLY FOR BUILT-IN FUNCTIONS!
-  DT_UNDEF // Probably useless TODO
+  DT_UNDEF // Only for use in AST!
 } DataType;
 
 // Structure for incomplete symbols

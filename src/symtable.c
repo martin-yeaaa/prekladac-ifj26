@@ -212,6 +212,8 @@ int ST_define_symbol(SymbTables *tables, SymbDraft *symbol_draft) {
   if (symbol_draft->param_count > 0) {
     assert(symbol_draft->param_type_arr);
   }
+  // UNDEF data type is only for AST
+  assert(symbol_draft->data_type != DT_UNDEF);
 
   // Check if symbol is already defined
   if (BST_get_data(tables->stack_top->table, symbol_draft->identifier) !=
