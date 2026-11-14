@@ -12,15 +12,127 @@
 
 // Function implementations
 
-SymbTables ST_new() {
+int ST_init(SymbTables *tables) {
 
-  SymbTables new_tables = {
-      .list_first = NULL,
-      .list_last = NULL,
-      .stack_top = NULL,
+  // tables must not be NULL
+  assert(tables != NULL);
+
+  // Initialize to NULL
+  tables->list_first = NULL;
+  tables->list_last = NULL;
+  tables->stack_top = NULL;
+
+  // Enter global scope
+  int err = ST_enter_scope(tables);
+  // Check success
+  if (err == 99) return err;
+
+  // Now we need to define symbols for built-in functions
+  // Make drafts for each symbol
+  SymbDraft s_print = {
+    .identifier = "print",
+    .symb_type = SB_BUILTIN,
+    .data_type = DT_UNIT,
+    .param_count = 1,
+    .param_type_arr = {DT_ANY},
   };
 
-  return new_tables;
+  SymbDraft s_readline = {
+    .identifier = "readLine",
+    .symb_type = SB_BUILTIN,
+    .data_type = DT_STRING,
+    .param_count = 0,
+    .param_type_arr = {},
+  };
+
+  SymbDraft s_readint = {
+    .identifier = "readInt",
+    .symb_type = SB_BUILTIN,
+    .data_type = DT_INTEGER,
+    .param_count = 0,
+    .param_type_arr = {},
+  };
+
+  SymbDraft s_readdouble = {
+    .identifier = "readDouble",
+    .symb_type = SB_BUILTIN,
+    .data_type = DT_DOUBLE,
+    .param_count = 0,
+    .param_type_arr = {},
+  };
+
+  SymbDraft s_tostr = {
+    .identifier = "toStr",
+    .symb_type = SB_BUILTIN,
+    .data_type = DT_STRING,
+    .param_count = 1,
+    .param_type_arr = {DT_ANY},
+  };
+
+  SymbDraft s_toint = {
+    .identifier = "toInt",
+    .symb_type = SB_BUILTIN,
+    .data_type = DT_INTEGER,
+    .param_count = 1,
+    .param_type_arr = {DT_DOUBLE},
+  };
+
+  SymbDraft s_strlength = {
+    .identifier = "strLength",
+    .symb_type = SB_BUILTIN,
+    .data_type = DT_INTEGER,
+    .param_count = 1,
+    .param_type_arr = {DT_STRING},
+  };
+
+  SymbDraft s_substr = {
+    .identifier = "subStr",
+    .symb_type = SB_BUILTIN,
+    .data_type = DT_STRING,
+    .param_count = 3,
+    .param_type_arr = {DT_STRING, DT_INTEGER, DT_INTEGER},
+  };
+
+  SymbDraft s_ord = {
+    .identifier = "ord",
+    .symb_type = SB_BUILTIN,
+    .data_type = DT_INTEGER,
+    .param_count = 2,
+    .param_type_arr = {DT_STRING, DT_INTEGER},
+  };
+
+  SymbDraft s_chr = {
+    .identifier = "chr",
+    .symb_type = SB_BUILTIN,
+    .data_type = DT_STRING,
+    .param_count = 1,
+    .param_type_arr = {DT_INTEGER},
+  };
+
+  // define symbols and check for errors
+  err = ST_define_symbol(tables, &s_print);
+  if (err != 0) return err;
+  err = ST_define_symbol(tables, &s_readline);
+  if (err != 0) return err;
+  err = ST_define_symbol(tables, &s_readint);
+  if (err != 0) return err;
+  err = ST_define_symbol(tables, &s_readdouble);
+  if (err != 0) return err;
+  err = ST_define_symbol(tables, &s_tostr);
+  if (err != 0) return err;
+  err = ST_define_symbol(tables, &s_toint);
+  if (err != 0) return err;
+  err = ST_define_symbol(tables, &s_strlength);
+  if (err != 0) return err;
+  err = ST_define_symbol(tables, &s_substr);
+  if (err != 0) return err;
+  err = ST_define_symbol(tables, &s_ord);
+  if (err != 0) return err;
+  err = ST_define_symbol(tables, &s_chr);
+  if (err != 0) return err;
+
+  // return no errors
+  return 0;
 }
 
 int ST_enter_scope(SymbTables *tables) {
@@ -103,7 +215,6 @@ int ST_define_symbol(SymbTables *tables, SymbDraft *symbol_draft) {
   // Initialize symbol
   new_symbol->symb_type = symbol_draft->symb_type;
   new_symbol->data_type = symbol_draft->data_type;
-  new_symbol->list_size = symbol_draft->list_size;
   new_symbol->param_count = symbol_draft->param_count;
   // Copy parameter array
   for (int i = 0; i < symbol_draft->param_count; i++) {

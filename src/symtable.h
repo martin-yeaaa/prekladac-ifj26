@@ -16,7 +16,7 @@ typedef enum symbol_type_enum {
   SB_VAL,
   SB_FUNC,
   SB_MAIN_FUNC, // Use for function with @main
-  SB_LIST,
+  SB_BUILTIN, // Built-in functions
 } SymbType;
 
 // Enum for data type of symbol or of function return value
@@ -26,7 +26,8 @@ typedef enum data_type_enum {
   DT_STRING,
   DT_UNIT,
   DT_BOOL,
-  DT_UNDEF
+  DT_ANY, // ONLY FOR BUILT-IN FUNCTIONS!
+  DT_UNDEF // Probably useless TODO
 } DataType;
 
 // Structure for incomplete symbols
@@ -35,7 +36,6 @@ struct symbol_draft_struct {
   BSTKey identifier; // String
   SymbType symb_type;
   DataType data_type;
-  int list_size;            // If the symbol is a list, set the size
   int param_count;          // If the symbol is a function, set parameter count
   DataType *param_type_arr; // Array of parameter types (if symbol is function)
 };
@@ -47,7 +47,6 @@ struct symbol_struct {
   SymbType symb_type;
   DataType data_type;
   int uniq_id;
-  int list_size;
   int param_count;
   DataType param_type_arr[]; // Flexible array member
 };
@@ -78,10 +77,13 @@ struct symbol_tables_struct {
 typedef struct symbol_tables_struct SymbTables;
 
 /**
- * Creates a new structure for symbol tables.
- * @return Empty symbol table structure.
+ * Creates a new structure for symbol tables, enters global scope,
+ * and prefills it with symbols of built-in functions.
+ * @param tables Pointer to declared uninitialized `SymbTables` structure.
+ * Will be initialized and modified. Must not be `NULL`.
+ * @return `0` if no errors occur, `99` if memory allocation fails.
  */
-SymbTables ST_new();
+int ST_init(SymbTables *tables);
 
 /**
  * Creates a new table. Call this after creating a new SymbTables structure or
