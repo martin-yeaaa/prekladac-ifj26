@@ -29,12 +29,13 @@ int ST_init(SymbTables *tables) {
 
   // Now we need to define symbols for built-in functions
   // Make drafts for each symbol
+  DataType s_print_arr[] = {DT_ANY};
   SymbDraft s_print = {
     .identifier = "print",
     .symb_type = SB_BUILTIN,
     .data_type = DT_UNIT,
     .param_count = 1,
-    .param_type_arr = {DT_ANY},
+    .param_type_arr = s_print_arr,
   };
 
   SymbDraft s_readline = {
@@ -42,7 +43,7 @@ int ST_init(SymbTables *tables) {
     .symb_type = SB_BUILTIN,
     .data_type = DT_STRING,
     .param_count = 0,
-    .param_type_arr = {},
+    .param_type_arr = NULL,
   };
 
   SymbDraft s_readint = {
@@ -50,7 +51,7 @@ int ST_init(SymbTables *tables) {
     .symb_type = SB_BUILTIN,
     .data_type = DT_INTEGER,
     .param_count = 0,
-    .param_type_arr = {},
+    .param_type_arr = NULL,
   };
 
   SymbDraft s_readdouble = {
@@ -58,55 +59,61 @@ int ST_init(SymbTables *tables) {
     .symb_type = SB_BUILTIN,
     .data_type = DT_DOUBLE,
     .param_count = 0,
-    .param_type_arr = {},
+    .param_type_arr = NULL,
   };
 
+  DataType s_tostr_arr[] = {DT_ANY};
   SymbDraft s_tostr = {
     .identifier = "toStr",
     .symb_type = SB_BUILTIN,
     .data_type = DT_STRING,
     .param_count = 1,
-    .param_type_arr = {DT_ANY},
+    .param_type_arr = s_tostr_arr,
   };
 
+  DataType s_toint_arr[] = {DT_DOUBLE};
   SymbDraft s_toint = {
     .identifier = "toInt",
     .symb_type = SB_BUILTIN,
     .data_type = DT_INTEGER,
     .param_count = 1,
-    .param_type_arr = {DT_DOUBLE},
+    .param_type_arr = s_toint_arr,
   };
 
+  DataType s_strlength_arr[] = {DT_STRING};
   SymbDraft s_strlength = {
     .identifier = "strLength",
     .symb_type = SB_BUILTIN,
     .data_type = DT_INTEGER,
     .param_count = 1,
-    .param_type_arr = {DT_STRING},
+    .param_type_arr = s_strlength_arr,
   };
 
+  DataType s_substr_arr[] = {DT_STRING, DT_INTEGER, DT_INTEGER};
   SymbDraft s_substr = {
     .identifier = "subStr",
     .symb_type = SB_BUILTIN,
     .data_type = DT_STRING,
     .param_count = 3,
-    .param_type_arr = {DT_STRING, DT_INTEGER, DT_INTEGER},
+    .param_type_arr = s_substr_arr,
   };
 
+  DataType s_ord_arr[] = {DT_STRING, DT_INTEGER};
   SymbDraft s_ord = {
     .identifier = "ord",
     .symb_type = SB_BUILTIN,
     .data_type = DT_INTEGER,
     .param_count = 2,
-    .param_type_arr = {DT_STRING, DT_INTEGER},
+    .param_type_arr = s_ord_arr,
   };
 
+  DataType s_chr_arr[] = {DT_INTEGER};
   SymbDraft s_chr = {
     .identifier = "chr",
     .symb_type = SB_BUILTIN,
     .data_type = DT_STRING,
     .param_count = 1,
-    .param_type_arr = {DT_INTEGER},
+    .param_type_arr = s_chr_arr,
   };
 
   // define symbols and check for errors
