@@ -27,8 +27,8 @@ typedef enum data_type_enum {
   DT_STRING,
   DT_UNIT,
   DT_BOOL,
-  DT_ANY,  // ONLY FOR BUILT-IN FUNCTIONS!
-  DT_UNDEF // Only for use in AST!
+  DT_ANY, // ONLY FOR BUILT-IN FUNCTIONS!
+  DT_UNDEF
 } DataType;
 
 // Structure for incomplete symbols
