@@ -62,13 +62,27 @@ int main()
         printf("nothing :(");
     }
     
+    // Rewrite test
+    char new_data[] = "how??";
+    bool success = BST_insert(&tree, "double", new_data, sizeof(new_data));
+    if (success == false) exit(1);
+
+    char *val_too = BST_get_data(tree, "double");
+    printf("second case: ");
+    // Check if NULL
+    if (val_too != NULL) {
+        printf("found data!! %s\n", val_too);
+    } else {
+        printf("nothing :(");
+    }
+
     // Now we delete that node
     BST_delete(&tree, "double");
 
     // Update val
     val = BST_get_data(tree, "double");
 
-    printf("second case: ");
+    printf("third case: ");
     // Check if NULL
     if (val != NULL) {
         printf("found data!! %d\n", *val);
