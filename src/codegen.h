@@ -4,6 +4,7 @@
 #include "ast.h"
 
 // Main function to generate IFJcode26 from AST
-void generate_code(ASTNode *root);
+// No '*' here because ASTNode is already a pointer in ast.h
+void generate_code(ASTNode root);
 
 #endif
