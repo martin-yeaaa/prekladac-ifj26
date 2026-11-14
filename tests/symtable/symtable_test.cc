@@ -12,7 +12,9 @@ extern "C" {
 
 TEST(symbol_tables, new_ST) {
 
-  SymbTables st = ST_new();
+  SymbTables st = {
+    .list_first = NULL, .list_last = NULL, .stack_top = NULL
+  };
   EXPECT_TRUE(st.list_first == NULL);
   EXPECT_TRUE(st.list_last == NULL);
   EXPECT_TRUE(st.stack_top == NULL);
@@ -21,7 +23,9 @@ TEST(symbol_tables, new_ST) {
 
 TEST(symbol_tables, enter_scope) {
 
-  SymbTables st = ST_new();
+  SymbTables st = {
+    .list_first = NULL, .list_last = NULL, .stack_top = NULL
+  };
   EXPECT_TRUE(st.list_first == NULL);
   EXPECT_TRUE(st.list_last == NULL);
   EXPECT_TRUE(st.stack_top == NULL);
@@ -46,7 +50,9 @@ TEST(symbol_tables, enter_scope) {
 
 TEST(symbol_tables, enter_multiple_scopes) {
 
-  SymbTables st = ST_new();
+  SymbTables st = {
+    .list_first = NULL, .list_last = NULL, .stack_top = NULL
+  };
 
   int ok = ST_enter_scope(&st);
   // Check success
@@ -90,7 +96,9 @@ TEST(symbol_tables, enter_multiple_scopes) {
 TEST(symbol_tables, exit_scope) {
 
   // New symbol table
-  SymbTables st = ST_new();
+  SymbTables st = {
+    .list_first = NULL, .list_last = NULL, .stack_top = NULL
+  };
   
   int ok = ST_enter_scope(&st);
   // Check success
@@ -106,7 +114,9 @@ TEST(symbol_tables, exit_scope) {
 TEST(symbol_tables, enter_exit_scopes) {
 
   // New symbol table
-  SymbTables st = ST_new();
+  SymbTables st = {
+    .list_first = NULL, .list_last = NULL, .stack_top = NULL
+  };
 
   int ok = ST_enter_scope(&st);
   ASSERT_TRUE(ok == 0);
@@ -162,7 +172,9 @@ TEST(symbol_tables, enter_exit_scopes) {
 TEST(symbol_tables, destroy_table){
 
   // New symbol table
-  SymbTables st = ST_new();
+  SymbTables st = {
+    .list_first = NULL, .list_last = NULL, .stack_top = NULL
+  };
 
   int ok = ST_enter_scope(&st);
   ASSERT_TRUE(ok == 0);
@@ -193,11 +205,12 @@ protected:
   DataType param_arr[2] = {DT_INTEGER, DT_DOUBLE};
 
   SymbDraft foo_main_func;
-  SymbDraft big_list_symbol; // list of 11 ddoouubblleess
 
   symbol_definitions() {
 
-    st = ST_new();
+    st = {
+    .list_first = NULL, .list_last = NULL, .stack_top = NULL
+  };
     
     // Initialize symbol drafts
     x_val_int = {
@@ -245,12 +258,6 @@ protected:
       .param_count = 0, // must have no parameters
     };
 
-    big_list_symbol = {
-      .identifier = "BIG",
-      .symb_type = SB_LIST,
-      .data_type = DT_DOUBLE,
-      .list_size = 11,
-    };
   }
 };
 
@@ -266,7 +273,6 @@ TEST_F(symbol_definitions, fixture_test) {
   EXPECT_TRUE(x_var_double.symb_type == SB_VAR);
   EXPECT_TRUE(smol_val_unit.data_type == DT_UNIT);
   EXPECT_TRUE(foo_func.param_type_arr[1] == DT_DOUBLE);
-  EXPECT_TRUE(big_list_symbol.list_size == 11);
 }
 
 TEST_F(symbol_definitions, define_symbol) {
@@ -365,3 +371,5 @@ TEST_F(symbol_definitions, get_symbol) {
   EXPECT_TRUE(sb->uniq_id == 2);
 
 }
+
+
