@@ -11,7 +11,7 @@
 
 #include "symtable.h"
 #include <stdbool.h>
-#include <stddef.h>
+// #include <stddef.h> TODO delete if useless
 
 // Node types for AST nodes
 typedef enum {
@@ -63,13 +63,13 @@ typedef enum {
 } NodeType;
 
 // Union for AST node data
-union NodeData {
+typedef union node_data_union {
   int int_val;
   double double_val;
   char *string_val;
   // Bool must exist internally even without BOOLTHEN
   bool bool_val;
-};
+} NodeData;
 
 // Structure for one AST node
 typedef struct ast_node_struct {
