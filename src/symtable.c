@@ -6,13 +6,14 @@
 
 #include "symtable.h"
 #include "bst.h"
+#include "error_codes.h"
 #include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
 
 // Function implementations
 
-int ST_init(SymbTables *tables) {
+ErrCode ST_init(SymbTables *tables) {
 
   // tables must not be NULL
   assert(tables != NULL);
@@ -23,9 +24,9 @@ int ST_init(SymbTables *tables) {
   tables->stack_top = NULL;
 
   // Enter global scope
-  int err = ST_enter_scope(tables);
+  ErrCode err = ST_enter_scope(tables);
   // Check success
-  if (err == 99)
+  if (err == ERR_INTERNAL)
     return err;
 
   // Now we need to define symbols for built-in functions
@@ -119,41 +120,41 @@ int ST_init(SymbTables *tables) {
 
   // define symbols and check for errors
   err = ST_define_symbol(tables, &s_print);
-  if (err != 0)
+  if (err != SUCCESS)
     return err;
   err = ST_define_symbol(tables, &s_readline);
-  if (err != 0)
+  if (err != SUCCESS)
     return err;
   err = ST_define_symbol(tables, &s_readint);
-  if (err != 0)
+  if (err != SUCCESS)
     return err;
   err = ST_define_symbol(tables, &s_readdouble);
-  if (err != 0)
+  if (err != SUCCESS)
     return err;
   err = ST_define_symbol(tables, &s_tostr);
-  if (err != 0)
+  if (err != SUCCESS)
     return err;
   err = ST_define_symbol(tables, &s_toint);
-  if (err != 0)
+  if (err != SUCCESS)
     return err;
   err = ST_define_symbol(tables, &s_strlength);
-  if (err != 0)
+  if (err != SUCCESS)
     return err;
   err = ST_define_symbol(tables, &s_substr);
-  if (err != 0)
+  if (err != SUCCESS)
     return err;
   err = ST_define_symbol(tables, &s_ord);
-  if (err != 0)
+  if (err != SUCCESS)
     return err;
   err = ST_define_symbol(tables, &s_chr);
-  if (err != 0)
+  if (err != SUCCESS)
     return err;
 
   // return no errors
-  return 0;
+  return SUCCESS;
 }
 
-int ST_enter_scope(SymbTables *tables) {
+ErrCode ST_enter_scope(SymbTables *tables) {
 
   assert(tables != NULL);
 
@@ -164,7 +165,7 @@ int ST_enter_scope(SymbTables *tables) {
   LNode linked_node = malloc(sizeof(struct linked_node_struct));
   // Check memory allocation success
   if (linked_node == NULL) {
-    return 99;
+    return ERR_INTERNAL;
   }
 
   // Initialize structure
@@ -188,7 +189,7 @@ int ST_enter_scope(SymbTables *tables) {
   tables->list_last = linked_node;
   tables->stack_top = linked_node;
 
-  return 0;
+  return SUCCESS;
 }
 
 void ST_exit_scope(SymbTables *tables) {
@@ -202,7 +203,7 @@ void ST_exit_scope(SymbTables *tables) {
   tables->stack_top = tables->stack_top->prev_scope;
 }
 
-int ST_define_symbol(SymbTables *tables, SymbDraft *symbol_draft) {
+ErrCode ST_define_symbol(SymbTables *tables, SymbDraft *symbol_draft) {
 
   // Assertions to prevent bugs
   assert(tables != NULL);
@@ -217,7 +218,7 @@ int ST_define_symbol(SymbTables *tables, SymbDraft *symbol_draft) {
   if (BST_get_data(tables->stack_top->table, symbol_draft->identifier) !=
       NULL) {
     // Error, symbol is already defined!!
-    return 4;
+    return ERR_REDEFINITION;
   }
 
   // Allocate memory for symbol (it has flexible array member)
@@ -227,7 +228,7 @@ int ST_define_symbol(SymbTables *tables, SymbDraft *symbol_draft) {
   // Check allocation success
   if (new_symbol == NULL) {
     // Allocation failed :(
-    return 99;
+    return ERR_INTERNAL;
   }
 
   // Initialize symbol
@@ -258,14 +259,14 @@ int ST_define_symbol(SymbTables *tables, SymbDraft *symbol_draft) {
   if (insert == false) {
     // Insertion failed == memory allocation failed
     free(new_symbol);
-    return 99;
+    return ERR_INTERNAL;
   }
 
   // Tree makes its own copy of data, we can free this
   free(new_symbol);
 
   // Success :3
-  return 0;
+  return SUCCESS;
 }
 
 Symbol *ST_get_symbol(SymbTables *tables, BSTKey id) {

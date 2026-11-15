@@ -3,6 +3,7 @@
 // Author: Martin Vaško (xvaskom00)
 
 // Header file for height-balanced binary search tree implementation
+// The tree is implemented as an AVL tree.
 
 #ifndef BST_H
 #define BST_H
@@ -31,12 +32,11 @@ BSTNode BST_new();
  * @param root Pointer(!) to BST root.
  * @param key Key of the inserted node, must not be `NULL`.
  * @param data Pointer to data of the inserted node.
- * @param data_size sizeof() of data type of inserted data. 
+ * @param data_size sizeof() of data type of inserted data.
  * In other words, the amount of bytes to allocate for inserted data.
  *
  * @return `true` if insertion is succesful.
- * @return If memory allocation fails, writes an error to `stderr` and returns
- * `false`.
+ * If memory allocation fails, returns `false`.
  */
 bool BST_insert(BSTNode *root, BSTKey key, BSTData data, size_t data_size);
 

@@ -3,6 +3,7 @@
 // Author: Martin Vaško (xvaskom00)
 
 // Implementation of height-balanced binary search tree
+// The tree is implemented as an AVL tree.
 
 #include "bst.h"
 #include "bst_priv.h"

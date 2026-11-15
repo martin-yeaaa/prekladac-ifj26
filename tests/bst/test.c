@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../../src/bst.h"
+#include "../../src/error_codes.h"
 
 typedef enum example_enum {
   IDENTIFIER,
@@ -33,7 +34,7 @@ BSTNode fill_tree(BSTNode tree) {
         // We must check if insertion succeeded! during insertion, malloc may fail!
         bool success = BST_insert(&tree, keys[i], &data[i], sizeof(data));
         if (success == false) {
-            exit(1);
+            exit(ERR_INTERNAL);
         }
     }
 
@@ -65,7 +66,7 @@ int main()
     // Rewrite test
     char new_data[] = "how??";
     bool success = BST_insert(&tree, "double", new_data, sizeof(new_data));
-    if (success == false) exit(1);
+    if (success == false) exit(ERR_INTERNAL);
 
     char *val_too = BST_get_data(tree, "double");
     printf("second case: ");
@@ -93,5 +94,5 @@ int main()
     // After we are done using the tree, remove it from memory
     BST_destroy_tree(tree);
 
-    return 0;
+    return SUCCESS;
 }

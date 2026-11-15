@@ -8,6 +8,7 @@
 #define SYMTABLE_H
 
 #include "bst.h"
+#include "error_codes.h"
 #include <stdbool.h>
 
 // Enum for different types of symbols
@@ -82,17 +83,19 @@ typedef struct symbol_tables_struct SymbTables;
  * and prefills it with symbols of built-in functions.
  * @param tables Pointer to declared uninitialized `SymbTables` structure.
  * Will be initialized and modified. Must not be `NULL`.
- * @return `0` if no errors occur, `99` if memory allocation fails.
+ * @return `SUCCESS` if no errors occur,
+ * `ERR_INTERNAL` if memory allocation fails.
  */
-int ST_init(SymbTables *tables);
+ErrCode ST_init(SymbTables *tables);
 
 /**
  * Creates a new table. Call this after creating a new SymbTables structure or
  * when entering a new indented block.
  * @param tables Pointer to `SymbTables` structure.
- * @return `0` if no errors occur, `99` if memory allocation fails.
+ * @return `SUCCESS` if no errors occur,
+ * `ERR_INTERNAL` if memory allocation fails.
  */
-int ST_enter_scope(SymbTables *tables);
+ErrCode ST_enter_scope(SymbTables *tables);
 
 /**
  * Pops table from the top of symbol table stack. Call this when exiting an
@@ -106,10 +109,11 @@ void ST_exit_scope(SymbTables *tables);
  * @param tables Pointer to `SymbTables` structure.
  * @param symbol_draft Pointer to symbol draft structure. This structure must be
  * properly initialized manually before calling this function.
- * @return `0` if no errors occur, `4` if symbol is already defined,
- * `99` if memory allocation fails.
+ * @return `SUCCESS` if no errors occur,
+ * `ERR_REDEFINITION` if symbol is already defined,
+ * `ERR_INTERNAL` if memory allocation fails.
  */
-int ST_define_symbol(SymbTables *tables, SymbDraft *symbol_draft);
+ErrCode ST_define_symbol(SymbTables *tables, SymbDraft *symbol_draft);
 
 /**
  * Finds the symbol closest to the top of symbol table stack.
