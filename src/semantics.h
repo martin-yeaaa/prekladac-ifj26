@@ -9,6 +9,7 @@
 #ifndef SEMANTICS_H
 #define SEMANTICS_H
 
+#include "error_codes.h"
 #include "symtable.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -102,27 +103,31 @@ typedef struct ast_node_struct {
  * @param data_type Type of data this node holds.
  * @param node_data Value of literal, or identifier string.
  * This is ignored when it's not needed.
- * @return `0` on success, `99` on memory allocation failure,
- * `6` if conversion fails while assigning data.
+ * @return `SUCCESS` on success,
+ * `ERR_INTERNAL` on memory allocation failure,
+ * `ERR_INCOMPATIBLE_TYPE` if conversion fails while assigning data.
  */
-int AST_init_node(ASTNode *node, NodeType node_type, DataType data_type,
-                  char *node_data);
+ErrCode AST_init_node(ASTNode *node, NodeType node_type, DataType data_type,
+                      char *node_data);
 
 /**
  * @brief Creates a tree from a parent node and children nodes.
  * @param parent AST node that should be the parent, not `NULL`.
  * @param child_count Amount of children nodes, must be at least 1.
  * @param child_arr Array of children nodes, "correctly sorted", not `NULL`.
- * @return `0` on success, `99` on memory allocation failure.
+ * @return `SUCCESS` on success,
+ * `ERR_INTERNAL` on memory allocation failure.
  */
-int AST_make_tree(ASTNode parent, int child_count, ASTNode *child_arr);
+ErrCode AST_make_tree(ASTNode parent, int child_count, ASTNode *child_arr);
 
 /**
  * @brief Fills the symbol table, does all type checking.
  * @param root Root of AST.
  * @param st Pointer to declared uninitialized symbol tables structure.
- * @return Error code. TODO
+ * @return 'SUCCESS' if analysis is successful, otherwise one of the following
+ * error codes: `ERR_UNDEF_SYM`, `ERR_REDEFINITION`, `ERR_FUN_ARGS`,
+ * `ERR_INCOMPATIBLE_TYPE`, `ERR_INVALID_ASSIGN`, `ERR_OTHER_SEMANTIC`
  */
-int semantic_analysis(ASTNode root, SymbTables *st);
+ErrCode semantic_analysis(ASTNode root, SymbTables *st);
 
 #endif

@@ -6,6 +6,7 @@
 
 #include "semantics.h"
 #include "symtable.h"
+#include "error_codes.h"
 #include <assert.h>
 #include <errno.h> // For conversion errors
 #include <stdbool.h>
@@ -18,27 +19,28 @@
  * @brief Converts string to 32 bit int and sets it as node data.
  * @param node Node into which data will be inserted. Not `NULL`.
  * @param data_string Data to be converted and saved. Not `NULL`.
- * @return `0` on success, `99` on memory allocation failure,
- * `6` if conversion fails.
+ * @return `SUCCESS` on success,
+ * `ERR_INCOMPATIBLE_TYPE` if conversion fails.
  */
-static int set_integer_node_data(ASTNode node, char *data_string);
+static ErrCode set_integer_node_data(ASTNode node, char *data_string);
 
 /**
  * @brief Converts string to 64 bit float and sets it as node data.
  * @param node Node into which data will be inserted. Not `NULL`.
  * @param data_string Data to be converted and saved. Not `NULL`.
- * @return `0` on success, `99` on memory allocation failure,
- * `6` if conversion fails.
+ * @return `SUCCESS` on success,
+ * `ERR_INCOMPATIBLE_TYPE` if conversion fails.
  */
-static int set_double_node_data(ASTNode node, char *data_string);
+static ErrCode set_double_node_data(ASTNode node, char *data_string);
 
 /**
  * @brief Copies string into node data.
  * @param node Node into which data will be inserted. Not `NULL`.
  * @param data_string Data to be copied. Not `NULL`.
- * @return `0` on success, `99` on memory allocation failure,
+ * @return `SUCCESS` on success,
+ * `ERR_INTERNAL` on memory allocation failure,
  */
-static int set_string_node_data(ASTNode node, char *data_string);
+static ErrCode set_string_node_data(ASTNode node, char *data_string);
 
 /** TODO delete probably
  * @brief Checks whether the node should hold symbol identifier.
@@ -50,17 +52,17 @@ static bool node_has_identifier(ASTNode node);
 
 // Function definitions
 
-int AST_init_node(ASTNode *node, NodeType node_type, DataType data_type,
+ErrCode AST_init_node(ASTNode *node, NodeType node_type, DataType data_type,
                   char *node_data) {
 
   // Variable that temporarily holds error codes
-  int err = 0;
+  ErrCode err = 0;
 
   // Allocate memory for new node
   ASTNode new_node = malloc(sizeof(struct ast_node_struct));
   // Check success
   if (new_node == NULL)
-    return 99;
+    return ERR_INTERNAL;
 
   // Initialize node
   // These types MUST be initialized first!
@@ -93,7 +95,7 @@ int AST_init_node(ASTNode *node, NodeType node_type, DataType data_type,
   }
 
   // Check for errors
-  if (err != 0) {
+  if (err != SUCCESS) {
     free(new_node);
     return err;
   }
@@ -106,7 +108,7 @@ int AST_init_node(ASTNode *node, NodeType node_type, DataType data_type,
   // Don't forget to set the node!
   *node = new_node;
 
-  return 0;
+  return SUCCESS;
 }
 
 /* TODO probably delete
@@ -140,7 +142,7 @@ static bool node_has_identifier(ASTNode node) {
 }
   */
 
-static int set_integer_node_data(ASTNode node, char *data_string) {
+static ErrCode set_integer_node_data(ASTNode node, char *data_string) {
 
   assert(node != NULL);
   assert(data_string != NULL);
@@ -158,20 +160,20 @@ static int set_integer_node_data(ASTNode node, char *data_string) {
   // Value out of range, and narrowing long long to 32 bit int
   if (errno == ERANGE || int_data > INT32_MAX || int_data < INT32_MIN) {
     errno = 0; // Reset errno
-    return 6;
+    return ERR_INCOMPATIBLE_TYPE;
   }
   // String wasn't fully converted
   if (string_end != conv_end) {
-    return 6;
+    return ERR_INCOMPATIBLE_TYPE;
   }
 
   // Assign data
   node->data.int_val = int_data;
 
-  return 0;
+  return SUCCESS;
 }
 
-static int set_double_node_data(ASTNode node, char *data_string) {
+static ErrCode set_double_node_data(ASTNode node, char *data_string) {
 
   assert(node != NULL);
   assert(data_string != NULL);
@@ -189,20 +191,20 @@ static int set_double_node_data(ASTNode node, char *data_string) {
   // Value out of range
   if (errno == ERANGE) {
     errno = 0; // Reset errno
-    return 6;
+    return ERR_INCOMPATIBLE_TYPE;
   }
   // String wasn't fully converted
   if (string_end != conv_end) {
-    return 6;
+    return ERR_INCOMPATIBLE_TYPE;
   }
 
   // Assign data
   node->data.double_val = dbl_data;
 
-  return 0;
+  return SUCCESS;
 }
 
-static int set_string_node_data(ASTNode node, char *data_string) {
+static ErrCode set_string_node_data(ASTNode node, char *data_string) {
 
   assert(node != NULL);
   assert(data_string != NULL);
@@ -215,15 +217,15 @@ static int set_string_node_data(ASTNode node, char *data_string) {
   node->data.string_val = malloc(sizeof(char) * (strlen(data_string) + 1));
   // Check success
   if (node->data.string_val == NULL) {
-    return 99; // Memory error
+    return ERR_INTERNAL; // Memory error
   }
   // Copy string
   strcpy(node->data.string_val, data_string);
 
-  return 0;
+  return SUCCESS;
 }
 
-int AST_make_tree(ASTNode parent, int child_count, ASTNode *child_arr) {
+ErrCode AST_make_tree(ASTNode parent, int child_count, ASTNode *child_arr) {
 
   // Assertions
   assert(parent != NULL);
@@ -236,7 +238,7 @@ int AST_make_tree(ASTNode parent, int child_count, ASTNode *child_arr) {
   // Create array of pointers to child nodes
   parent->child_node_arr = malloc(sizeof(ASTNode) * child_count);
   if (parent->child_node_arr == NULL) {
-    return 99;
+    return ERR_INTERNAL;
   }
 
   // Fill array
@@ -245,5 +247,5 @@ int AST_make_tree(ASTNode parent, int child_count, ASTNode *child_arr) {
   }
 
   // Success
-  return 0;
+  return SUCCESS;
 }
