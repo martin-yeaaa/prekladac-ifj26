@@ -110,9 +110,9 @@ int AST_init_node(ASTNode *node, NodeType node_type, DataType data_type,
 
 /**
  * @brief Creates a tree from a parent node and children nodes.
- * @param parent AST node that should be the parent.
- * @param child_count Amount of children nodes.
- * @param child_arr Array of children nodes.
+ * @param parent AST node that should be the parent, not `NULL`.
+ * @param child_count Amount of children nodes, must be at least 1.
+ * @param child_arr Array of children nodes, "correctly sorted", not `NULL`.
  * @return `0` on success, `99` on memory allocation failure.
  */
 int AST_make_tree(ASTNode parent, int child_count, ASTNode *child_arr);

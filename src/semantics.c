@@ -40,12 +40,13 @@ static int set_double_node_data(ASTNode node, char *data_string);
  */
 static int set_string_node_data(ASTNode node, char *data_string);
 
-/**
+/** TODO delete probably
  * @brief Checks whether the node should hold symbol identifier.
  * @param node Node to check. Must not be `NULL`
  * @return `true` if node should hold identifier, `false` otherwise.
- */
+
 static bool node_has_identifier(ASTNode node);
+*/
 
 // Function definitions
 
@@ -67,25 +68,26 @@ int AST_init_node(ASTNode *node, NodeType node_type, DataType data_type,
   new_node->data_type = data_type;
 
   // Figure out type of data node_data is, and assign it
-  if (node_has_identifier(new_node)) {
+  if (node_type == NODE_IDENTIFIER) {
     // Data is identifier
     err = set_string_node_data(new_node, node_data);
   }
 
-  // Check data types: Integer
-  else if (data_type == DT_INTEGER) {
-    err = set_integer_node_data(new_node, node_data);
-  }
+  else if (node_type == NODE_LITERAL) {
+    // Check data types: Integer
+    if (data_type == DT_INTEGER) {
+      err = set_integer_node_data(new_node, node_data);
+    }
 
-  // Double
-  else if (data_type == DT_DOUBLE) {
-    err = set_double_node_data(new_node, node_data);
-  }
+    // Double
+    else if (data_type == DT_DOUBLE) {
+      err = set_double_node_data(new_node, node_data);
+    }
 
-  // String
-  else if (data_type == DT_STRING) {
-    err = set_string_node_data(new_node, node_data);
-
+    // String
+    else if (data_type == DT_STRING) {
+      err = set_string_node_data(new_node, node_data);
+    }
   } else {
     // Don't set anything
   }
@@ -107,7 +109,10 @@ int AST_init_node(ASTNode *node, NodeType node_type, DataType data_type,
   return 0;
 }
 
+/* TODO probably delete
 static bool node_has_identifier(ASTNode node) {
+
+  assert(node != NULL);
 
   // Return value
   bool ret = false;
@@ -122,6 +127,7 @@ static bool node_has_identifier(ASTNode node) {
   case NODE_VAL_DEF:
   case NODE_FUNC_DEF:
   case NODE_MAIN_FUNC_DEF:
+  case NODE_FUNC_CALL:
     ret = true;
     break;
 
@@ -132,6 +138,7 @@ static bool node_has_identifier(ASTNode node) {
 
   return ret;
 }
+  */
 
 static int set_integer_node_data(ASTNode node, char *data_string) {
 
@@ -200,7 +207,7 @@ static int set_string_node_data(ASTNode node, char *data_string) {
   assert(node != NULL);
   assert(data_string != NULL);
   // Identifier cannot be an empty string
-  if (node_has_identifier(node)) {
+  if (node->node_type == NODE_IDENTIFIER) {
     assert(strlen(data_string) > 0);
   }
 
@@ -216,4 +223,27 @@ static int set_string_node_data(ASTNode node, char *data_string) {
   return 0;
 }
 
-int AST_make_tree(ASTNode parent, int child_count, ASTNode *child_arr);
+int AST_make_tree(ASTNode parent, int child_count, ASTNode *child_arr) {
+
+  // Assertions
+  assert(parent != NULL);
+  assert(child_count > 0);
+  assert(child_arr != NULL);
+
+  // Update parent
+  parent->child_node_count = child_count;
+
+  // Create array of pointers to child nodes
+  parent->child_node_arr = malloc(sizeof(ASTNode) * child_count);
+  if (parent->child_node_arr == NULL) {
+    return 99;
+  }
+
+  // Fill array
+  for (int i = 0; i < child_count; i++) {
+    parent->child_node_arr[i] = child_arr[i];
+  }
+
+  // Success
+  return 0;
+}
