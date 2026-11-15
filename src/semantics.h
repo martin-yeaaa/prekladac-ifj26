@@ -117,4 +117,12 @@ int AST_init_node(ASTNode *node, NodeType node_type, DataType data_type,
  */
 int AST_make_tree(ASTNode parent, int child_count, ASTNode *child_arr);
 
+/**
+ * @brief Fills the symbol table, does all type checking.
+ * @param root Root of AST.
+ * @param st Pointer to declared uninitialized symbol tables structure.
+ * @return Error code. TODO
+ */
+int semantic_analysis(ASTNode root, SymbTables *st);
+
 #endif
