@@ -6,6 +6,7 @@
 
 #include "ast.h"
 #include "symtable.h"
+#include <assert.h>
 #include <errno.h> // For conversion errors
 #include <stdbool.h>
 #include <stdlib.h>
@@ -15,8 +16,8 @@
 
 /**
  * @brief Converts string to 32 bit int and sets it as node data.
- * @param node Node into which data will be inserted.
- * @param data_string Data to be converted and saved.
+ * @param node Node into which data will be inserted. Not `NULL`.
+ * @param data_string Data to be converted and saved. Not `NULL`.
  * @return `0` on success, `99` on memory allocation failure,
  * `6` if conversion fails.
  */
@@ -24,8 +25,8 @@ static int set_integer_node_data(ASTNode node, char *data_string);
 
 /**
  * @brief Converts string to 64 bit float and sets it as node data.
- * @param node Node into which data will be inserted.
- * @param data_string Data to be converted and saved.
+ * @param node Node into which data will be inserted. Not `NULL`.
+ * @param data_string Data to be converted and saved. Not `NULL`.
  * @return `0` on success, `99` on memory allocation failure,
  * `6` if conversion fails.
  */
@@ -33,61 +34,119 @@ static int set_double_node_data(ASTNode node, char *data_string);
 
 /**
  * @brief Copies string into node data.
- * @param node Node into which data will be inserted.
- * @param data_string Data to be copied.
+ * @param node Node into which data will be inserted. Not `NULL`.
+ * @param data_string Data to be copied. Not `NULL`.
  * @return `0` on success, `99` on memory allocation failure,
  */
 static int set_string_node_data(ASTNode node, char *data_string);
 
+/**
+ * @brief Checks whether the node should hold symbol identifier.
+ * @param node Node to check. Must not be `NULL`
+ * @return `true` if node should hold identifier, `false` otherwise.
+ */
+static bool node_has_identifier(ASTNode node);
+
+// Function definitions
+
 int AST_init_node(ASTNode *node, NodeType node_type, DataType data_type,
                   char *node_data) {
+
+  // Variable that temporarily holds error codes
+  int err;
 
   // Allocate memory for new node
   ASTNode new_node = malloc(sizeof(struct ast_node_struct));
   // Check success
   if (new_node == NULL)
-    return NULL;
+    return 99;
 
   // Initialize node
+  // These types MUST be initialized first!
   new_node->node_type = node_type;
   new_node->data_type = data_type;
 
-  // Figure out type of data, and assign it
-  switch (node_type) {
+  // Figure out type of data node_data is, and assign it
+  if (node_has_identifier(node)) {
 
-  // If node should contain symbol
+    // Data is identifier
+    err = set_string_node_data(node, node_data);
+    if (err != 0)
+      return err; // Check for errors
+  }
+
+  else if (data_type != DT_UNDEF) {
+    // Check data types
+    // Integer
+    if (data_type == DT_INTEGER) {
+      err = set_integer_node_data(node, node_data);
+      if (err != 0)
+        return err; // Check for errors
+    }
+    // Double
+    if (data_type == DT_DOUBLE) {
+      err = set_double_node_data(node, node_data);
+      if (err != 0)
+        return err; // Check for errors
+    }
+    // String
+    if (data_type == DT_STRING) {
+      err = set_string_node_data(node, node_data);
+      if (err != 0)
+        return err; // Check for errors
+    }
+    // Else, data isn't set
+  }
+
+  // These might be modified later, but are initialized to defaults
+  new_node->symbol_ptr = NULL;
+  new_node->child_node_count = 0;
+  new_node->child_node_arr = NULL;
+
+  // Don't forget to set the node!
+  *node = new_node;
+
+  return 0;
+}
+
+static bool node_has_identifier(ASTNode node) {
+
+  // Return value
+  bool ret = false;
+
+  // Result depends on node type
+  switch (node->node_type) {
+
+  // Node should contain identifier if it's one of these node types:
   case NODE_IDENTIFIER:
   case NODE_ASSIGNMENT:
   case NODE_VAR_DEF:
   case NODE_VAL_DEF:
   case NODE_FUNC_DEF:
   case NODE_MAIN_FUNC_DEF:
-
+    ret = true;
     break;
-
-  case NODE_LITERAL:
-    if (data_type == DT_INTEGER) {
-      new_node->data.int_val = 4; // this will work trust
-    }
 
   default:
-    new_node->data.bool_val = false;
+    ret = false;
     break;
   }
-  // this doesnt work lmao new_node->data = node_data;
 
-  // These might be modified later
-  new_node->symbol_ptr = NULL;
-  new_node->child_node_count = 0;
-  new_node->child_node_arr = NULL;
-
-  *node = new_node;
-  // return new_node;
+  return ret;
 }
 
-static int set_integer_node_data(ASTNode node, char *data_string) {}
+static int set_integer_node_data(ASTNode node, char *data_string) {
+
+  assert(node != NULL);
+  assert(data_string != NULL);
+
+  return 0;
+}
 
 static int set_double_node_data(ASTNode node, char *data_string) {
+
+  assert(node != NULL);
+  assert(data_string != NULL);
 
   // Pointers that help check correct conversion
   char *string_end = data_string[strlen(data_string)];
@@ -114,6 +173,9 @@ static int set_double_node_data(ASTNode node, char *data_string) {
 }
 
 static int set_string_node_data(ASTNode node, char *data_string) {
+
+  assert(node != NULL);
+  assert(data_string != NULL);
 
   // node_data should be symbol identifier
   node->data.string_val = malloc(sizeof(char) * (strlen(data_string) + 1));
