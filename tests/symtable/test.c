@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../../src/symtable.h"
+#include "../../src/error_codes.h"
 
 /*
 My note, ignore this ig:
@@ -23,20 +24,22 @@ know everything about the symbol, probably, we just read the nodes i think
 // Global symbol table structure
 SymbTables symbol_table;
 
-void init_st() {
-    symbol_table = ST_new();
-}
 
 int main()
 {
 
-    // New table
-    init_st();
-    // Enter global scope
-    int err = ST_enter_scope(&symbol_table);
-    // Check success
-    if (err == 99) exit(err);
+    // Initialize table
+    ErrCode err = ST_init(&symbol_table);
+    if (err == ERR_INTERNAL) exit(err);
 
+    // Global scope is already entered !
+    
+    // DONT DO THIS:
+    // err = ST_enter_scope(&symbol_table);
+    // Check success
+    // if (err == 99) exit(err);
+
+    
     // Copied structures from symtable_test.cc
 
     // Main function
@@ -62,10 +65,10 @@ int main()
     // Define symbols
     err = ST_define_symbol(&symbol_table, &foo_main_func);
     // Check definition success
-    if (err == 4 || err == 99) exit(err);
+    if (err == ERR_REDEFINITION || err == ERR_INTERNAL) exit(err);
 
     err = ST_define_symbol(&symbol_table, &foo_func);
-    if (err == 4 || err == 99) exit(err);
+    if (err == ERR_REDEFINITION || err == ERR_INTERNAL) exit(err);
 
     // Try to get symbol
     Symbol * yay = ST_get_symbol(&symbol_table, "foo");
@@ -76,7 +79,7 @@ int main()
     
     // Enter local scope
     err = ST_enter_scope(&symbol_table);
-    if (err == 99) exit(err);
+    if (err == ERR_INTERNAL) exit(err);
 
     // More symbol drafts copied from symtable_test.cc
     SymbDraft x_var_double = {
@@ -88,7 +91,7 @@ int main()
     // Define symbols
     err = ST_define_symbol(&symbol_table, &x_var_double);
     // Check definition success
-    if (err == 4 || err == 99) exit(err);
+    if (err == ERR_REDEFINITION || err == ERR_INTERNAL) exit(err);
 
     // Get symbol x
     Symbol * get_x_1 = ST_get_symbol(&symbol_table, "x");
@@ -99,18 +102,18 @@ int main()
 
     // Redefinition is not allowed
     err = ST_define_symbol(&symbol_table, &x_var_double);
-    if (err == 99) exit(err);
-    if (err == 4) fprintf(stderr, "Redefinition of x !!! BAD!!!\n");
+    if (err == ERR_INTERNAL) exit(err);
+    if (err == ERR_REDEFINITION) fprintf(stderr, "Redefinition of x !!! BAD!!!\n");
 
     // Example continues
 
     // Enter local scope
     err = ST_enter_scope(&symbol_table);
-    if (err == 99) exit(err);
+    if (err == ERR_INTERNAL) exit(err);
 
     // Now we can shadow x
     err = ST_define_symbol(&symbol_table, &x_var_double);
-    if (err == 99 || err == 4) exit(err);
+    if (err == ERR_INTERNAL || err == ERR_REDEFINITION) exit(err);
 
     Symbol * get_x_2 = ST_get_symbol(&symbol_table, "x");
     if (get_x_2 != NULL)
@@ -133,5 +136,5 @@ int main()
 
     // Run valgrind to check memory leaks
 
-    return 0;
+    return SUCCESS;
 }

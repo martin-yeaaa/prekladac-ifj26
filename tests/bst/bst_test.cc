@@ -134,6 +134,47 @@ TEST(BST_basic, func_BST_get_data) {
   EXPECT_TRUE(tree == NULL);
 }
 
+TEST(BST_basic, func_BST_rewrite) {
+ 
+  // New tree
+  BSTNode tree = BST_new();
+  // Insert data
+  int data = 5;
+  char key[] = "hello";
+  ASSERT_TRUE(BST_insert(&tree, key, &data, sizeof(data)));
+
+  // Insert more data
+  int data2 = 52;
+  char key2[] = "aaaa";
+  ASSERT_TRUE(BST_insert(&tree, key2, &data2, sizeof(data2)));
+
+  // Check if it's really there
+  ASSERT_FALSE(tree == NULL);
+  // Test get_data()
+  EXPECT_TRUE(*(int*)BST_get_data(tree, key) == data);
+  EXPECT_TRUE(*(int*)BST_get_data(tree, key2) == data2);
+  
+  char new_data1[] = "oh its a string";
+  char new_data2[] = "didnt know you could do that!";
+
+  // Rewrite data with data of different size and type
+  ASSERT_TRUE(BST_insert(&tree, key, new_data1, sizeof(new_data1)));
+  ASSERT_TRUE(BST_insert(&tree, key2, new_data2, sizeof(new_data2)));
+
+  // Test get_data()
+  char * check1 = (char*)BST_get_data(tree, key);
+  char * check2 = (char*)BST_get_data(tree, key2);
+  ASSERT_TRUE(check1 != NULL);
+  ASSERT_TRUE(check2 != NULL);
+  // Check same string
+  EXPECT_TRUE(strcmp(check1, new_data1) == 0);
+  EXPECT_TRUE(strcmp(check2, new_data2) == 0);
+
+  BST_delete(&tree, key);
+  BST_delete(&tree, key2);
+  // Tree should be empty
+  EXPECT_TRUE(tree == NULL);
+}
 
 class BST_balanced_fill : public testing::Test {
 protected:
