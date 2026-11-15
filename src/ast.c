@@ -67,38 +67,36 @@ int AST_init_node(ASTNode *node, NodeType node_type, DataType data_type,
   new_node->data_type = data_type;
 
   // Figure out type of data node_data is, and assign it
-  if (node_has_identifier(node)) {
+  if (node_has_identifier(new_node)) {
 
     // Data is identifier
-    err = set_string_node_data(node, node_data);
+    err = set_string_node_data(new_node, node_data);
     if (err != 0)
       return err; // Check for errors
   }
-
-  else if (data_type != DT_UNDEF) {
-    // Check data types
-    // Integer
-    if (data_type == DT_INTEGER) {
-      err = set_integer_node_data(node, node_data);
-      if (err != 0)
-        return err; // Check for errors
-    }
-    // Double
-    if (data_type == DT_DOUBLE) {
-      err = set_double_node_data(node, node_data);
-      if (err != 0)
-        return err; // Check for errors
-    }
-    // String
-    if (data_type == DT_STRING) {
-      err = set_string_node_data(node, node_data);
-      if (err != 0)
-        return err; // Check for errors
-    }
-    // Else, data isn't set
+  // Check data types: Integer
+  else if (data_type == DT_INTEGER) {
+    err = set_integer_node_data(new_node, node_data);
+    if (err != 0)
+      return err; // Check for errors
+  }
+  // Double
+  else if (data_type == DT_DOUBLE) {
+    err = set_double_node_data(new_node, node_data);
+    if (err != 0)
+      return err; // Check for errors
+  }
+  // String
+  else if (data_type == DT_STRING) {
+    err = set_string_node_data(new_node, node_data);
+    if (err != 0)
+      return err; // Check for errors
+  } else {
+    // Placeholder
+    new_node->data.string_val = NULL;
   }
 
-  // These might be modified later, but are initialized to defaults
+  // These values might be modified later
   new_node->symbol_ptr = NULL;
   new_node->child_node_count = 0;
   new_node->child_node_arr = NULL;
@@ -140,6 +138,27 @@ static int set_integer_node_data(ASTNode node, char *data_string) {
   assert(node != NULL);
   assert(data_string != NULL);
 
+  // Pointers that help check correct conversion
+  char *string_end = data_string[strlen(data_string)];
+  char *conv_end = NULL;
+
+  // Conversion to long long
+  long long int_data = strtoll(data_string, &conv_end, 10);
+
+  // Check errors
+  // Value out of range, and narrowing long long to 32 bit int
+  if (errno == ERANGE || int_data > INT32_MAX || int_data < INT32_MIN) {
+    errno = 0; // Reset errno
+    return 6;
+  }
+  // String wasn't fully converted
+  if (string_end != conv_end) {
+    return 6;
+  }
+
+  // Assign data
+  node->data.int_val = int_data;
+
   return 0;
 }
 
@@ -158,7 +177,7 @@ static int set_double_node_data(ASTNode node, char *data_string) {
   // Check errors
   // Value out of range
   if (errno == ERANGE) {
-    errno = 0;
+    errno = 0; // Reset errno
     return 6;
   }
   // String wasn't fully converted
