@@ -14,12 +14,12 @@ TEST(build_AST, node_init_w_symbol) {
 
   ASTNode tree;
 
-  // init node equivalent to: "var x: Int"
-  int err = AST_init_node(&tree, NODE_VAR_DEF, DT_INTEGER, "x");
+  // init node equivalent to: "x"
+  int err = AST_init_node(&tree, NODE_IDENTIFIER, DT_INTEGER, "x");
   ASSERT_TRUE(err == 0);
 
   // Check correct initialization
-  EXPECT_TRUE(tree->node_type == NODE_VAR_DEF);
+  EXPECT_TRUE(tree->node_type == NODE_IDENTIFIER);
   EXPECT_TRUE(tree->data_type == DT_INTEGER);
   EXPECT_TRUE(strcmp(tree->data.string_val, "x") == 0);
   EXPECT_TRUE(tree->symbol_ptr == NULL);
@@ -133,6 +133,32 @@ TEST(build_AST, node_init_w_string_literal) {
   EXPECT_TRUE(second->symbol_ptr == NULL);
   EXPECT_TRUE(second->child_node_arr == NULL);
   EXPECT_TRUE(second->child_node_count == 0);
+}
 
-  
+
+TEST(build_AST, make_tree_var_def) {
+
+  ASTNode definition;
+  ASTNode variable;
+  ASTNode integer;
+
+  // convert into AST: var xd: Int = 5
+
+  int err = AST_init_node(&definition, NODE_VAR_DEF, DT_INTEGER, NULL);
+  ASSERT_TRUE(err == 0);
+  err = AST_init_node(&variable, NODE_IDENTIFIER, DT_INTEGER, "xd");
+  ASSERT_TRUE(err == 0);
+  err = AST_init_node(&integer, NODE_LITERAL, DT_INTEGER, "5");
+  ASSERT_TRUE(err == 0);
+
+  // Left to right
+  // xd = 5
+  ASTNode array[2] = {variable, integer};
+
+  err = AST_make_tree(definition, 2, array);
+  ASSERT_TRUE(err == 0);
+
+  // Check tree
+  EXPECT_TRUE(definition->child_node_arr[0]->node_type == NODE_IDENTIFIER);
+  EXPECT_TRUE(definition->child_node_arr[1]->node_type == NODE_LITERAL);
 }
