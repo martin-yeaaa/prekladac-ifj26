@@ -3,6 +3,7 @@
 // Author: Martin Vaško (xvaskom00)
 
 // Implementation of height-balanced binary search tree
+// The tree is implemented as an AVL tree.
 
 #include "bst.h"
 #include "bst_priv.h"
@@ -69,7 +70,24 @@ BSTNode insert_recursive(BSTNode root, BSTKey key, BSTData data,
 
     // Exact match -> rewrite data
     if (key_comparison == 0) {
-      root->data = data;
+
+      // New data can have different size!
+      // Allocate memory for new data
+      void *data_copy = malloc(data_size);
+      // Check allocation success
+      if (data_copy == NULL) {
+        error_flag = true; // malloc failed, set error_flag
+        return root;
+      }
+
+      // Free previous data
+      free(root->data);
+
+      // Copy data
+      memcpy(data_copy, data, data_size);
+
+      // Update node
+      root->data = data_copy;
     }
 
     // less than 0 -> left son

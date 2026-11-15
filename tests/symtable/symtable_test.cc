@@ -12,7 +12,9 @@ extern "C" {
 
 TEST(symbol_tables, new_ST) {
 
-  SymbTables st = ST_new();
+  SymbTables st = {
+    .list_first = NULL, .list_last = NULL, .stack_top = NULL
+  };
   EXPECT_TRUE(st.list_first == NULL);
   EXPECT_TRUE(st.list_last == NULL);
   EXPECT_TRUE(st.stack_top == NULL);
@@ -21,7 +23,9 @@ TEST(symbol_tables, new_ST) {
 
 TEST(symbol_tables, enter_scope) {
 
-  SymbTables st = ST_new();
+  SymbTables st = {
+    .list_first = NULL, .list_last = NULL, .stack_top = NULL
+  };
   EXPECT_TRUE(st.list_first == NULL);
   EXPECT_TRUE(st.list_last == NULL);
   EXPECT_TRUE(st.stack_top == NULL);
@@ -46,7 +50,9 @@ TEST(symbol_tables, enter_scope) {
 
 TEST(symbol_tables, enter_multiple_scopes) {
 
-  SymbTables st = ST_new();
+  SymbTables st = {
+    .list_first = NULL, .list_last = NULL, .stack_top = NULL
+  };
 
   int ok = ST_enter_scope(&st);
   // Check success
@@ -90,7 +96,9 @@ TEST(symbol_tables, enter_multiple_scopes) {
 TEST(symbol_tables, exit_scope) {
 
   // New symbol table
-  SymbTables st = ST_new();
+  SymbTables st = {
+    .list_first = NULL, .list_last = NULL, .stack_top = NULL
+  };
   
   int ok = ST_enter_scope(&st);
   // Check success
@@ -106,7 +114,9 @@ TEST(symbol_tables, exit_scope) {
 TEST(symbol_tables, enter_exit_scopes) {
 
   // New symbol table
-  SymbTables st = ST_new();
+  SymbTables st = {
+    .list_first = NULL, .list_last = NULL, .stack_top = NULL
+  };
 
   int ok = ST_enter_scope(&st);
   ASSERT_TRUE(ok == 0);
@@ -162,7 +172,9 @@ TEST(symbol_tables, enter_exit_scopes) {
 TEST(symbol_tables, destroy_table){
 
   // New symbol table
-  SymbTables st = ST_new();
+  SymbTables st = {
+    .list_first = NULL, .list_last = NULL, .stack_top = NULL
+  };
 
   int ok = ST_enter_scope(&st);
   ASSERT_TRUE(ok == 0);
@@ -193,11 +205,12 @@ protected:
   DataType param_arr[2] = {DT_INTEGER, DT_DOUBLE};
 
   SymbDraft foo_main_func;
-  SymbDraft big_list_symbol; // list of 11 ddoouubblleess
 
   symbol_definitions() {
 
-    st = ST_new();
+    st = {
+    .list_first = NULL, .list_last = NULL, .stack_top = NULL
+  };
     
     // Initialize symbol drafts
     x_val_int = {
@@ -245,12 +258,6 @@ protected:
       .param_count = 0, // must have no parameters
     };
 
-    big_list_symbol = {
-      .identifier = "BIG",
-      .symb_type = SB_LIST,
-      .data_type = DT_DOUBLE,
-      .list_size = 11,
-    };
   }
 };
 
@@ -266,7 +273,6 @@ TEST_F(symbol_definitions, fixture_test) {
   EXPECT_TRUE(x_var_double.symb_type == SB_VAR);
   EXPECT_TRUE(smol_val_unit.data_type == DT_UNIT);
   EXPECT_TRUE(foo_func.param_type_arr[1] == DT_DOUBLE);
-  EXPECT_TRUE(big_list_symbol.list_size == 11);
 }
 
 TEST_F(symbol_definitions, define_symbol) {
@@ -364,4 +370,126 @@ TEST_F(symbol_definitions, get_symbol) {
   // Check uniq_id - this should be the first "x"
   EXPECT_TRUE(sb->uniq_id == 2);
 
+}
+
+// This tests ST_init(), it has to be in the end because it calls
+// other functions - enter_scope() and define_symbol()
+TEST(symbol_table_init, initialization) {
+
+  SymbTables st;
+  int err = ST_init(&st);
+  // Check success
+  ASSERT_TRUE(err == 0);
+
+  // Check initialization of scope
+  EXPECT_TRUE(st.stack_top != NULL);
+  EXPECT_TRUE(st.stack_top->prev_scope == NULL);
+  EXPECT_TRUE(st.stack_top == st.list_first);
+  EXPECT_TRUE(st.stack_top == st.list_last);
+  EXPECT_TRUE(st.stack_top->next_node == NULL);
+  EXPECT_TRUE(st.stack_top->table != NULL);
+
+}
+
+// Checks builtin functions symbols
+TEST(symbol_table_init, built_in_func_test) {
+
+  SymbTables st;
+  int err = ST_init(&st);
+  // Check success
+  ASSERT_TRUE(err == 0);
+
+    // Check built in functions symbols
+  Symbol * sb = ST_get_symbol(&st, "print");
+  ASSERT_TRUE(sb != NULL);
+  EXPECT_TRUE(sb->symb_type == SB_BUILTIN);
+  EXPECT_TRUE(sb->data_type == DT_UNIT); // return value
+  EXPECT_TRUE(sb->param_count == 1);
+  EXPECT_TRUE(sb->param_type_arr[0] == DT_ANY);
+
+  sb = ST_get_symbol(&st, "readLine");
+  ASSERT_TRUE(sb != NULL);
+  EXPECT_TRUE(sb->symb_type == SB_BUILTIN);
+  EXPECT_TRUE(sb->data_type == DT_STRING); // return value
+  EXPECT_TRUE(sb->param_count == 0);
+
+  sb = ST_get_symbol(&st, "readInt");
+  ASSERT_TRUE(sb != NULL);
+  EXPECT_TRUE(sb->symb_type == SB_BUILTIN);
+  EXPECT_TRUE(sb->data_type == DT_INTEGER); // return value
+  EXPECT_TRUE(sb->param_count == 0);
+
+  sb = ST_get_symbol(&st, "readDouble");
+  ASSERT_TRUE(sb != NULL);
+  EXPECT_TRUE(sb->symb_type == SB_BUILTIN);
+  EXPECT_TRUE(sb->data_type == DT_DOUBLE); // return value
+  EXPECT_TRUE(sb->param_count == 0);
+
+  sb = ST_get_symbol(&st, "toStr");
+  ASSERT_TRUE(sb != NULL);
+  EXPECT_TRUE(sb->symb_type == SB_BUILTIN);
+  EXPECT_TRUE(sb->data_type == DT_STRING); // return value
+  EXPECT_TRUE(sb->param_count == 1);
+  EXPECT_TRUE(sb->param_type_arr[0] == DT_ANY);
+
+  sb = ST_get_symbol(&st, "toInt");
+  ASSERT_TRUE(sb != NULL);
+  EXPECT_TRUE(sb->symb_type == SB_BUILTIN);
+  EXPECT_TRUE(sb->data_type == DT_INTEGER); // return value
+  EXPECT_TRUE(sb->param_count == 1);
+  EXPECT_TRUE(sb->param_type_arr[0] == DT_DOUBLE);
+
+  sb = ST_get_symbol(&st, "strLength");
+  ASSERT_TRUE(sb != NULL);
+  EXPECT_TRUE(sb->symb_type == SB_BUILTIN);
+  EXPECT_TRUE(sb->data_type == DT_INTEGER); // return value
+  EXPECT_TRUE(sb->param_count == 1);
+  EXPECT_TRUE(sb->param_type_arr[0] == DT_STRING);
+
+  sb = ST_get_symbol(&st, "subStr");
+  ASSERT_TRUE(sb != NULL);
+  EXPECT_TRUE(sb->symb_type == SB_BUILTIN);
+  EXPECT_TRUE(sb->data_type == DT_STRING); // return value
+  EXPECT_TRUE(sb->param_count == 3);
+  EXPECT_TRUE(sb->param_type_arr[0] == DT_STRING);
+  EXPECT_TRUE(sb->param_type_arr[1] == DT_INTEGER);
+  EXPECT_TRUE(sb->param_type_arr[2] == DT_INTEGER);
+
+  sb = ST_get_symbol(&st, "ord");
+  ASSERT_TRUE(sb != NULL);
+  EXPECT_TRUE(sb->symb_type == SB_BUILTIN);
+  EXPECT_TRUE(sb->data_type == DT_INTEGER); // return value
+  EXPECT_TRUE(sb->param_count == 2);
+  EXPECT_TRUE(sb->param_type_arr[0] == DT_STRING);
+  EXPECT_TRUE(sb->param_type_arr[1] == DT_INTEGER);
+
+  sb = ST_get_symbol(&st, "chr");
+  ASSERT_TRUE(sb != NULL);
+  EXPECT_TRUE(sb->symb_type == SB_BUILTIN);
+  EXPECT_TRUE(sb->data_type == DT_STRING); // return value
+  EXPECT_TRUE(sb->param_count == 1);
+  EXPECT_TRUE(sb->param_type_arr[0] == DT_INTEGER);
+
+}
+
+TEST(symbol_table_init, try_redefining_builtin) {
+
+  SymbTables st;
+  int err = ST_init(&st);
+  // Check success
+  ASSERT_TRUE(err == 0);
+
+
+  DataType bad_arr[] = {DT_STRING};
+  SymbDraft bad = {
+      .identifier = "print",
+      .symb_type = SB_FUNC,
+      .data_type = DT_UNIT,
+      .param_count = 1,
+      .param_type_arr = bad_arr,
+    };
+
+  err = ST_define_symbol(&st, &bad);
+  // redefintion !!
+  EXPECT_TRUE(err == 4);
 }
