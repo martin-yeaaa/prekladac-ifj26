@@ -2,9 +2,9 @@
 // File: ast.c
 // Author: Martin Vaško (vaskom00)
 
-// Implementation of abstract syntax tree = AST
+// Implementation of abstract syntax tree = AST and semantic analysis functions
 
-#include "ast.h"
+#include "semantics.h"
 #include "symtable.h"
 #include <assert.h>
 #include <errno.h> // For conversion errors
@@ -53,7 +53,7 @@ int AST_init_node(ASTNode *node, NodeType node_type, DataType data_type,
                   char *node_data) {
 
   // Variable that temporarily holds error codes
-  int err;
+  int err = 0;
 
   // Allocate memory for new node
   ASTNode new_node = malloc(sizeof(struct ast_node_struct));
@@ -68,32 +68,32 @@ int AST_init_node(ASTNode *node, NodeType node_type, DataType data_type,
 
   // Figure out type of data node_data is, and assign it
   if (node_has_identifier(new_node)) {
-
     // Data is identifier
     err = set_string_node_data(new_node, node_data);
-    if (err != 0)
-      return err; // Check for errors
   }
+
   // Check data types: Integer
   else if (data_type == DT_INTEGER) {
     err = set_integer_node_data(new_node, node_data);
-    if (err != 0)
-      return err; // Check for errors
   }
+
   // Double
   else if (data_type == DT_DOUBLE) {
     err = set_double_node_data(new_node, node_data);
-    if (err != 0)
-      return err; // Check for errors
   }
+
   // String
   else if (data_type == DT_STRING) {
     err = set_string_node_data(new_node, node_data);
-    if (err != 0)
-      return err; // Check for errors
+
   } else {
-    // Placeholder
-    new_node->data.string_val = NULL;
+    // Don't set anything
+  }
+
+  // Check for errors
+  if (err != 0) {
+    free(new_node);
+    return err;
   }
 
   // These values might be modified later
@@ -137,9 +137,11 @@ static int set_integer_node_data(ASTNode node, char *data_string) {
 
   assert(node != NULL);
   assert(data_string != NULL);
+  // Data string must not be empty
+  assert(strlen(data_string) > 0);
 
   // Pointers that help check correct conversion
-  char *string_end = data_string[strlen(data_string)];
+  char *string_end = &data_string[strlen(data_string)];
   char *conv_end = NULL;
 
   // Conversion to long long
@@ -166,9 +168,11 @@ static int set_double_node_data(ASTNode node, char *data_string) {
 
   assert(node != NULL);
   assert(data_string != NULL);
+  // Data string must not be empty
+  assert(strlen(data_string) > 0);
 
   // Pointers that help check correct conversion
-  char *string_end = data_string[strlen(data_string)];
+  char *string_end = &data_string[strlen(data_string)];
   char *conv_end = NULL;
 
   // Conversion
@@ -195,6 +199,10 @@ static int set_string_node_data(ASTNode node, char *data_string) {
 
   assert(node != NULL);
   assert(data_string != NULL);
+  // Identifier cannot be an empty string
+  if (node_has_identifier(node)) {
+    assert(strlen(data_string) > 0);
+  }
 
   // node_data should be symbol identifier
   node->data.string_val = malloc(sizeof(char) * (strlen(data_string) + 1));

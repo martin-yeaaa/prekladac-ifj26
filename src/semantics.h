@@ -4,10 +4,10 @@
 // - Martin Vaško (vaskom00)
 // - Lukáš Dvořák (xdvoral00)
 
-// Header file for abstract syntax tree = AST
+// Header file for abstract syntax tree = AST and semantic analysis
 
-#ifndef AST_H
-#define AST_H
+#ifndef SEMANTICS_H
+#define SEMANTICS_H
 
 #include "symtable.h"
 #include <stdbool.h>
