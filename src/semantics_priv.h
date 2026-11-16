@@ -37,12 +37,4 @@ static ErrCode set_double_node_data(ASTNode node, char *data_string);
  */
 static ErrCode set_string_node_data(ASTNode node, char *data_string);
 
-/** TODO delete probably
- * @brief Checks whether the node should hold symbol identifier.
- * @param node Node to check. Must not be `NULL`
- * @return `true` if node should hold identifier, `false` otherwise.
-
-static bool node_has_identifier(ASTNode node);
-*/
-
 #endif

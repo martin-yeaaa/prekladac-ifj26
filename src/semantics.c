@@ -5,8 +5,8 @@
 // Implementation of abstract syntax tree = AST and semantic analysis functions
 
 #include "semantics.h"
-#include "semantics_priv.h"
 #include "error_codes.h"
+#include "semantics_priv.h"
 #include "symtable.h"
 
 #include <assert.h>
@@ -76,37 +76,6 @@ ErrCode AST_init_node(ASTNode *node, NodeType node_type, DataType data_type,
 
   return SUCCESS;
 }
-
-/* TODO probably delete
-static bool node_has_identifier(ASTNode node) {
-
-  assert(node != NULL);
-
-  // Return value
-  bool ret = false;
-
-  // Result depends on node type
-  switch (node->node_type) {
-
-  // Node should contain identifier if it's one of these node types:
-  case NODE_IDENTIFIER:
-  case NODE_ASSIGNMENT:
-  case NODE_VAR_DEF:
-  case NODE_VAL_DEF:
-  case NODE_FUNC_DEF:
-  case NODE_MAIN_FUNC_DEF:
-  case NODE_FUNC_CALL:
-    ret = true;
-    break;
-
-  default:
-    ret = false;
-    break;
-  }
-
-  return ret;
-}
-  */
 
 static ErrCode set_integer_node_data(ASTNode node, char *data_string) {
 
@@ -229,5 +198,66 @@ ErrCode AST_node_add_child(ASTNode parent, ASTNode child) {
   parent->child_arr[i] = child;
 
   // Success
+  return SUCCESS;
+}
+
+ErrCode semantic_analysis(ASTNode root, SymbTables *st) {
+
+  // Error code return variable
+  ErrCode err = SUCCESS;
+
+  // Initialize symbol table
+  err = ST_init(st);
+  if (err != SUCCESS)
+    return err;
+
+  // Fill in symbol table with function declarations
+  err = define_func_symbols(root, st);
+  if (err != SUCCESS)
+    return err;
+
+  // Fill in symbol table with local declarations (variables)
+  err = define_local_symbols(root, st);
+  if (err != SUCCESS)
+    return err;
+
+  // TODO check return???
+
+  // Helper variable
+  bool type_update;
+
+  // Resolve as many data types as possible
+  do {
+    type_update = false;
+
+    /*
+    // 3 phases - resolve data types of:
+    // 1 - expressions
+    err = resolve_expr_types(root, st, &type_update);
+    if (err != SUCCESS)
+      return err;
+
+    // 2 - assignments and definitions of variables
+    err = resolve_assignment_types(root, st, &type_update);
+    if (err != SUCCESS)
+      return err;
+
+    // 3 - function return values
+    err = resolve_func_types(root, st, &type_update);
+    if (err != SUCCESS)
+      return err;
+      */
+
+    // Might be a good idea to combine them, so we don't walk the tree so much
+    err = resolve_data_types(root, st, &type_update);
+    if (err != SUCCESS)
+      return err;
+
+    // If a new type was resolved, repeat
+  } while (type_update == true);
+
+  // Check something else? TODO
+
+  // Types are checked, symbols are defined, we are DONE
   return SUCCESS;
 }
