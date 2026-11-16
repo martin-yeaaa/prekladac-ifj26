@@ -23,8 +23,9 @@ TEST(build_AST, node_init_w_symbol) {
   EXPECT_TRUE(tree->data_type == DT_INTEGER);
   EXPECT_TRUE(strcmp(tree->data.string_val, "x") == 0);
   EXPECT_TRUE(tree->symbol_ptr == NULL);
-  EXPECT_TRUE(tree->child_node_arr == NULL);
-  EXPECT_TRUE(tree->child_node_count == 0);
+  EXPECT_TRUE(tree->child_arr == NULL);
+  EXPECT_TRUE(tree->child_count == 0);
+  EXPECT_TRUE(tree->child_limit == 0);
 }
 
 
@@ -41,8 +42,9 @@ TEST(build_AST, node_init_w_int_literal) {
   EXPECT_TRUE(tree->data_type == DT_INTEGER);
   EXPECT_TRUE(tree->data.int_val == 67);
   EXPECT_TRUE(tree->symbol_ptr == NULL);
-  EXPECT_TRUE(tree->child_node_arr == NULL);
-  EXPECT_TRUE(tree->child_node_count == 0);
+  EXPECT_TRUE(tree->child_arr == NULL);
+  EXPECT_TRUE(tree->child_count == 0);
+  EXPECT_TRUE(tree->child_limit == 0);
 }
 
 TEST(build_AST, node_init_w_int_literal_invalid) {
@@ -82,8 +84,9 @@ TEST(build_AST, node_init_w_double_literal) {
   EXPECT_DOUBLE_EQ(tree->data.double_val, 123.456);
 
   EXPECT_TRUE(tree->symbol_ptr == NULL);
-  EXPECT_TRUE(tree->child_node_arr == NULL);
-  EXPECT_TRUE(tree->child_node_count == 0);
+  EXPECT_TRUE(tree->child_arr == NULL);
+  EXPECT_TRUE(tree->child_count == 0);
+  EXPECT_TRUE(tree->child_limit == 0);
 }
 
 TEST(build_AST, node_init_w_double_literal_invalid) {
@@ -114,8 +117,9 @@ TEST(build_AST, node_init_w_string_literal) {
   EXPECT_TRUE(strcmp(tree->data.string_val, "what how") == 0);
 
   EXPECT_TRUE(tree->symbol_ptr == NULL);
-  EXPECT_TRUE(tree->child_node_arr == NULL);
-  EXPECT_TRUE(tree->child_node_count == 0);
+  EXPECT_TRUE(tree->child_arr == NULL);
+  EXPECT_TRUE(tree->child_count == 0);
+  EXPECT_TRUE(tree->child_limit == 0);
 
   // One more node
   ASTNode second;
@@ -131,8 +135,9 @@ TEST(build_AST, node_init_w_string_literal) {
   EXPECT_TRUE(strcmp(second->data.string_val, "") == 0);
 
   EXPECT_TRUE(second->symbol_ptr == NULL);
-  EXPECT_TRUE(second->child_node_arr == NULL);
-  EXPECT_TRUE(second->child_node_count == 0);
+  EXPECT_TRUE(second->child_arr == NULL);
+  EXPECT_TRUE(second->child_count == 0);
+  EXPECT_TRUE(tree->child_limit == 0);
 }
 
 
@@ -151,14 +156,14 @@ TEST(build_AST, make_tree_var_def) {
   err = AST_init_node(&integer, NODE_LITERAL, DT_INTEGER, "5");
   ASSERT_TRUE(err == 0);
 
-  // Left to right
-  // xd = 5
-  ASTNode array[2] = {variable, integer};
-
-  err = AST_make_tree(definition, 2, array);
+  // Make tree by adding children separately
+  err = AST_node_add_child(definition, variable);
+  ASSERT_TRUE(err == 0);
+  err = AST_node_add_child(definition, integer);
   ASSERT_TRUE(err == 0);
 
   // Check tree
-  EXPECT_TRUE(definition->child_node_arr[0]->node_type == NODE_IDENTIFIER);
-  EXPECT_TRUE(definition->child_node_arr[1]->node_type == NODE_LITERAL);
+  EXPECT_TRUE(definition->child_arr[0]->node_type == NODE_IDENTIFIER);
+  EXPECT_TRUE(definition->child_arr[1]->node_type == NODE_LITERAL);
 }
+

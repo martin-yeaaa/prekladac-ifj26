@@ -91,8 +91,9 @@ typedef struct ast_node_struct {
   Symbol *symbol_ptr;
 
   // Children nodes, there can be many
-  int child_node_count;
-  struct ast_node_struct **child_node_arr;
+  int child_count;
+  int child_limit; // Info for realloc
+  struct ast_node_struct **child_arr;
 
 } *ASTNode;
 
@@ -112,13 +113,12 @@ ErrCode AST_init_node(ASTNode *node, NodeType node_type, DataType data_type,
 
 /**
  * @brief Creates a tree from a parent node and children nodes.
- * @param parent AST node that should be the parent, not `NULL`.
- * @param child_count Amount of children nodes, must be at least 1.
- * @param child_arr Array of children nodes, "correctly sorted", not `NULL`.
+ * @param parent AST node that will be the parent, not `NULL`.
+ * @param child AST node that will be the child, not `NULL`.
  * @return `SUCCESS` on success,
  * `ERR_INTERNAL` on memory allocation failure.
  */
-ErrCode AST_make_tree(ASTNode parent, int child_count, ASTNode *child_arr);
+ErrCode AST_node_add_child(ASTNode parent, ASTNode child);
 
 /**
  * @brief Fills the symbol table, does all type checking.

@@ -5,8 +5,8 @@
 // Implementation of abstract syntax tree = AST and semantic analysis functions
 
 #include "semantics.h"
-#include "symtable.h"
 #include "error_codes.h"
+#include "symtable.h"
 #include <assert.h>
 #include <errno.h> // For conversion errors
 #include <stdbool.h>
@@ -53,7 +53,7 @@ static bool node_has_identifier(ASTNode node);
 // Function definitions
 
 ErrCode AST_init_node(ASTNode *node, NodeType node_type, DataType data_type,
-                  char *node_data) {
+                      char *node_data) {
 
   // Variable that temporarily holds error codes
   ErrCode err = 0;
@@ -102,8 +102,9 @@ ErrCode AST_init_node(ASTNode *node, NodeType node_type, DataType data_type,
 
   // These values might be modified later
   new_node->symbol_ptr = NULL;
-  new_node->child_node_count = 0;
-  new_node->child_node_arr = NULL;
+  new_node->child_count = 0;
+  new_node->child_limit = 0;
+  new_node->child_arr = NULL;
 
   // Don't forget to set the node!
   *node = new_node;
@@ -225,26 +226,42 @@ static ErrCode set_string_node_data(ASTNode node, char *data_string) {
   return SUCCESS;
 }
 
-ErrCode AST_make_tree(ASTNode parent, int child_count, ASTNode *child_arr) {
+ErrCode AST_node_add_child(ASTNode parent, ASTNode child) {
 
   // Assertions
   assert(parent != NULL);
-  assert(child_count > 0);
-  assert(child_arr != NULL);
+  assert(child != NULL);
 
-  // Update parent
-  parent->child_node_count = child_count;
+  // Index where child will be inserted into array
+  int i = parent->child_count;
 
-  // Create array of pointers to child nodes
-  parent->child_node_arr = malloc(sizeof(ASTNode) * child_count);
-  if (parent->child_node_arr == NULL) {
-    return ERR_INTERNAL;
+  // Update parent count
+  parent->child_count += 1;
+
+  // Dynamic array allocation
+  if (parent->child_limit == 0) {
+    // First child node
+    parent->child_limit = 2; // 2 is a common amount of AST child nodes
+    parent->child_arr = malloc(sizeof(ASTNode) * parent->child_limit);
+    if (parent->child_arr == NULL) {
+      return ERR_INTERNAL;
+    }
+
+  } else if (parent->child_limit < parent->child_count) {
+    // Out of limit
+    parent->child_limit *= 2; // Double the limit
+    // Need to realloc
+    ASTNode *new_arr =
+        realloc(parent->child_arr, sizeof(ASTNode) * parent->child_limit);
+    if (new_arr == NULL) {
+      return ERR_INTERNAL;
+    }
+    // Successful realloc
+    parent->child_arr = new_arr;
   }
 
-  // Fill array
-  for (int i = 0; i < child_count; i++) {
-    parent->child_node_arr[i] = child_arr[i];
-  }
+  // After making room, assign child node
+  parent->child_arr[i] = child;
 
   // Success
   return SUCCESS;
