@@ -167,3 +167,66 @@ TEST(build_AST, make_tree_var_def) {
   EXPECT_TRUE(definition->child_arr[1]->node_type == NODE_LITERAL);
 }
 
+TEST(build_AST, make_tree_fun_call) {
+
+  ASTNode func_id;
+  ASTNode func_call;
+  ASTNode arg_list;
+  ASTNode arg1;
+  ASTNode arg2;
+  ASTNode arg3;
+  ASTNode arg4;
+  ASTNode arg5;
+
+
+  // convert into AST: func_id("too", "plus", 2, "equals", 4)
+
+  // Init all nodes
+  int err = AST_init_node(&func_id, NODE_IDENTIFIER, DT_INTEGER, "foo");
+  ASSERT_TRUE(err == 0);
+  err = AST_init_node(&func_call, NODE_FUNC_CALL, DT_UNDEF, NULL);
+  ASSERT_TRUE(err == 0);
+  err = AST_init_node(&arg_list, NODE_ARGS_LIST, DT_UNDEF, NULL);
+  ASSERT_TRUE(err == 0);
+
+  err = AST_init_node(&arg1, NODE_LITERAL, DT_STRING, "too");
+  ASSERT_TRUE(err == 0);
+  err = AST_init_node(&arg2, NODE_LITERAL, DT_STRING, "plus");
+  ASSERT_TRUE(err == 0);
+  err = AST_init_node(&arg3, NODE_LITERAL, DT_INTEGER, "2");
+  ASSERT_TRUE(err == 0);
+  err = AST_init_node(&arg4, NODE_LITERAL, DT_STRING, "equals");
+  ASSERT_TRUE(err == 0);
+  err = AST_init_node(&arg5, NODE_LITERAL, DT_INTEGER, "4");
+  ASSERT_TRUE(err == 0);
+
+  // Make tree by adding children separately
+  err = AST_node_add_child(func_call, func_id);
+  ASSERT_TRUE(err == 0);
+  err = AST_node_add_child(func_call, arg_list);
+  ASSERT_TRUE(err == 0);
+
+  err = AST_node_add_child(arg_list, arg1);
+  ASSERT_TRUE(err == 0);
+  err = AST_node_add_child(arg_list, arg2);
+  ASSERT_TRUE(err == 0);
+  err = AST_node_add_child(arg_list, arg3);
+  ASSERT_TRUE(err == 0);
+  err = AST_node_add_child(arg_list, arg4);
+  ASSERT_TRUE(err == 0);
+  err = AST_node_add_child(arg_list, arg5);
+  ASSERT_TRUE(err == 0);
+
+
+  // Check tree
+  EXPECT_TRUE(func_call->node_type == NODE_FUNC_CALL);
+  EXPECT_TRUE(func_call->child_arr[0]->node_type == NODE_IDENTIFIER);
+  EXPECT_TRUE(func_call->child_arr[1]->node_type == NODE_ARGS_LIST);
+
+  EXPECT_TRUE(arg_list->child_arr[0]->node_type == NODE_LITERAL);
+  EXPECT_TRUE(arg_list->child_arr[1]->node_type == NODE_LITERAL);
+  EXPECT_TRUE(arg_list->child_arr[2]->node_type == NODE_LITERAL);
+  EXPECT_TRUE(arg_list->child_arr[3]->node_type == NODE_LITERAL);
+  EXPECT_TRUE(arg_list->child_arr[4]->node_type == NODE_LITERAL);
+
+}

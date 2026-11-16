@@ -50,14 +50,16 @@ typedef enum {
   NODE_VAL_DEF,
   NODE_FUNC_DEF,
   NODE_MAIN_FUNC_DEF,
+  NODE_PARAM_LIST,
 
   NODE_IF,
   NODE_WHILE,
 
   NODE_WRITE, // TODO WHAT IS THIS
 
-  NODE_FUNC_CALL, // call a function
-  NODE_RETURN,    // return from function
+  NODE_FUNC_CALL,
+  NODE_ARG_LIST,
+  NODE_RETURN, // return from function
 
 } NodeType;
 
