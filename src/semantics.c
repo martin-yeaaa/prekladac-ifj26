@@ -1,54 +1,19 @@
 // Project: prekladac-ifj26
-// File: ast.c
+// File: semantics.c
 // Author: Martin Vaško (vaskom00)
 
 // Implementation of abstract syntax tree = AST and semantic analysis functions
 
 #include "semantics.h"
+#include "semantics_priv.h"
 #include "error_codes.h"
 #include "symtable.h"
+
 #include <assert.h>
 #include <errno.h> // For conversion errors
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-
-// Declarations of internal functions
-
-/**
- * @brief Converts string to 32 bit int and sets it as node data.
- * @param node Node into which data will be inserted. Not `NULL`.
- * @param data_string Data to be converted and saved. Not `NULL`.
- * @return `SUCCESS` on success,
- * `ERR_INCOMPATIBLE_TYPE` if conversion fails.
- */
-static ErrCode set_integer_node_data(ASTNode node, char *data_string);
-
-/**
- * @brief Converts string to 64 bit float and sets it as node data.
- * @param node Node into which data will be inserted. Not `NULL`.
- * @param data_string Data to be converted and saved. Not `NULL`.
- * @return `SUCCESS` on success,
- * `ERR_INCOMPATIBLE_TYPE` if conversion fails.
- */
-static ErrCode set_double_node_data(ASTNode node, char *data_string);
-
-/**
- * @brief Copies string into node data.
- * @param node Node into which data will be inserted. Not `NULL`.
- * @param data_string Data to be copied. Not `NULL`.
- * @return `SUCCESS` on success,
- * `ERR_INTERNAL` on memory allocation failure,
- */
-static ErrCode set_string_node_data(ASTNode node, char *data_string);
-
-/** TODO delete probably
- * @brief Checks whether the node should hold symbol identifier.
- * @param node Node to check. Must not be `NULL`
- * @return `true` if node should hold identifier, `false` otherwise.
-
-static bool node_has_identifier(ASTNode node);
-*/
 
 // Function definitions
 
