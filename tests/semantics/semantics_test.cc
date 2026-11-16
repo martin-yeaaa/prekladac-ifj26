@@ -186,7 +186,7 @@ TEST(build_AST, make_tree_fun_call) {
   ASSERT_TRUE(err == 0);
   err = AST_init_node(&func_call, NODE_FUNC_CALL, DT_UNDEF, NULL);
   ASSERT_TRUE(err == 0);
-  err = AST_init_node(&arg_list, NODE_ARGS_LIST, DT_UNDEF, NULL);
+  err = AST_init_node(&arg_list, NODE_ARG_LIST, DT_UNDEF, NULL);
   ASSERT_TRUE(err == 0);
 
   err = AST_init_node(&arg1, NODE_LITERAL, DT_STRING, "too");
@@ -221,7 +221,7 @@ TEST(build_AST, make_tree_fun_call) {
   // Check tree
   EXPECT_TRUE(func_call->node_type == NODE_FUNC_CALL);
   EXPECT_TRUE(func_call->child_arr[0]->node_type == NODE_IDENTIFIER);
-  EXPECT_TRUE(func_call->child_arr[1]->node_type == NODE_ARGS_LIST);
+  EXPECT_TRUE(func_call->child_arr[1]->node_type == NODE_ARG_LIST);
 
   EXPECT_TRUE(arg_list->child_arr[0]->node_type == NODE_LITERAL);
   EXPECT_TRUE(arg_list->child_arr[1]->node_type == NODE_LITERAL);
