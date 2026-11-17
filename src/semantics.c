@@ -222,6 +222,8 @@ ErrCode semantic_analysis(ASTNode root, SymbTables *st) {
   err = check_other_semantics(root);
   RETURN_ON_ERROR(err, "found invalid return statement or invalid recursion.");
 
+  /* TODO REMOVE BLOCK COMMENT
+
   // Initialize symbol table
   err = ST_init(st);
   RETURN_ON_ERROR(err, "failed to initialize symbol table.");
@@ -257,7 +259,7 @@ ErrCode semantic_analysis(ASTNode root, SymbTables *st) {
     err = resolve_func_types(root, st, &type_update);
     if (err != SUCCESS)
       return err;
-      */
+
 
     // Might be a good idea to combine them, so we don't walk the tree so much
     err = resolve_data_types(root, st, &type_update);
@@ -268,6 +270,8 @@ ErrCode semantic_analysis(ASTNode root, SymbTables *st) {
 
   // Check something else? TODO
 
+
+  */
   // Types are checked, symbols are defined, we are DONE
   return SUCCESS;
 }
@@ -525,6 +529,32 @@ int find_func_calls(ASTNode func_body, BSTNode *call_list) {
   }
   // else
   // There can't be any other valid node type.
+}
+
+void AST_destroy_tree(ASTNode root) {
+
+  if (root == NULL)
+    return;
+
+  for (int i = 0; i < root->child_count; i++) {
+    // recursively destroy every child xd
+    AST_destroy_tree(root->child_arr[i]);
+  }
+
+  // Free child pointer array
+  if (root->child_arr != NULL) {
+    free(root->child_arr);
+  }
+
+  // Free string data
+  if (root->node_type == NODE_IDENTIFIER) {
+    free(root->data.string_val);
+  } else if (root->node_type == NODE_LITERAL && root->data_type == DT_STRING) {
+    free(root->data.string_val);
+  }
+
+  // Finally,
+  free(root);
 }
 
 // TODO mabye delete

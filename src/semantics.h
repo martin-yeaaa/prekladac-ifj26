@@ -61,10 +61,6 @@ typedef enum {
   // Indented block types
   NODE_BLOCK,
 
-  // TODO DUMB PROBABLY DELETE
-  // NODE_THEN_BLOCK, // if statement - block after then
-  // NODE_ELSE_BLOCK, // if statement - block after else
-
   NODE_IF,
   NODE_WHILE,
   NODE_COND, // Condition
@@ -148,5 +144,11 @@ ErrCode AST_node_add_child(ASTNode parent, ASTNode child);
  * `ERR_INTERNAL`
  */
 ErrCode semantic_analysis(ASTNode root, SymbTables *st);
+
+/**
+ * @brief Frees AST from memory.
+ * @param root Root of tree to be destroyed. `root` will become unusable.
+ */
+void AST_destroy_tree(ASTNode root);
 
 #endif
