@@ -129,7 +129,7 @@ ErrCode AST_init_node(ASTNode *node, NodeType node_type, DataType data_type,
 ErrCode AST_node_add_child(ASTNode parent, ASTNode child);
 
 /**
- * @brief Fills the symbol table, does all type checking.
+ * @brief Fills the symbol table, does all semantic checks.
  * @param root Root of AST.
  * @param st Pointer to declared UNINITIALIZED symbol tables structure.
  * @return 'SUCCESS' if analysis is successful, otherwise one of the following

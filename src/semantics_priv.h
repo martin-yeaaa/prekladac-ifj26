@@ -37,4 +37,25 @@ static ErrCode set_double_node_data(ASTNode node, char *data_string);
  */
 static ErrCode set_string_node_data(ASTNode node, char *data_string);
 
+/**
+ * @brief Goes through tree and looks for invalid return statements.
+ * @param root Root of AST.
+ * @return `SUCCESS` if everything is valid,
+ * `ERR_OTHER_SEMANTIC` if an invalid return statement is found.
+ */
+ErrCode check_return_stmts(root);
+
+/**
+ * @brief Fills the symbol table with function symbols.
+ * @param root Root of AST.
+ * @param st Pointer to FRESHLY INITIALIZED symbol tables structure.
+ * @return `SUCCESS` if definitions are successful, otherwise one of the
+ * following error codes:
+ * `ERR_UNDEF_SYM` if @main function is missing,
+ * `ERR_REDEFINITION` if a function is redefined,
+ * `ERR_FUN_ARGS` if @main function has invalid parameters,
+ * `ERR_INTERNAL` if memory allocation fails.
+ */
+ErrCode define_func_symbols(ASTNode root, SymbTables *st);
+
 #endif

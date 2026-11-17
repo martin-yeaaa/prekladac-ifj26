@@ -12,8 +12,18 @@
 #include <assert.h>
 #include <errno.h> // For conversion errors
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+// Macro for checking for errors and returning if error occured
+#define RETURN_ON_ERROR(error_code, error_msg)                                 \
+  do {                                                                         \
+    if (error_code != SUCCESS) {                                               \
+      fprintf(stderr, "Error: %s\n", error_msg);                               \
+      return error_code;                                                       \
+    }                                                                          \
+  } while (0)
 
 // Function definitions
 
@@ -206,22 +216,22 @@ ErrCode semantic_analysis(ASTNode root, SymbTables *st) {
   // Error code return variable
   ErrCode err = SUCCESS;
 
+  // Check return statements, now we can already tell
+  // if function type was explicitly declared!
+  err = check_return_stmts(root, st);
+  RETURN_ON_ERROR(err, "found invalid return statement.");
+
   // Initialize symbol table
   err = ST_init(st);
-  if (err != SUCCESS)
-    return err;
+  RETURN_ON_ERROR(err, "failed to initialize symbol table.");
 
   // Fill in symbol table with function declarations
   err = define_func_symbols(root, st);
-  if (err != SUCCESS)
-    return err;
+  RETURN_ON_ERROR(err, "failed defining function symbols.");
 
   // Fill in symbol table with local declarations (variables)
   err = define_local_symbols(root, st);
-  if (err != SUCCESS)
-    return err;
-
-  // TODO check return???
+  RETURN_ON_ERROR(err, "failed defining symbols of variables.");
 
   // Helper variable
   bool type_update;
@@ -250,8 +260,7 @@ ErrCode semantic_analysis(ASTNode root, SymbTables *st) {
 
     // Might be a good idea to combine them, so we don't walk the tree so much
     err = resolve_data_types(root, st, &type_update);
-    if (err != SUCCESS)
-      return err;
+    RETURN_ON_ERROR(err, "data type check failed.");
 
     // If a new type was resolved, repeat
   } while (type_update == true);
