@@ -60,14 +60,22 @@ typedef enum {
 
   // Indented block types
   NODE_BLOCK,
-  NODE_THEN_BLOCK, // if statement - block after then
-  NODE_ELSE_BLOCK, // if statement - block after else
+
+  // TODO DUMB PROBABLY DELETE
+  // NODE_THEN_BLOCK, // if statement - block after then
+  // NODE_ELSE_BLOCK, // if statement - block after else
 
   NODE_IF,
   NODE_WHILE,
   NODE_COND, // Condition
 
 } NodeType;
+
+// Constant index values of nodes in AST
+#define I_FBODY 2 // Function body
+#define I_WB 1    // While block
+#define I_IB1 1   // If - then block
+#define I_IB2 2   // If - else block
 
 // Union for AST node data
 typedef union node_data_union {

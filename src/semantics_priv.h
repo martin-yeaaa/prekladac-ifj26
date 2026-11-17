@@ -7,6 +7,7 @@
 
 #include "error_codes.h"
 #include "semantics.h"
+#include <stdbool.h>
 
 // Declarations of internal functions
 
@@ -38,16 +39,24 @@ static ErrCode set_double_node_data(ASTNode node, char *data_string);
 static ErrCode set_string_node_data(ASTNode node, char *data_string);
 
 /**
+ * @brief Goes through children of `node`, looks for node with `searched_type`.
+ * @param node Node whose children will be checked. Not `NULL`.
+ * @param searched_type Value of `NodeType` which is searched,
+ * @return Node with type if found, otherwise `NULL`.
+ */
+static ASTNode get_node_of_type(ASTNode node, NodeType searched_type);
+
+/**
  * @brief Goes through tree and looks for invalid return statements.
- * @param root Root of AST.
+ * @param root Root of AST. Must be valid.
  * @return `SUCCESS` if everything is valid,
  * `ERR_OTHER_SEMANTIC` if an invalid return statement is found.
  */
-ErrCode check_return_stmts(root);
+ErrCode check_return_stmts(ASTNode root);
 
 /**
  * @brief Fills the symbol table with function symbols.
- * @param root Root of AST.
+ * @param root Root of AST. Must be valid.
  * @param st Pointer to FRESHLY INITIALIZED symbol tables structure.
  * @return `SUCCESS` if definitions are successful, otherwise one of the
  * following error codes:

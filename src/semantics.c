@@ -218,7 +218,7 @@ ErrCode semantic_analysis(ASTNode root, SymbTables *st) {
 
   // Check return statements, now we can already tell
   // if function type was explicitly declared!
-  err = check_return_stmts(root, st);
+  err = check_return_stmts(root);
   RETURN_ON_ERROR(err, "found invalid return statement.");
 
   // Initialize symbol table
@@ -268,5 +268,89 @@ ErrCode semantic_analysis(ASTNode root, SymbTables *st) {
   // Check something else? TODO
 
   // Types are checked, symbols are defined, we are DONE
+  return SUCCESS;
+}
+
+/*
+static ASTNode get_node_of_type(ASTNode node, NodeType searched_type) {
+
+  assert(node != NULL);
+
+  // Helper variable
+  bool node_found = false;
+
+  // Check every child, return first found
+  for (int i = 0; i < node->child_count; i++) {
+
+    if (node->child_arr[i]->node_type == searched_type) {
+      return node->child_arr[i];
+    }
+  }
+
+  // Node not found
+  return NULL;
+}
+*/
+
+static bool contains_return(ASTNode block) {
+
+  // Only check blocks
+  assert(block->node_type == NODE_BLOCK);
+
+  // Check every child
+  for (int i = 0; i < block->child_count; i++) {
+
+    ASTNode child = block->child_arr[i];
+
+    // Return statement
+    if (child->node_type == NODE_RETURN) {
+      return true;
+
+      // If
+    } else if (child->node_type == NODE_IF) {
+      // Search blocks inside if
+      return contains_return(child->child_arr[I_IB1]) ||
+             contains_return(child->child_arr[I_IB2]);
+
+      // While
+    } else if (child->node_type == NODE_WHILE) {
+      // Search block inside loop
+      return contains_return(child->child_arr[I_WB]);
+    }
+  }
+
+  return false;
+}
+
+ErrCode check_return_stmts(ASTNode root) {
+
+  assert(root != NULL);
+
+  // Direct children of root are only function definitions
+  for (int i = 0; i < root->child_count; i++) {
+
+    // Get function def node
+    ASTNode func_def = root->child_arr[i];
+
+    // Assert correct AST structure
+    assert(func_def->node_type == NODE_FUNC_DEF ||
+           func_def->node_type == NODE_MAIN_FUNC_DEF);
+    assert(func_def->child_count == 3);
+
+    ASTNode block = func_def->child_arr[I_FBODY];
+
+    // Only a block can hold return statement
+    if (block->node_type == NODE_BLOCK) {
+
+      // Data type isn't set explicitly -> return is forbidden
+      if (func_def->data_type == DT_UNDEF) {
+        if (contains_return(block))
+          return ERR_OTHER_SEMANTIC;
+      }
+
+      // Otherwise data type is set explicitly and can contain return
+    }
+  }
+
   return SUCCESS;
 }
