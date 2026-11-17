@@ -39,20 +39,13 @@ static ErrCode set_double_node_data(ASTNode node, char *data_string);
 static ErrCode set_string_node_data(ASTNode node, char *data_string);
 
 /**
- * @brief Goes through children of `node`, looks for node with `searched_type`.
- * @param node Node whose children will be checked. Not `NULL`.
- * @param searched_type Value of `NodeType` which is searched,
- * @return Node with type if found, otherwise `NULL`.
- */
-static ASTNode get_node_of_type(ASTNode node, NodeType searched_type);
-
-/**
- * @brief Goes through tree and looks for invalid return statements.
+ * @brief Goes through tree and looks for invalid return statements or
+ * recursion.
  * @param root Root of AST. Must be valid.
  * @return `SUCCESS` if everything is valid,
- * `ERR_OTHER_SEMANTIC` if an invalid return statement is found.
+ * `ERR_OTHER_SEMANTIC` if an invalid return statement or recursion is found.
  */
-ErrCode check_return_stmts(ASTNode root);
+ErrCode check_other_semantics(ASTNode root);
 
 /**
  * @brief Recursively searches block node for return statements.
@@ -60,6 +53,16 @@ ErrCode check_return_stmts(ASTNode root);
  * @return `true` if return is found, otherwise `false`.
  */
 static bool contains_return(ASTNode block);
+
+/**
+ * @brief Recursively searches for function calls, and if found, adds
+ * identifiers of called functions to func_call_list
+ * @param func_body
+ * @param func_call_list
+ * @return `-1` if an error occurs, or amount of found function calls if
+ * everything goes right.
+ */
+int find_func_calls(ASTNode func_body, BSTNode *func_call_list);
 
 /**
  * @brief Fills the symbol table with function symbols.
@@ -75,3 +78,12 @@ static bool contains_return(ASTNode block);
 ErrCode define_func_symbols(ASTNode root, SymbTables *st);
 
 #endif
+
+// TODO MAAYBE DELETE
+/**
+ * @brief Goes through children of `node`, looks for node with `searched_type`.
+ * @param node Node whose children will be checked. Not `NULL`.
+ * @param searched_type Value of `NodeType` which is searched,
+ * @return Node with type if found, otherwise `NULL`.
+ */
+// static ASTNode get_node_of_type(ASTNode node, NodeType searched_type);

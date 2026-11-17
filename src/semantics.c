@@ -5,6 +5,7 @@
 // Implementation of abstract syntax tree = AST and semantic analysis functions
 
 #include "semantics.h"
+#include "bst.h" // For recursion check
 #include "error_codes.h"
 #include "semantics_priv.h"
 #include "symtable.h"
@@ -216,10 +217,10 @@ ErrCode semantic_analysis(ASTNode root, SymbTables *st) {
   // Error code return variable
   ErrCode err = SUCCESS;
 
-  // Check return statements, now we can already tell
+  // Check unallowed return statements and recursion, only now we can tell
   // if function type was explicitly declared!
-  err = check_return_stmts(root);
-  RETURN_ON_ERROR(err, "found invalid return statement.");
+  err = check_other_semantics(root);
+  RETURN_ON_ERROR(err, "found invalid return statement or invalid recursion.");
 
   // Initialize symbol table
   err = ST_init(st);
@@ -271,28 +272,7 @@ ErrCode semantic_analysis(ASTNode root, SymbTables *st) {
   return SUCCESS;
 }
 
-/*
-static ASTNode get_node_of_type(ASTNode node, NodeType searched_type) {
-
-  assert(node != NULL);
-
-  // Helper variable
-  bool node_found = false;
-
-  // Check every child, return first found
-  for (int i = 0; i < node->child_count; i++) {
-
-    if (node->child_arr[i]->node_type == searched_type) {
-      return node->child_arr[i];
-    }
-  }
-
-  // Node not found
-  return NULL;
-}
-*/
-
-ErrCode check_return_stmts(ASTNode root) {
+ErrCode check_other_semantics(ASTNode root) {
 
   assert(root != NULL);
 
@@ -307,19 +287,38 @@ ErrCode check_return_stmts(ASTNode root) {
            func_def->node_type == NODE_MAIN_FUNC_DEF);
     assert(func_def->child_count == 3);
 
-    ASTNode block = func_def->child_arr[I_FBODY];
+    // Data type isn't set explicitly -> return or recursion is forbidden
+    if (func_def->data_type == DT_UNDEF) {
 
-    // Only a block can hold return statement
-    if (block->node_type == NODE_BLOCK) {
+      ASTNode func_body = func_def->child_arr[I_FBODY];
 
-      // Data type isn't set explicitly -> return is forbidden
-      if (func_def->data_type == DT_UNDEF) {
-        if (contains_return(block))
+      // Only a block can hold return statement
+      if (func_body->node_type == NODE_BLOCK) {
+        if (contains_return(func_body))
           return ERR_OTHER_SEMANTIC;
       }
 
-      // Otherwise data type is set explicitly and can contain return
+      // Check recursion
+
+      // Recursively find all function calls and save them to LIST
+      // STEP 2
+      // Compare them to `func_name`
+      // If equal, return true
+      // If not equal, recursively find all function calls from functions in the
+      // LIST. If any new funcalls were inserted into LIST, repeat from STEP 2
+
+      // List of function calls which are "accessible"
+      BSTNode func_call_list = BST_new();
+
+      int total = find_func_calls(func_body, &func_call_list);
+      // Check errors
+      if (total < 0) {
+        BST_destroy_tree(func_call_list);
+        return ERR_INTERNAL;
+      }
     }
+    // else
+    // - data type is set explicitly and can contain return/recursion
   }
 
   return SUCCESS;
@@ -354,3 +353,123 @@ static bool contains_return(ASTNode block) {
 
   return false;
 }
+
+int find_func_calls(ASTNode func_body, BSTNode *func_call_list) {
+
+  // Assertions
+  assert(func_body != NULL);
+  assert(func_body->node_type == NODE_BLOCK ||
+         func_body->node_type == NODE_FUNC_CALL ||
+         func_body->node_type == NODE_EXPR);
+  assert(func_call_list != NULL);
+
+  // Expression
+  if (func_body->node_type == NODE_EXPR) {
+    // No function calls in expression
+    return 0;
+  }
+
+  // Function call
+  else if (func_body->node_type == NODE_FUNC_CALL) {
+
+    // Check if it already exists
+    if (BST_get_data(*func_call_list, func_body->data.string_val) != NULL) {
+      return 0; // Function call with the same name already exists
+    }
+
+    // Function call node contains identifier in data!
+    bool placeholder = true; // Just something to insert into BST
+    bool success = BST_insert(func_call_list, func_body->data.string_val,
+                              &placeholder, sizeof(bool));
+    if (success == false)
+      return -1; // Code for error
+    else
+      return 1; // New function call found
+  }
+
+  // Block
+  else if (func_body->node_type == NODE_BLOCK) {
+
+    int total = 0;
+
+    // Check every child
+    for (int i = 0; i < func_body->child_count; i++) {
+
+      ASTNode child = func_body->child_arr[i];
+      int subtotal = 0;
+
+      // Recursively find calls based on node type of statement nodes
+      switch (child->node_type) {
+
+      case NODE_EXPR:
+      case NODE_FUNC_CALL:
+        subtotal = find_func_calls(child, func_call_list);
+        break;
+
+      case NODE_VAR_DEF:
+      case NODE_VAL_DEF:
+      case NODE_ASSIGNMENT:
+        subtotal = find_func_calls(child->child_arr[I_RHS], func_call_list);
+        break;
+
+      case NODE_RETURN:
+        // Check if return isn't just by itself
+        if (child->child_count != 0) {
+          subtotal = find_func_calls(child->child_arr[I_RET], func_call_list);
+        }
+        break;
+
+      case NODE_WHILE:
+        subtotal = find_func_calls(child->child_arr[I_WB], func_call_list);
+        break;
+
+      case NODE_IF:
+        int sub1 = find_func_calls(child->child_arr[I_IB1], func_call_list);
+        int sub2 = find_func_calls(child->child_arr[I_IB2], func_call_list);
+        // Check errors from both blocks
+        if (sub1 < 0 || sub2 < 0) {
+          subtotal = -1;
+        } else {
+          subtotal == sub1 + sub2;
+        }
+        break;
+
+      default:
+        fprintf(stderr, "Programmer error: recursion: no matching type!\n");
+        return -1;
+        break;
+      }
+
+      if (subtotal < 0)
+        return -1; // Error occured
+      else
+        total += subtotal; // Add to total
+    } // end child check
+
+    return total;
+  }
+  // else
+  // There can't be any other valid node type.
+}
+
+// TODO mabye delete
+/*
+static ASTNode get_node_of_type(ASTNode node, NodeType searched_type) {
+
+  assert(node != NULL);
+
+  // Helper variable
+  bool node_found = false;
+
+  // Check every child, return first found
+  for (int i = 0; i < node->child_count; i++) {
+
+    if (node->child_arr[i]->node_type == searched_type) {
+      return node->child_arr[i];
+    }
+  }
+
+  // Node not found
+  return NULL;
+}
+*/
