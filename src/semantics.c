@@ -292,36 +292,6 @@ static ASTNode get_node_of_type(ASTNode node, NodeType searched_type) {
 }
 */
 
-static bool contains_return(ASTNode block) {
-
-  // Only check blocks
-  assert(block->node_type == NODE_BLOCK);
-
-  // Check every child
-  for (int i = 0; i < block->child_count; i++) {
-
-    ASTNode child = block->child_arr[i];
-
-    // Return statement
-    if (child->node_type == NODE_RETURN) {
-      return true;
-
-      // If
-    } else if (child->node_type == NODE_IF) {
-      // Search blocks inside if
-      return contains_return(child->child_arr[I_IB1]) ||
-             contains_return(child->child_arr[I_IB2]);
-
-      // While
-    } else if (child->node_type == NODE_WHILE) {
-      // Search block inside loop
-      return contains_return(child->child_arr[I_WB]);
-    }
-  }
-
-  return false;
-}
-
 ErrCode check_return_stmts(ASTNode root) {
 
   assert(root != NULL);
@@ -353,4 +323,34 @@ ErrCode check_return_stmts(ASTNode root) {
   }
 
   return SUCCESS;
+}
+
+static bool contains_return(ASTNode block) {
+
+  // Only check blocks
+  assert(block->node_type == NODE_BLOCK);
+
+  // Check every child
+  for (int i = 0; i < block->child_count; i++) {
+
+    ASTNode child = block->child_arr[i];
+
+    // Return statement
+    if (child->node_type == NODE_RETURN) {
+      return true;
+
+      // If
+    } else if (child->node_type == NODE_IF) {
+      // Search blocks inside if
+      return contains_return(child->child_arr[I_IB1]) ||
+             contains_return(child->child_arr[I_IB2]);
+
+      // While
+    } else if (child->node_type == NODE_WHILE) {
+      // Search block inside loop
+      return contains_return(child->child_arr[I_WB]);
+    }
+  }
+
+  return false;
 }

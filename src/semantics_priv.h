@@ -55,6 +55,13 @@ static ASTNode get_node_of_type(ASTNode node, NodeType searched_type);
 ErrCode check_return_stmts(ASTNode root);
 
 /**
+ * @brief Recursively searches block node for return statements.
+ * @param block Node of type `NODE_BLOCK`.
+ * @return `true` if return is found, otherwise `false`.
+ */
+static bool contains_return(ASTNode block);
+
+/**
  * @brief Fills the symbol table with function symbols.
  * @param root Root of AST. Must be valid.
  * @param st Pointer to FRESHLY INITIALIZED symbol tables structure.
