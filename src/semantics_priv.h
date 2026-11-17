@@ -56,13 +56,13 @@ static bool contains_return(ASTNode block);
 
 /**
  * @brief Recursively searches for function calls, and if found, adds
- * identifiers of called functions to func_call_list
+ * identifiers of called functions to call_list
  * @param func_body
- * @param func_call_list
+ * @param call_list
  * @return `-1` if an error occurs, or amount of found function calls if
  * everything goes right.
  */
-int find_func_calls(ASTNode func_body, BSTNode *func_call_list);
+int find_func_calls(ASTNode func_body, BSTNode *call_list);
 
 /**
  * @brief Fills the symbol table with function symbols.

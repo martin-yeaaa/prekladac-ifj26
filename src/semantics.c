@@ -292,13 +292,18 @@ ErrCode check_other_semantics(ASTNode root) {
 
       ASTNode func_body = func_def->child_arr[I_FBODY];
 
+      // Function that is just an expression cannot fail this
+      if (func_body->node_type == NODE_EXPR) {
+        return SUCCESS;
+      }
+
       // Only a block can hold return statement
       if (func_body->node_type == NODE_BLOCK) {
         if (contains_return(func_body))
           return ERR_OTHER_SEMANTIC;
       }
 
-      // Check recursion
+      // Check recursion (direct or indirect)
 
       // Recursively find all function calls and save them to LIST
       // STEP 2
@@ -307,20 +312,90 @@ ErrCode check_other_semantics(ASTNode root) {
       // If not equal, recursively find all function calls from functions in the
       // LIST. If any new funcalls were inserted into LIST, repeat from STEP 2
 
-      // List of function calls which are "accessible"
-      BSTNode func_call_list = BST_new();
+      // Check if can contain recursive func calls
+      if (func_body->node_type == NODE_BLOCK ||
+          func_body->node_type == NODE_FUNC_CALL) {
 
-      int total = find_func_calls(func_body, &func_call_list);
-      // Check errors
-      if (total < 0) {
-        BST_destroy_tree(func_call_list);
-        return ERR_INTERNAL;
-      }
+        // List of function calls which are "accessible"
+        BSTNode call_list = BST_new();
+
+        // Keep track of amount of calls
+        int prev_total = 0;
+        int total = 0;
+
+        int subtotal = find_func_calls(func_body, &call_list);
+        // Check errors
+        if (subtotal < 0) {
+          BST_destroy_tree(call_list);
+          return ERR_INTERNAL;
+        }
+
+        // Add to total
+        total += subtotal;
+
+        // No function calls found
+        if (total == 0) {
+          BST_destroy_tree(call_list);
+          return SUCCESS;
+        }
+
+        // Check if we found recursion
+        if (BST_get_data(call_list, func_body->data.string_val) != NULL) {
+          // Invalid recursion found!
+          BST_destroy_tree(call_list);
+          return ERR_OTHER_SEMANTIC;
+          // More checking :(
+        } else {
+          do {
+
+            // Update condition value
+            prev_total = total;
+
+            // We need to find possible indirect recursion!
+            // Check every function DEFINITION
+            for (int i = 0; i < root->child_count; i++) {
+
+              ASTNode called_func = root->child_arr[i];
+
+              // If called_func was called
+              if (BST_get_data(call_list, called_func->data.string_val) !=
+                  NULL) {
+
+                int subtotal = find_func_calls(called_func, &call_list);
+
+                // COPIED CODE EWWWW but its entirely not identical
+                // Check errors
+                if (subtotal < 0) {
+                  BST_destroy_tree(call_list);
+                  return ERR_INTERNAL;
+                }
+
+                // Add to total
+                total += subtotal;
+
+                // Check if we found recursion
+                if (BST_get_data(call_list, func_body->data.string_val) !=
+                    NULL) {
+                  // Invalid recursion found!
+                  BST_destroy_tree(call_list);
+                  return ERR_OTHER_SEMANTIC;
+                }
+
+              } // if called func
+
+            } // for func_defs
+
+            // Repeat while we keep finding new unique func calls
+          } while (prev_total < total);
+        } // recursion check
+      } // if can contain recursion
     }
     // else
     // - data type is set explicitly and can contain return/recursion
-  }
 
+  } // child check for loop
+
+  // Checks succeeded
   return SUCCESS;
 }
 
@@ -354,14 +429,14 @@ static bool contains_return(ASTNode block) {
   return false;
 }
 
-int find_func_calls(ASTNode func_body, BSTNode *func_call_list) {
+int find_func_calls(ASTNode func_body, BSTNode *call_list) {
 
   // Assertions
   assert(func_body != NULL);
   assert(func_body->node_type == NODE_BLOCK ||
          func_body->node_type == NODE_FUNC_CALL ||
          func_body->node_type == NODE_EXPR);
-  assert(func_call_list != NULL);
+  assert(call_list != NULL);
 
   // Expression
   if (func_body->node_type == NODE_EXPR) {
@@ -373,13 +448,13 @@ int find_func_calls(ASTNode func_body, BSTNode *func_call_list) {
   else if (func_body->node_type == NODE_FUNC_CALL) {
 
     // Check if it already exists
-    if (BST_get_data(*func_call_list, func_body->data.string_val) != NULL) {
+    if (BST_get_data(*call_list, func_body->data.string_val) != NULL) {
       return 0; // Function call with the same name already exists
     }
 
     // Function call node contains identifier in data!
     bool placeholder = true; // Just something to insert into BST
-    bool success = BST_insert(func_call_list, func_body->data.string_val,
+    bool success = BST_insert(call_list, func_body->data.string_val,
                               &placeholder, sizeof(bool));
     if (success == false)
       return -1; // Code for error
@@ -403,29 +478,29 @@ int find_func_calls(ASTNode func_body, BSTNode *func_call_list) {
 
       case NODE_EXPR:
       case NODE_FUNC_CALL:
-        subtotal = find_func_calls(child, func_call_list);
+        subtotal = find_func_calls(child, call_list);
         break;
 
       case NODE_VAR_DEF:
       case NODE_VAL_DEF:
       case NODE_ASSIGNMENT:
-        subtotal = find_func_calls(child->child_arr[I_RHS], func_call_list);
+        subtotal = find_func_calls(child->child_arr[I_RHS], call_list);
         break;
 
       case NODE_RETURN:
         // Check if return isn't just by itself
         if (child->child_count != 0) {
-          subtotal = find_func_calls(child->child_arr[I_RET], func_call_list);
+          subtotal = find_func_calls(child->child_arr[I_RET], call_list);
         }
         break;
 
       case NODE_WHILE:
-        subtotal = find_func_calls(child->child_arr[I_WB], func_call_list);
+        subtotal = find_func_calls(child->child_arr[I_WB], call_list);
         break;
 
       case NODE_IF:
-        int sub1 = find_func_calls(child->child_arr[I_IB1], func_call_list);
-        int sub2 = find_func_calls(child->child_arr[I_IB2], func_call_list);
+        int sub1 = find_func_calls(child->child_arr[I_IB1], call_list);
+        int sub2 = find_func_calls(child->child_arr[I_IB2], call_list);
         // Check errors from both blocks
         if (sub1 < 0 || sub2 < 0) {
           subtotal = -1;
