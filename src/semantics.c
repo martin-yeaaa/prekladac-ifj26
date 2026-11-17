@@ -217,6 +217,10 @@ ErrCode semantic_analysis(ASTNode root, SymbTables *st) {
   // Error code return variable
   ErrCode err = SUCCESS;
 
+  // Initialize symbol table
+  err = ST_init(st);
+  RETURN_ON_ERROR(err, "failed to initialize symbol table.");
+
   // Check unallowed return statements and recursion, only now we can tell
   // if function type was explicitly declared!
   err = check_other_semantics(root);
@@ -224,9 +228,7 @@ ErrCode semantic_analysis(ASTNode root, SymbTables *st) {
 
   /* TODO REMOVE BLOCK COMMENT
 
-  // Initialize symbol table
-  err = ST_init(st);
-  RETURN_ON_ERROR(err, "failed to initialize symbol table.");
+
 
   // Fill in symbol table with function declarations
   err = define_func_symbols(root, st);
@@ -343,8 +345,10 @@ ErrCode check_other_semantics(ASTNode root) {
           return SUCCESS;
         }
 
+        char *func_name = func_def->child_arr[I_FD_ID]->data.string_val;
+
         // Check if we found recursion
-        if (BST_get_data(call_list, func_body->data.string_val) != NULL) {
+        if (BST_get_data(call_list, func_name) != NULL) {
           // Invalid recursion found!
           BST_destroy_tree(call_list);
           return ERR_OTHER_SEMANTIC;
@@ -359,13 +363,16 @@ ErrCode check_other_semantics(ASTNode root) {
             // Check every function DEFINITION
             for (int i = 0; i < root->child_count; i++) {
 
-              ASTNode called_func = root->child_arr[i];
+              ASTNode called_func_def = root->child_arr[i];
+
+              char *called_name =
+                  called_func_def->child_arr[I_FD_ID]->data.string_val;
 
               // If called_func was called
-              if (BST_get_data(call_list, called_func->data.string_val) !=
-                  NULL) {
+              if (BST_get_data(call_list, called_name) != NULL) {
 
-                int subtotal = find_func_calls(called_func, &call_list);
+                ASTNode called_func_body = called_func_def->child_arr[I_FBODY];
+                int subtotal = find_func_calls(called_func_body, &call_list);
 
                 // COPIED CODE EWWWW but its entirely not identical
                 // Check errors
@@ -378,8 +385,8 @@ ErrCode check_other_semantics(ASTNode root) {
                 total += subtotal;
 
                 // Check if we found recursion
-                if (BST_get_data(call_list, func_body->data.string_val) !=
-                    NULL) {
+                if (BST_get_data(call_list, func_name) != NULL) {
+
                   // Invalid recursion found!
                   BST_destroy_tree(call_list);
                   return ERR_OTHER_SEMANTIC;
@@ -451,15 +458,16 @@ int find_func_calls(ASTNode func_body, BSTNode *call_list) {
   // Function call
   else if (func_body->node_type == NODE_FUNC_CALL) {
 
+    char *func_name = func_body->child_arr[I_FC_ID]->data.string_val;
+
     // Check if it already exists
-    if (BST_get_data(*call_list, func_body->data.string_val) != NULL) {
+    if (BST_get_data(*call_list, func_name) != NULL) {
       return 0; // Function call with the same name already exists
     }
 
     // Function call node contains identifier in data!
     bool placeholder = true; // Just something to insert into BST
-    bool success = BST_insert(call_list, func_body->data.string_val,
-                              &placeholder, sizeof(bool));
+    bool success = BST_insert(call_list, func_name, &placeholder, sizeof(bool));
     if (success == false)
       return -1; // Code for error
     else

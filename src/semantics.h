@@ -68,12 +68,15 @@ typedef enum {
 } NodeType;
 
 // Constant index values of nodes in AST
-#define I_FBODY 2 // Function body
+#define I_FBODY 2 // Func def body
+#define I_FD_ID 0 // Func def identifier
+
 #define I_WB 1    // While block
 #define I_IB1 1   // If - then block
 #define I_IB2 2   // If - else block
 #define I_RHS 1   // Assignment or variable definitions
 #define I_RET 0   // Return stmt
+#define I_FC_ID 0 // Func call identifier
 
 // Union for AST node data
 typedef union node_data_union {
