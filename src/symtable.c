@@ -224,7 +224,8 @@ ErrCode ST_define_symbol(SymbTables *tables, SymbDraft *symbol_draft) {
   // Allocate memory for symbol (it has flexible array member)
   size_t symbol_size =
       sizeof(Symbol) + sizeof(DataType) * symbol_draft->param_count;
-  Symbol *new_symbol = malloc(symbol_size);
+  // Calloc so uninitialized values don't hold garbage
+  Symbol *new_symbol = calloc(1, symbol_size);
   // Check allocation success
   if (new_symbol == NULL) {
     // Allocation failed :(
@@ -311,4 +312,9 @@ void ST_destroy(SymbTables *tables) {
     BST_destroy_tree(del_now->table);
     free(del_now);
   }
+
+  // Reset to NULL
+  tables->list_first = NULL;
+  tables->list_last = NULL;
+  tables->stack_top = NULL;
 }
