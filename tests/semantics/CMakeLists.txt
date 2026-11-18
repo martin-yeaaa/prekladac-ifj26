@@ -26,20 +26,20 @@ add_library(
   bst
   ../../src/bst.c
 )
-target_include_directories(bst PRIVATE ../../src/)
+target_include_directories(bst PUBLIC ../../src/)
 
 # library for symbol table
 add_library(
   symtable
   ../../src/symtable.c
 )
-target_include_directories(symtable PRIVATE ../../src/)
+target_include_directories(symtable PUBLIC ../../src/)
 # library for semantics module
 add_library(
   semantics
   ../../src/semantics.c
 )
-target_include_directories(semantics PRIVATE ../../src/)
+target_include_directories(semantics PUBLIC ../../src/)
 
 
 add_executable(
@@ -49,9 +49,9 @@ add_executable(
 target_link_libraries(
   semantics_test
   GTest::gtest_main
-  bst
+  semantics # KEEP ORDER HERE
   symtable
-  semantics
+  bst
 )
 
 include(GoogleTest)
@@ -59,6 +59,6 @@ gtest_discover_tests(semantics_test)
 
 # C compatibility with C++ tests
 # allows implicit conversion of void pointers
-target_compile_options(semantics_test PRIVATE -fpermissive -w)
+target_compile_options(semantics_test PUBLIC -fpermissive -w)
 # allows string literal in char *
-target_compile_options(semantics_test PRIVATE -Wno-write-strings)
+target_compile_options(semantics_test PUBLIC -Wno-write-strings)
