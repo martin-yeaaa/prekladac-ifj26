@@ -366,14 +366,27 @@ protected:
   virtual ASTNode BuildProgram() {
     using namespace ast;
     /*
-      def add(x: Int, y: Int): Int { return x + y }
-      def twice(x: Int): Int { return add(x, x) }
-      def main() {
+      def add(x: Int, y: Int): Int =
+         return x + y 
+
+      def twice(x: Int): Int =
+         return add(x, x) 
+
+      def main() =
         var a: Int = 1
         val b: Int = add(a, 2)
-        if (a < b) { a = a + 1 } else { a = 0 }
-        while (a < 10) { a = a + 1 }
-      }
+        if (a < b) then
+            a = a + 1
+        else  
+            a = 0 
+        while (a < 10) 
+            var c: Double = a + 5.5
+            a = a + 1 
+
+      def lolz() : Unit = ()
+      
+        
+      
     */
     return Program(
         Func("add", DT_INTEGER, Params(Param("x", DT_INTEGER), Param("y", DT_INTEGER)),
@@ -387,7 +400,10 @@ protected:
                Block(Assign("a", Add(Id("a"), Int("1")))),
                Block(Assign("a", Int("0")))),
             While(Cond(NODE_LT, Id("a"), Int("10")),
-                  Block(Assign("a", Add(Id("a"), Int("1"))))))),
+                  Block(
+                    Var("c", DT_DOUBLE, Expr(Add(Id("a"), Dbl("5.5")))), // Implicit conversion
+                    Assign("a", Add(Id("a"), Int("1")))
+                )))),
         Func("lolz", DT_UNIT, Params(), Expr(Unit())));
   }
 
@@ -409,6 +425,8 @@ TEST_F(AstFixture, ValidProgramPasses) {
   EXPECT_EQ(semantic_analysis(root, &st), SUCCESS);
 
   // Check symbol table
+
+  // FUNCTION CHECKS
   Symbol *sb = ST_get_symbol(&st, "main");
   ASSERT_TRUE(sb != NULL);
   EXPECT_TRUE(sb->symb_type == SB_MAIN_FUNC);
@@ -416,7 +434,6 @@ TEST_F(AstFixture, ValidProgramPasses) {
   EXPECT_TRUE(sb->param_count == 0);
 
   EXPECT_TRUE(sb == root->child_arr[2]->child_arr[I_FD_ID]->symbol_ptr);
-
 
   sb = ST_get_symbol(&st, "add");
   ASSERT_TRUE(sb != NULL);
@@ -444,9 +461,48 @@ TEST_F(AstFixture, ValidProgramPasses) {
   EXPECT_TRUE(sb->param_count == 0);
 
   EXPECT_TRUE(sb == root->child_arr[3]->child_arr[I_FD_ID]->symbol_ptr);
-
 }
 
+
+TEST_F(AstFixture, ValidProgramPassesVariablesCheck) {
+  EXPECT_EQ(semantic_analysis(root, &st), SUCCESS);
+
+  // We cannot use this function for finding symbols anymore
+  Symbol *sb = ST_get_symbol(&st, "a");
+  EXPECT_TRUE(sb == NULL);
+  sb = ST_get_symbol(&st, "b");
+  EXPECT_TRUE(sb == NULL);
+  sb = ST_get_symbol(&st, "c");
+  EXPECT_TRUE(sb == NULL);
+  sb = ST_get_symbol(&st, "x");
+  EXPECT_TRUE(sb == NULL);
+  sb = ST_get_symbol(&st, "y");
+  EXPECT_TRUE(sb == NULL);
+
+  // We don't have access to symbol identifiers
+  // Not much to check
+  ASTNode par_list0 = root->child_arr[0]->child_arr[I_FD_PAR];
+  Symbol * param0 = par_list0->child_arr[0]->symbol_ptr;
+  EXPECT_TRUE(param0->symb_type == SB_VAL);
+  EXPECT_TRUE(param0->data_type == DT_INTEGER);
+
+  Symbol * param1 = par_list0->child_arr[1]->symbol_ptr;
+  EXPECT_TRUE(param1->symb_type == SB_VAL);
+  EXPECT_TRUE(param1->data_type == DT_INTEGER);
+
+  ASTNode par_list_twice = root->child_arr[1]->child_arr[I_FD_PAR];
+  Symbol * par_tw = par_list_twice->child_arr[0]->symbol_ptr;
+  EXPECT_TRUE(par_tw->symb_type == SB_VAL);
+  EXPECT_TRUE(par_tw->data_type == DT_INTEGER);
+
+  // Lazy to check others, just check inside while
+  ASTNode id_c = root->child_arr[2]->child_arr[I_FBODY]->child_arr[3]->child_arr[I_WB]->child_arr[0]->child_arr[I_LHS];
+  Symbol * sym_ptr = id_c->symbol_ptr;
+  EXPECT_TRUE(sym_ptr->symb_type == SB_VAR);
+  EXPECT_TRUE(sym_ptr->data_type == DT_DOUBLE);
+
+
+}
 
 // Function cannot have return without explicit typing
 TEST_F(AstFixture, InvalidReturn) {
