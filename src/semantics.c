@@ -309,101 +309,17 @@ ErrCode check_other_semantics(ASTNode root) {
         }
       }
 
-      // Check recursion (direct or indirect)
-
-      // Recursively find all function calls and save them to LIST
-      // STEP 2
-      // Compare them to `func_name`
-      // If equal, return true
-      // If not equal, recursively find all function calls from functions in the
-      // LIST. If any new funcalls were inserted into LIST, repeat from STEP 2
-
       // Check if can contain recursive func calls
       if (func_body->node_type == NODE_BLOCK ||
           func_body->node_type == NODE_FUNC_CALL) {
 
-        // List of function calls which are "accessible"
-        BSTNode call_list = BST_new();
-
-        // Keep track of amount of calls
-        int prev_total = 0;
-        int total = 0;
-
-        int subtotal = find_func_calls(func_body, &call_list);
-        // Check errors
-        if (subtotal < 0) {
-          BST_destroy_tree(call_list);
-          return ERR_INTERNAL;
-        }
-
-        // Add to total
-        total += subtotal;
-
-        // No function calls found
-        if (total == 0) {
-          BST_destroy_tree(call_list);
-          return SUCCESS;
-        }
-
         char *func_name = func_def->child_arr[I_FD_ID]->data.string_val;
 
-        // Check if we found recursion
-        if (BST_get_data(call_list, func_name) != NULL) {
-          // Invalid recursion found!
-          BST_destroy_tree(call_list);
-          fprintf(stderr, "Error: Contains direct recursion.\n");
-          return ERR_OTHER_SEMANTIC;
-          // More checking :(
-        } else {
-          do {
+        // Run detection
+        ErrCode err = check_recursion(func_body, func_name, root);
+        if (err != SUCCESS)
+          return err;
 
-            // Update condition value
-            prev_total = total;
-
-            // We need to find possible indirect recursion!
-            // Check every function DEFINITION
-            for (int i = 0; i < root->child_count; i++) {
-
-              ASTNode called_func_def = root->child_arr[i];
-
-              char *called_name =
-                  called_func_def->child_arr[I_FD_ID]->data.string_val;
-
-              // If called_func was called
-              if (BST_get_data(call_list, called_name) != NULL) {
-
-                ASTNode called_func_body = called_func_def->child_arr[I_FBODY];
-                int subtotal = find_func_calls(called_func_body, &call_list);
-
-                // COPIED CODE EWWWW but its entirely not identical
-                // Check errors
-                if (subtotal < 0) {
-                  BST_destroy_tree(call_list);
-                  return ERR_INTERNAL;
-                }
-
-                // Add to total
-                total += subtotal;
-
-                // Check if we found recursion
-                if (BST_get_data(call_list, func_name) != NULL) {
-
-                  // Invalid recursion found!
-                  BST_destroy_tree(call_list);
-                  fprintf(stderr, "Error: Contains indirect recursion.\n");
-                  return ERR_OTHER_SEMANTIC;
-                }
-
-              } // if called func
-
-            } // for func_defs
-
-            // Repeat while we keep finding new unique func calls
-          } while (prev_total < total);
-        } // recursion check
-
-        // Don't forget to destroy tree
-        BST_destroy_tree(call_list);
       } // if can contain recursion
     }
     // else
@@ -443,6 +359,101 @@ static bool contains_return(ASTNode block) {
   }
 
   return false;
+}
+
+static ErrCode check_recursion(ASTNode func_body, char *func_name,
+                               ASTNode root) {
+
+  // Check recursion (direct or indirect)
+
+  // Recursively find all function calls and save them to LIST
+  // STEP 2:
+  // Compare them to `func_name`
+  // If equal, return true
+  // If not equal, recursively find all function calls from functions in the
+  // LIST. If any new funcalls were inserted into LIST, repeat from STEP 2
+
+  // List of function calls which are "accessible"
+  BSTNode call_list = BST_new();
+
+  // Keep track of amount of calls
+  int prev_total = 0;
+  int total = 0;
+
+  int subtotal = find_func_calls(func_body, &call_list);
+  // Check errors
+  if (subtotal < 0) {
+    BST_destroy_tree(call_list);
+    return ERR_INTERNAL;
+  }
+
+  // Add to total
+  total += subtotal;
+
+  // No function calls found
+  if (total == 0) {
+    BST_destroy_tree(call_list);
+    return SUCCESS;
+  }
+
+  // Check if we found recursion
+  if (BST_get_data(call_list, func_name) != NULL) {
+    // Invalid recursion found!
+    BST_destroy_tree(call_list);
+    fprintf(stderr, "Error: Contains direct recursion.\n");
+    return ERR_OTHER_SEMANTIC;
+    // More checking :(
+  } else {
+    do {
+
+      // Update condition value
+      prev_total = total;
+
+      // We need to find possible indirect recursion!
+      // Check every function DEFINITION
+      for (int i = 0; i < root->child_count; i++) {
+
+        ASTNode called_func_def = root->child_arr[i];
+
+        char *called_name =
+            called_func_def->child_arr[I_FD_ID]->data.string_val;
+
+        // If called_func was called
+        if (BST_get_data(call_list, called_name) != NULL) {
+
+          ASTNode called_func_body = called_func_def->child_arr[I_FBODY];
+          int subtotal = find_func_calls(called_func_body, &call_list);
+
+          // COPIED CODE EWWWW but its entirely not identical
+          // Check errors
+          if (subtotal < 0) {
+            BST_destroy_tree(call_list);
+            return ERR_INTERNAL;
+          }
+
+          // Add to total
+          total += subtotal;
+
+          // Check if we found recursion
+          if (BST_get_data(call_list, func_name) != NULL) {
+
+            // Invalid recursion found!
+            BST_destroy_tree(call_list);
+            fprintf(stderr, "Error: Contains indirect recursion.\n");
+            return ERR_OTHER_SEMANTIC;
+          }
+
+        } // if called func
+
+      } // for func_defs
+
+      // Repeat while we keep finding new unique func calls
+    } while (prev_total < total);
+  } // recursion check
+
+  // Don't forget to destroy tree
+  BST_destroy_tree(call_list);
+  return SUCCESS;
 }
 
 int find_func_calls(ASTNode func_body, BSTNode *call_list) {

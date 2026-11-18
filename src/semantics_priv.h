@@ -55,6 +55,17 @@ ErrCode check_other_semantics(ASTNode root);
 static bool contains_return(ASTNode block);
 
 /**
+ * @brief Detects direct or indirect recursion.
+ * @param func_body Body node of checked function
+ * @param func_name Name of checked function.
+ * @param root Root of whole AST so it can check indirect recursion.
+ * @return `SUCCESS` if NO recursion is found,
+ * `ERR_OTHER_SEMANTIC` if recursion IS found,
+ * `ERR_INTERNAL` if memory allocation fails.
+ */
+static ErrCode check_recursion(ASTNode func_body, char *func_name,
+                               ASTNode root);
+/**
  * @brief Recursively searches for function calls, and if found, adds
  * identifiers of called functions to call_list
  * @param func_body
