@@ -102,8 +102,6 @@ ErrCode define_local_symbols(ASTNode root, SymbTables *st);
 
 #endif
 
-
-
 // TODO MAAYBE DELETE
 /**
  * @brief Goes through children of `node`, looks for node with `searched_type`.

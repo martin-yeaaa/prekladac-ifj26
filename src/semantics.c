@@ -668,6 +668,70 @@ ErrCode define_func_symbols(ASTNode root, SymbTables *st) {
 
 ErrCode define_local_symbols(ASTNode root, SymbTables *st) {
 
+  assert(root != NULL);
+  // symbol tables aren't empty
+  // it should be in global scope
+  assert(st->stack_top != NULL);
+  assert(st->stack_top->prev_scope == NULL);
+
+  // Loop over every function
+  for (int i = 0; i < root->child_count; i++) {
+
+    // Func definition
+    ASTNode func_def = root->child_arr[i];
+    // Func definition
+    ASTNode func_id = func_def->child_arr[I_FD_ID];
+    // Func body
+    ASTNode func_body = func_def->child_arr[I_FBODY];
+    // Func params
+    ASTNode func_par = func_def->child_arr[I_FD_PAR];
+    int par_count = func_par->child_count;
+
+    // It's worth entering scope only when func has parameters
+    // or its body is a block
+    if (par_count > 0 || func_body->node_type == NODE_BLOCK) {
+
+      // Enter local scope
+      ErrCode err = ST_enter_scope(st);
+      RETURN_ON_ERROR(err, "occured on enter_scope in define_local_symbols");
+
+      // Define parameters symbols
+      for (int p = 0; p < par_count; p++) {
+
+        // Parameter
+        ASTNode par_id = func_par->child_arr[p];
+
+        // Verify correctness of func symbols
+        assert(par_id->data_type == func_id->symbol_ptr->param_type_arr[p]);
+
+        SymbDraft par_draft = {
+            .identifier = par_id->data.string_val,
+            .symb_type = SB_VAL, // Parameters are UNMODIFIABLE
+            .data_type = par_id->data_type,
+        };
+
+        // Try defining it - this also checks redefinition!
+        ErrCode err = ST_define_symbol(st, &par_draft);
+        RETURN_ON_ERROR(err, "occured when defining local symbol (param).");
+
+        // Save symbol pointer
+        Symbol *local_symb = ST_get_symbol(st, par_id->data.string_val);
+        assert(local_symb != NULL);
+        par_id->symbol_ptr = local_symb;
+      }
+
+      // Define symbols inside blocks
+      if (func_body->node_type == NODE_BLOCK) {
+
+        // TODO RECURSIVE FUNC FOR DEFINING LOCAL SYMBOLS
+      }
+
+      // After entering local scope, don't forget to exit it!
+      ST_exit_scope(st);
+    } // scope entered
+  } // func_def loop
+
+  // YES
   return SUCCESS;
 }
 
