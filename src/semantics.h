@@ -140,7 +140,7 @@ ErrCode AST_node_add_child(ASTNode parent, ASTNode child);
 /**
  * @brief Fills the symbol table, does all semantic checks.
  * @param root Root of AST.
- * @param st Pointer to declared UNINITIALIZED symbol tables structure.
+ * @param st Pointer to INITIALIZED symbol tables structure.
  * @return 'SUCCESS' if analysis is successful, otherwise one of the following
  * error codes: `ERR_UNDEF_SYM`, `ERR_REDEFINITION`, `ERR_FUN_ARGS`,
  * `ERR_INCOMPATIBLE_TYPE`, `ERR_INVALID_ASSIGN`, `ERR_OTHER_SEMANTIC`,

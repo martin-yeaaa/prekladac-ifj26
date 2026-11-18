@@ -217,10 +217,6 @@ ErrCode semantic_analysis(ASTNode root, SymbTables *st) {
   // Error code return variable
   ErrCode err = SUCCESS;
 
-  // Initialize symbol table
-  err = ST_init(st);
-  RETURN_ON_ERROR(err, "failed to initialize symbol table.");
-
   // Check unallowed return statements and recursion, only now we can tell
   // if function type was explicitly declared!
   err = check_other_semantics(root);
@@ -305,8 +301,12 @@ ErrCode check_other_semantics(ASTNode root) {
 
       // Only a block can hold return statement
       if (func_body->node_type == NODE_BLOCK) {
-        if (contains_return(func_body))
+        if (contains_return(func_body)) {
+
+          char *bad_fun = func_def->child_arr[I_FD_ID]->data.string_val;
+          fprintf(stderr, "%s: Contains return.\n", bad_fun);
           return ERR_OTHER_SEMANTIC;
+        }
       }
 
       // Check recursion (direct or indirect)
@@ -351,6 +351,7 @@ ErrCode check_other_semantics(ASTNode root) {
         if (BST_get_data(call_list, func_name) != NULL) {
           // Invalid recursion found!
           BST_destroy_tree(call_list);
+          fprintf(stderr, "Error: Contains direct recursion.\n");
           return ERR_OTHER_SEMANTIC;
           // More checking :(
         } else {
@@ -389,6 +390,7 @@ ErrCode check_other_semantics(ASTNode root) {
 
                   // Invalid recursion found!
                   BST_destroy_tree(call_list);
+                  fprintf(stderr, "Error: Contains indirect recursion.\n");
                   return ERR_OTHER_SEMANTIC;
                 }
 
@@ -399,6 +401,9 @@ ErrCode check_other_semantics(ASTNode root) {
             // Repeat while we keep finding new unique func calls
           } while (prev_total < total);
         } // recursion check
+
+        // Don't forget to destroy tree
+        BST_destroy_tree(call_list);
       } // if can contain recursion
     }
     // else
@@ -500,10 +505,8 @@ int find_func_calls(ASTNode func_body, BSTNode *call_list) {
         break;
 
       case NODE_RETURN:
-        // Check if return isn't just by itself
-        if (child->child_count != 0) {
-          subtotal = find_func_calls(child->child_arr[I_RET], call_list);
-        }
+        // Return MUST have child expr or func call
+        subtotal = find_func_calls(child->child_arr[I_RET], call_list);
         break;
 
       case NODE_WHILE:
