@@ -13,16 +13,18 @@
 #include <assert.h>
 #include <errno.h> // For conversion errors
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-// Macro for checking for errors and returning if error occured
+// Macro for checking for errors and returning if error occurred
 #define RETURN_ON_ERROR(error_code, error_msg)                                 \
   do {                                                                         \
-    if (error_code != SUCCESS) {                                               \
+    ErrCode evaluated_err = (error_code);                                      \
+    if (evaluated_err != SUCCESS) {                                            \
       fprintf(stderr, "Error: %s\n", error_msg);                               \
-      return error_code;                                                       \
+      return evaluated_err;                                                    \
     }                                                                          \
   } while (0)
 
@@ -32,7 +34,7 @@ ErrCode AST_init_node(ASTNode *node, NodeType node_type, DataType data_type,
                       char *node_data) {
 
   // Variable that temporarily holds error codes
-  ErrCode err = 0;
+  ErrCode err = SUCCESS;
 
   // Allocate memory for new node
   ASTNode new_node = malloc(sizeof(struct ast_node_struct));
@@ -99,6 +101,8 @@ static ErrCode set_integer_node_data(ASTNode node, char *data_string) {
   char *string_end = &data_string[strlen(data_string)];
   char *conv_end = NULL;
 
+  errno = 0; // Reset errno
+
   // Conversion to long long
   long long int_data = strtoll(data_string, &conv_end, 10);
 
@@ -129,6 +133,8 @@ static ErrCode set_double_node_data(ASTNode node, char *data_string) {
   // Pointers that help check correct conversion
   char *string_end = &data_string[strlen(data_string)];
   char *conv_end = NULL;
+
+  errno = 0; // Reset errno
 
   // Conversion
   double dbl_data = strtod(data_string, &conv_end);
@@ -180,8 +186,7 @@ ErrCode AST_node_add_child(ASTNode parent, ASTNode child) {
   // Index where child will be inserted into array
   int i = parent->child_count;
 
-  // Update parent count
-  parent->child_count += 1;
+  int new_child_count = parent->child_count + 1;
 
   // Dynamic array allocation
   if (parent->child_limit == 0) {
@@ -192,7 +197,7 @@ ErrCode AST_node_add_child(ASTNode parent, ASTNode child) {
       return ERR_INTERNAL;
     }
 
-  } else if (parent->child_limit < parent->child_count) {
+  } else if (parent->child_limit < new_child_count) {
     // Out of limit
     parent->child_limit *= 2; // Double the limit
     // Need to realloc
@@ -201,9 +206,13 @@ ErrCode AST_node_add_child(ASTNode parent, ASTNode child) {
     if (new_arr == NULL) {
       return ERR_INTERNAL;
     }
+
     // Successful realloc
     parent->child_arr = new_arr;
   }
+
+  // Update parent count
+  parent->child_count += 1;
 
   // After making room, assign child node
   parent->child_arr[i] = child;
@@ -294,7 +303,7 @@ ErrCode check_other_semantics(ASTNode root) {
 
       // Function that is just an expression cannot fail this
       if (func_body->node_type == NODE_EXPR) {
-        return SUCCESS;
+        continue; // Check next
       }
 
       // Only a block can hold return statement
@@ -346,13 +355,15 @@ static bool contains_return(ASTNode block) {
       // If
     } else if (child->node_type == NODE_IF) {
       // Search blocks inside if
-      return contains_return(child->child_arr[I_IB1]) ||
-             contains_return(child->child_arr[I_IB2]);
+      if (contains_return(child->child_arr[I_IB1]) ||
+          contains_return(child->child_arr[I_IB2]))
+        return true;
 
       // While
     } else if (child->node_type == NODE_WHILE) {
       // Search block inside loop
-      return contains_return(child->child_arr[I_WB]);
+      if (contains_return(child->child_arr[I_WB]))
+        return true;
     }
   }
 
@@ -479,7 +490,6 @@ int find_func_calls(ASTNode func_body, BSTNode *call_list) {
       return 0; // Function call with the same name already exists
     }
 
-    // Function call node contains identifier in data!
     bool placeholder = true; // Just something to insert into BST
     bool success = BST_insert(call_list, func_name, &placeholder, sizeof(bool));
     if (success == false)
@@ -503,35 +513,40 @@ int find_func_calls(ASTNode func_body, BSTNode *call_list) {
       switch (child->node_type) {
 
       case NODE_EXPR:
-      case NODE_FUNC_CALL:
+      case NODE_FUNC_CALL: {
         subtotal = find_func_calls(child, call_list);
         break;
+      }
 
       case NODE_VAR_DEF:
       case NODE_VAL_DEF:
-      case NODE_ASSIGNMENT:
+      case NODE_ASSIGNMENT: {
         subtotal = find_func_calls(child->child_arr[I_RHS], call_list);
         break;
+      }
 
-      case NODE_RETURN:
+      case NODE_RETURN: {
         // Return MUST have child expr or func call
         subtotal = find_func_calls(child->child_arr[I_RET], call_list);
         break;
+      }
 
-      case NODE_WHILE:
+      case NODE_WHILE: {
         subtotal = find_func_calls(child->child_arr[I_WB], call_list);
         break;
+      }
 
-      case NODE_IF:
+      case NODE_IF: {
         int sub1 = find_func_calls(child->child_arr[I_IB1], call_list);
         int sub2 = find_func_calls(child->child_arr[I_IB2], call_list);
         // Check errors from both blocks
         if (sub1 < 0 || sub2 < 0) {
           subtotal = -1;
         } else {
-          subtotal == sub1 + sub2;
+          subtotal = sub1 + sub2;
         }
         break;
+      }
 
       default:
         fprintf(stderr, "Programmer error: recursion: no matching type!\n");
@@ -540,7 +555,7 @@ int find_func_calls(ASTNode func_body, BSTNode *call_list) {
       }
 
       if (subtotal < 0)
-        return -1; // Error occured
+        return -1; // Error occurred
       else
         total += subtotal; // Add to total
     } // end child check
@@ -549,6 +564,7 @@ int find_func_calls(ASTNode func_body, BSTNode *call_list) {
   }
   // else
   // There can't be any other valid node type.
+  return -1;
 }
 
 ErrCode define_func_symbols(ASTNode root, SymbTables *st) {
@@ -645,7 +661,7 @@ ErrCode define_func_symbols(ASTNode root, SymbTables *st) {
     // Try defining it - this also checks redefinition!
     ErrCode err = ST_define_symbol(st, &func_draft);
     free(par_arr); // every malloc has a free :)
-    RETURN_ON_ERROR(err, "occured when defining function symbol.");
+    RETURN_ON_ERROR(err, "occurred when defining function symbol.");
 
     // After defining symbol, we need to save pointer to it
     Symbol *func_symb = ST_get_symbol(st, func_idtf->data.string_val);
@@ -679,7 +695,7 @@ ErrCode define_local_symbols(ASTNode root, SymbTables *st) {
 
     // Func definition
     ASTNode func_def = root->child_arr[i];
-    // Func definition
+    // Func identifier
     ASTNode func_id = func_def->child_arr[I_FD_ID];
     // Func body
     ASTNode func_body = func_def->child_arr[I_FBODY];
@@ -693,7 +709,7 @@ ErrCode define_local_symbols(ASTNode root, SymbTables *st) {
 
       // Enter local scope
       ErrCode err = ST_enter_scope(st);
-      RETURN_ON_ERROR(err, "occured on enter_scope in define_local_symbols");
+      RETURN_ON_ERROR(err, "occurred on enter_scope in define_local_symbols");
 
       // Define parameters symbols
       for (int p = 0; p < par_count; p++) {
@@ -706,7 +722,7 @@ ErrCode define_local_symbols(ASTNode root, SymbTables *st) {
 
         // symbol type is SB_VAL because params are unmodifiable
         err = define_variable_symbol(par_id, SB_VAL, st);
-        RETURN_ON_ERROR(err, "occured when defining local symbol (param).");
+        RETURN_ON_ERROR(err, "occurred when defining local symbol (param).");
       }
 
       // Define symbols inside blocks
@@ -714,7 +730,7 @@ ErrCode define_local_symbols(ASTNode root, SymbTables *st) {
 
         // Recursively defines symbols
         err = define_symbols_in_blocks(func_body, st);
-        RETURN_ON_ERROR(err, "occured when defining symbols in blocks.");
+        RETURN_ON_ERROR(err, "occurred when defining symbols in blocks.");
       }
 
       // After entering local scope, don't forget to exit it!
@@ -751,6 +767,8 @@ ErrCode define_variable_symbol(ASTNode idtf, SymbType sb_type, SymbTables *st) {
 
 ErrCode define_symbols_in_blocks(ASTNode block, SymbTables *st) {
 
+  assert(block->node_type == NODE_BLOCK);
+
   // Loop over every statement
   for (int i = 0; i < block->child_count; i++) {
 
@@ -761,23 +779,25 @@ ErrCode define_symbols_in_blocks(ASTNode block, SymbTables *st) {
     switch (stmt->node_type) {
 
     // var id = expr_or_call
-    case NODE_VAR_DEF:
+    case NODE_VAR_DEF: {
       ASTNode var_def_id = stmt->child_arr[I_LHS];
       err = define_variable_symbol(var_def_id, SB_VAR, st);
       if (err != SUCCESS)
         return err;
       break;
+    }
 
     // val id = expr_or_call
-    case NODE_VAL_DEF:
+    case NODE_VAL_DEF: {
       ASTNode val_def_id = stmt->child_arr[I_LHS];
-      define_variable_symbol(val_def_id, SB_VAL, st);
+      err = define_variable_symbol(val_def_id, SB_VAL, st);
       if (err != SUCCESS)
         return err;
       break;
+    }
 
     // while loop
-    case NODE_WHILE:
+    case NODE_WHILE: {
 
       // Call this function on block inside loop
       ASTNode while_block = stmt->child_arr[I_WB];
@@ -793,9 +813,10 @@ ErrCode define_symbols_in_blocks(ASTNode block, SymbTables *st) {
         return err;
 
       break;
+    }
 
     // if stmt
-    case NODE_IF:
+    case NODE_IF: {
 
       // Call this function on both if blocks
       ASTNode then_block = stmt->child_arr[I_IB1];
@@ -821,6 +842,7 @@ ErrCode define_symbols_in_blocks(ASTNode block, SymbTables *st) {
         return err;
 
       break;
+    }
 
     default:
       // Other statements
