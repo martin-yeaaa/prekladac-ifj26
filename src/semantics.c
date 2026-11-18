@@ -222,13 +222,15 @@ ErrCode semantic_analysis(ASTNode root, SymbTables *st) {
   err = check_other_semantics(root);
   RETURN_ON_ERROR(err, "found invalid return statement or invalid recursion.");
 
+  // Fill in symbol table with function declarations
+  err = define_func_symbols(root, st);
+  RETURN_ON_ERROR(err, "failed defining function symbols.");
+
   /* TODO REMOVE BLOCK COMMENT
 
 
 
-  // Fill in symbol table with function declarations
-  err = define_func_symbols(root, st);
-  RETURN_ON_ERROR(err, "failed defining function symbols.");
+
 
   // Fill in symbol table with local declarations (variables)
   err = define_local_symbols(root, st);
@@ -551,6 +553,121 @@ int find_func_calls(ASTNode func_body, BSTNode *call_list) {
   }
   // else
   // There can't be any other valid node type.
+}
+
+ErrCode define_func_symbols(ASTNode root, SymbTables *st) {
+
+  assert(root != NULL);
+  // symbol tables aren't empty
+  // it should be in global scope
+  assert(st->stack_top != NULL);
+  assert(st->stack_top->prev_scope == NULL);
+
+  bool main_was_defined = false;
+
+  // Define every function
+  for (int i = 0; i < root->child_count; i++) {
+
+    // Func definition
+    ASTNode func_def = root->child_arr[i];
+    // Func identifier
+    ASTNode func_idtf = func_def->child_arr[I_FD_ID];
+    // Func param list
+    ASTNode func_par = func_def->child_arr[I_FD_PAR];
+
+    // Sanity checks
+    assert(func_def->node_type == NODE_FUNC_DEF ||
+           func_def->node_type == NODE_MAIN_FUNC_DEF);
+    // A convention I decided to follow, even though it's useless
+    assert(func_def->data_type == func_idtf->data_type);
+
+    SymbType func_sym_type = SB_FUNC;
+
+    // Set proper symbol type
+    if (func_def->node_type == NODE_MAIN_FUNC_DEF) {
+
+      func_sym_type = SB_MAIN_FUNC;
+
+      // Main function checks
+
+      // Multiple main functions
+      if (main_was_defined == true) {
+        RETURN_ON_ERROR(ERR_REDEFINITION, "Multiple main functions.");
+      }
+      main_was_defined = true;
+
+      // Main func must have zero parameters
+      if (func_par->child_count != 0) {
+        RETURN_ON_ERROR(ERR_FUN_ARGS, "Main function has parameters.");
+      }
+
+      // Main func must have return data type Unit
+      // Parser will create AST with all information it has
+      // If data type wasn't defined we'll assume it's Unit
+      // Then later, type checks will fail if result is different.
+      if (func_def->data_type == DT_UNDEF) {
+        func_def->data_type = DT_UNIT;
+        func_idtf->data_type = DT_UNIT;
+
+        // else if it has wrong explicitly defined data type
+      } else if (func_def->data_type != DT_UNIT) {
+        RETURN_ON_ERROR(ERR_INCOMPATIBLE_TYPE,
+                        "Main function has wrong return data type.");
+      }
+
+      // At end of this function we check if main_was_defined.
+
+      // Else function isn't main
+    } else if (func_def->node_type == NODE_FUNC_DEF) {
+      func_sym_type = SB_FUNC;
+    }
+
+    int par_count = func_par->child_count;
+    DataType *par_arr = NULL;
+
+    // Create parameter array if needed
+    if (par_count > 0) {
+      // Allocate memory
+      par_arr = malloc(sizeof(DataType) * par_count);
+      if (par_arr == NULL) {
+        RETURN_ON_ERROR(ERR_INTERNAL, "Parameter array filling.");
+      }
+
+      // Populate array
+      for (int p = 0; p < par_count; p++) {
+        par_arr[p] = func_par->child_arr[p]->data_type;
+      }
+    }
+
+    // Fill symbol data
+    SymbDraft func_draft = {.identifier = func_idtf->data.string_val,
+                            .symb_type = func_sym_type,
+                            .data_type = func_idtf->data_type,
+                            .param_count = par_count,
+                            .param_type_arr = par_arr};
+
+    // Try defining it
+    ErrCode err = ST_define_symbol(st, &func_draft);
+    free(par_arr); // every malloc has a free :)
+    RETURN_ON_ERROR(err, "occured when defining function symbol.");
+
+    // After defining symbol, we need to save pointer to it
+    Symbol *func_symb = ST_get_symbol(st, func_idtf->data.string_val);
+
+    // Function symbol should never be NULL
+    assert(func_symb != NULL);
+
+    // Save pointer to symbol
+    func_idtf->symbol_ptr = func_symb;
+  }
+
+  // There must be one main function
+  if (main_was_defined == false) {
+    RETURN_ON_ERROR(ERR_UNDEF_SYM, "Missing main function.");
+  }
+
+  // All good
+  return SUCCESS;
 }
 
 void AST_destroy_tree(ASTNode root) {

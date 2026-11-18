@@ -68,8 +68,9 @@ typedef enum {
 } NodeType;
 
 // Constant index values of nodes in AST
-#define I_FBODY 2 // Func def body
-#define I_FD_ID 0 // Func def identifier
+#define I_FBODY 2  // Func def body
+#define I_FD_ID 0  // Func def identifier
+#define I_FD_PAR 1 // Func param list
 
 #define I_WB 1    // While block
 #define I_IB1 1   // If - then block
