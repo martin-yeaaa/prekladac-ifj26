@@ -72,10 +72,14 @@ typedef enum {
 #define I_FD_ID 0  // Func def identifier
 #define I_FD_PAR 1 // Func param list
 
-#define I_WB 1    // While block
-#define I_IB1 1   // If - then block
-#define I_IB2 2   // If - else block
-#define I_RHS 1   // Assignment or variable definitions
+#define I_WB 1  // While block
+#define I_IB1 1 // If - then block
+#define I_IB2 2 // If - else block
+
+// Assignment or variable definitions
+#define I_RHS 1 // expr or funcall
+#define I_LHS 0 // identifier
+
 #define I_RET 0   // Return stmt
 #define I_FC_ID 0 // Func call identifier
 

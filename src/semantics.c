@@ -704,26 +704,17 @@ ErrCode define_local_symbols(ASTNode root, SymbTables *st) {
         // Verify correctness of func symbols
         assert(par_id->data_type == func_id->symbol_ptr->param_type_arr[p]);
 
-        SymbDraft par_draft = {
-            .identifier = par_id->data.string_val,
-            .symb_type = SB_VAL, // Parameters are UNMODIFIABLE
-            .data_type = par_id->data_type,
-        };
-
-        // Try defining it - this also checks redefinition!
-        ErrCode err = ST_define_symbol(st, &par_draft);
+        // symbol type is SB_VAL because params are unmodifiable
+        err = define_variable_symbol(par_id, SB_VAL, st);
         RETURN_ON_ERROR(err, "occured when defining local symbol (param).");
-
-        // Save symbol pointer
-        Symbol *local_symb = ST_get_symbol(st, par_id->data.string_val);
-        assert(local_symb != NULL);
-        par_id->symbol_ptr = local_symb;
       }
 
       // Define symbols inside blocks
       if (func_body->node_type == NODE_BLOCK) {
 
-        // TODO RECURSIVE FUNC FOR DEFINING LOCAL SYMBOLS
+        // Recursively defines symbols
+        err = define_symbols_in_blocks(func_body, st);
+        RETURN_ON_ERROR(err, "occured when defining symbols in blocks.");
       }
 
       // After entering local scope, don't forget to exit it!
@@ -732,6 +723,111 @@ ErrCode define_local_symbols(ASTNode root, SymbTables *st) {
   } // func_def loop
 
   // YES
+  return SUCCESS;
+}
+
+ErrCode define_variable_symbol(ASTNode idtf, SymbType sb_type, SymbTables *st) {
+
+  // Make draft
+  SymbDraft symb_draft = {
+      .identifier = idtf->data.string_val,
+      .symb_type = sb_type,
+      .data_type = idtf->data_type,
+  };
+
+  // Try defining it - this also checks redefinition!
+  ErrCode err = ST_define_symbol(st, &symb_draft);
+  if (err != SUCCESS)
+    return err;
+
+  // Save symbol pointer
+  Symbol *local_symb = ST_get_symbol(st, idtf->data.string_val);
+  assert(local_symb != NULL);
+  idtf->symbol_ptr = local_symb;
+
+  // Symbol defined
+  return SUCCESS;
+}
+
+ErrCode define_symbols_in_blocks(ASTNode block, SymbTables *st) {
+
+  // Loop over every statement
+  for (int i = 0; i < block->child_count; i++) {
+
+    ASTNode stmt = block->child_arr[i];
+    ErrCode err;
+
+    // Recursively find calls based on node type of statement nodes
+    switch (stmt->node_type) {
+
+    // var id = expr_or_call
+    case NODE_VAR_DEF:
+      ASTNode var_def_id = stmt->child_arr[I_LHS];
+      err = define_variable_symbol(var_def_id, SB_VAR, st);
+      if (err != SUCCESS)
+        return err;
+      break;
+
+    // val id = expr_or_call
+    case NODE_VAL_DEF:
+      ASTNode val_def_id = stmt->child_arr[I_LHS];
+      define_variable_symbol(val_def_id, SB_VAL, st);
+      if (err != SUCCESS)
+        return err;
+      break;
+
+    // while loop
+    case NODE_WHILE:
+
+      // Call this function on block inside loop
+      ASTNode while_block = stmt->child_arr[I_WB];
+
+      // Caller deals with scopes
+      err = ST_enter_scope(st);
+      if (err != SUCCESS)
+        return err;
+      // Recursion
+      err = define_symbols_in_blocks(while_block, st);
+      ST_exit_scope(st);
+      if (err != SUCCESS)
+        return err;
+
+      break;
+
+    // if stmt
+    case NODE_IF:
+
+      // Call this function on both if blocks
+      ASTNode then_block = stmt->child_arr[I_IB1];
+      ASTNode else_block = stmt->child_arr[I_IB2];
+
+      // Caller deals with scopes
+      err = ST_enter_scope(st);
+      if (err != SUCCESS)
+        return err;
+      // Recursion
+      err = define_symbols_in_blocks(then_block, st);
+      ST_exit_scope(st);
+      if (err != SUCCESS)
+        return err;
+
+      // Same thing for second block
+      err = ST_enter_scope(st);
+      if (err != SUCCESS)
+        return err;
+      err = define_symbols_in_blocks(else_block, st);
+      ST_exit_scope(st);
+      if (err != SUCCESS)
+        return err;
+
+      break;
+
+    default:
+      // Other statements
+      break;
+    }
+  }
+
   return SUCCESS;
 }
 

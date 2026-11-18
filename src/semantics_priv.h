@@ -100,6 +100,30 @@ ErrCode define_func_symbols(ASTNode root, SymbTables *st);
  */
 ErrCode define_local_symbols(ASTNode root, SymbTables *st);
 
+/**
+ * @brief Properly inserts variable symbol into symbol table.
+ * @param block ASTNode of type NODE_IDENTIFIER. Must be valid.
+ * @param sb_type Type of symbol (SB_VAL or SB_VAR)
+ * @param st Pointer to symbol tables structure. Expects to be in correct scope!
+ * @return `SUCCESS` if definitions are successful, otherwise one of the
+ * following error codes:
+ * `ERR_REDEFINITION` if a symbol is redefined,
+ * `ERR_INTERNAL` if memory allocation fails.
+ */
+ErrCode define_variable_symbol(ASTNode idtf, SymbType sb_type, SymbTables *st);
+
+/**
+ * @brief Fills the symbol table with local symbols of variables inside block.
+ * Does NOT check the right side of definitions. Recursive.
+ * @param block ASTNode of type NODE_BLOCK. Must be valid.
+ * @param st Pointer to symbol tables structure. Expects to be in correct scope!
+ * @return `SUCCESS` if definitions are successful, otherwise one of the
+ * following error codes:
+ * `ERR_REDEFINITION` if a symbol is redefined,
+ * `ERR_INTERNAL` if memory allocation fails.
+ */
+ErrCode define_symbols_in_blocks(ASTNode block, SymbTables *st);
+
 #endif
 
 // TODO MAAYBE DELETE
