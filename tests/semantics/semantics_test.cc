@@ -278,6 +278,8 @@ inline ASTNode Int(const char *v)  { return N(NODE_LITERAL, DT_INTEGER, v); }
 inline ASTNode Dbl(const char *v)  { return N(NODE_LITERAL, DT_DOUBLE, v); }
 inline ASTNode Str(const char *v)  { return N(NODE_LITERAL, DT_STRING, v); }
 inline ASTNode Bool(const char *v) { return N(NODE_LITERAL, DT_BOOL, v); }
+// UNIT
+inline ASTNode Unit() { return N(NODE_LITERAL, DT_UNIT); }
 
 // ---------- expressions ----------
 // Explicit NODE_EXPR wrapper (only the TOP of an expression gets one)
@@ -385,7 +387,8 @@ protected:
                Block(Assign("a", Add(Id("a"), Int("1")))),
                Block(Assign("a", Int("0")))),
             While(Cond(NODE_LT, Id("a"), Int("10")),
-                  Block(Assign("a", Add(Id("a"), Int("1"))))))));
+                  Block(Assign("a", Add(Id("a"), Int("1"))))))),
+        Func("lolz", DT_UNIT, Params(), Expr(Unit())));
   }
 
   void SetUp() override {
@@ -404,15 +407,97 @@ protected:
 // ---------- examples ----------
 TEST_F(AstFixture, ValidProgramPasses) {
   EXPECT_EQ(semantic_analysis(root, &st), SUCCESS);
+
+  // Check symbol table
+  Symbol *sb = ST_get_symbol(&st, "main");
+  ASSERT_TRUE(sb != NULL);
+  EXPECT_TRUE(sb->symb_type == SB_MAIN_FUNC);
+  EXPECT_TRUE(sb->data_type == DT_UNIT); // return value
+  EXPECT_TRUE(sb->param_count == 0);
+
+  EXPECT_TRUE(sb == root->child_arr[2]->child_arr[I_FD_ID]->symbol_ptr);
+
+
+  sb = ST_get_symbol(&st, "add");
+  ASSERT_TRUE(sb != NULL);
+  EXPECT_TRUE(sb->symb_type == SB_FUNC);
+  EXPECT_TRUE(sb->data_type == DT_INTEGER); // return value
+  EXPECT_TRUE(sb->param_count == 2);
+  EXPECT_TRUE(sb->param_type_arr[0] == DT_INTEGER);
+  EXPECT_TRUE(sb->param_type_arr[1] == DT_INTEGER);
+
+  EXPECT_TRUE(sb == root->child_arr[0]->child_arr[I_FD_ID]->symbol_ptr);
+
+  sb = ST_get_symbol(&st, "twice");
+  ASSERT_TRUE(sb != NULL);
+  EXPECT_TRUE(sb->symb_type == SB_FUNC);
+  EXPECT_TRUE(sb->data_type == DT_INTEGER); // return value
+  EXPECT_TRUE(sb->param_count == 1);
+  EXPECT_TRUE(sb->param_type_arr[0] == DT_INTEGER);
+
+  EXPECT_TRUE(sb == root->child_arr[1]->child_arr[I_FD_ID]->symbol_ptr);
+
+  sb = ST_get_symbol(&st, "lolz");
+  ASSERT_TRUE(sb != NULL);
+  EXPECT_TRUE(sb->symb_type == SB_FUNC);
+  EXPECT_TRUE(sb->data_type == DT_UNIT); // return value
+  EXPECT_TRUE(sb->param_count == 0);
+
+  EXPECT_TRUE(sb == root->child_arr[3]->child_arr[I_FD_ID]->symbol_ptr);
+
 }
 
 
+// Function cannot have return without explicit typing
 TEST_F(AstFixture, InvalidReturn) {
-
     ASTNode undef_func = root->child_arr[0];
   undef_func->data_type = DT_UNDEF;
+  undef_func->child_arr[I_FD_ID]->data_type = DT_UNDEF;
+
   EXPECT_EQ(semantic_analysis(root, &st), ERR_OTHER_SEMANTIC);
 }
+
+
+TEST_F(AstFixture, MissingMain) {
+    // Set main to normal fn
+  ASTNode main_fn = root->child_arr[2];
+  main_fn->node_type = NODE_FUNC_DEF;
+  EXPECT_EQ(semantic_analysis(root, &st), ERR_UNDEF_SYM);
+}
+
+TEST_F(AstFixture, MultipleMain) {
+    // Set normal fn to main
+  ASTNode fn = root->child_arr[3]; // function lolz
+  fn->node_type = NODE_MAIN_FUNC_DEF;
+  EXPECT_EQ(semantic_analysis(root, &st), ERR_REDEFINITION);
+}
+
+TEST_F(AstFixture, BadMainParam) {
+    // Set main to normal fn
+
+  ASTNode bad_param;
+  ErrCode err = AST_init_node(&bad_param, NODE_IDENTIFIER, DT_BOOL, "hi");
+  ASSERT_TRUE(err == SUCCESS);
+
+  ASTNode main_fn = root->child_arr[2];
+
+  err = AST_node_add_child(main_fn->child_arr[I_FD_PAR], bad_param);
+  ASSERT_TRUE(err == SUCCESS);
+
+  EXPECT_EQ(semantic_analysis(root, &st), ERR_FUN_ARGS);
+}
+
+TEST_F(AstFixture, BadMainReturnType) {
+    // Set main to normal fn
+
+  ASTNode main_fn = root->child_arr[2];
+
+  main_fn->data_type = DT_DOUBLE;
+  main_fn->child_arr[I_FD_ID]->data_type = DT_DOUBLE;
+
+  EXPECT_EQ(semantic_analysis(root, &st), ERR_INCOMPATIBLE_TYPE);
+}
+
 
 
 // Negative test: tweak the tree after building
@@ -516,6 +601,7 @@ TEST_F(IndirectRecursionFixture, NoRecursion) {
 
   ASTNode undef_fn = root->child_arr[0];
   undef_fn->data_type = DT_UNDEF;
+  undef_fn->child_arr[0]->data_type = DT_UNDEF;
 
   ASTNode changed_fn = root->child_arr[3];
 
