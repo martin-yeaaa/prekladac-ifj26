@@ -226,15 +226,11 @@ ErrCode semantic_analysis(ASTNode root, SymbTables *st) {
   err = define_func_symbols(root, st);
   RETURN_ON_ERROR(err, "failed defining function symbols.");
 
-  /* TODO REMOVE BLOCK COMMENT
-
-
-
-
-
   // Fill in symbol table with local declarations (variables)
   err = define_local_symbols(root, st);
   RETURN_ON_ERROR(err, "failed defining symbols of variables.");
+
+  /* TODO REMOVE BLOCK COMMENT
 
   // Helper variable
   bool type_update;
@@ -646,7 +642,7 @@ ErrCode define_func_symbols(ASTNode root, SymbTables *st) {
                             .param_count = par_count,
                             .param_type_arr = par_arr};
 
-    // Try defining it
+    // Try defining it - this also checks redefinition!
     ErrCode err = ST_define_symbol(st, &func_draft);
     free(par_arr); // every malloc has a free :)
     RETURN_ON_ERROR(err, "occured when defining function symbol.");
@@ -667,6 +663,11 @@ ErrCode define_func_symbols(ASTNode root, SymbTables *st) {
   }
 
   // All good
+  return SUCCESS;
+}
+
+ErrCode define_local_symbols(ASTNode root, SymbTables *st) {
+
   return SUCCESS;
 }
 

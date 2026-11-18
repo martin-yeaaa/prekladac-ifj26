@@ -88,7 +88,21 @@ int find_func_calls(ASTNode func_body, BSTNode *call_list);
  */
 ErrCode define_func_symbols(ASTNode root, SymbTables *st);
 
+/**
+ * @brief Fills the symbol table with local symbols of variables and function
+ * parameters. Does NOT check the right side of definitions.
+ * @param root Root of AST. Must be valid.
+ * @param st Pointer to symbol tables structure filled with function symbols.
+ * @return `SUCCESS` if definitions are successful, otherwise one of the
+ * following error codes:
+ * `ERR_REDEFINITION` if a symbol is redefined,
+ * `ERR_INTERNAL` if memory allocation fails.
+ */
+ErrCode define_local_symbols(ASTNode root, SymbTables *st);
+
 #endif
+
+
 
 // TODO MAAYBE DELETE
 /**
