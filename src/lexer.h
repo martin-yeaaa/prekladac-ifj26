@@ -61,10 +61,11 @@ typedef enum token_type{
     ASSIGNMENT,
     COMMA,
     SEMICOLON,
-    AT,
+    AT_MAIN,
     COLON,
-    SPACE,
+    DOT,
     INDENT,
+    DEDENT,
     NEW_LINE,
     END_OF_FILE,
     OPEN_BRACKET,
@@ -77,12 +78,6 @@ typedef struct token
     char *value;
     struct token *next;
 } token_t;
-
-/**
- * @brief Reads whole standard input and stores it in newly allocated string.
- * @return Newly allocated string with the input.
- */
-char *read_stdin(void);
 
 /**
  * @brief Returns next token from the list created by lexer_parse().
@@ -110,10 +105,9 @@ void lexer_free_tokens(token_t *head);
 void fill_keyword_tree(BSTNode *keyword_tree);
 
 /**
- * @brief Splits the source code into list of tokens.
- * @param source String containing source code.
+ * @brief Reads whole standard input and splits it into list of tokens.
  * @return First token of the list, last one is END_OF_FILE.
  */
-token_t *lexer_parse(char *source);
+token_t *lexer_parse(void);
 
 #endif // LEXER_H

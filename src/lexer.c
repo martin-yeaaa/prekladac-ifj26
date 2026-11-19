@@ -15,66 +15,12 @@
 #include "bst.h"
 
 
-static token_t *list;
-static token_t *list_head;
-static token_t *next_token;
+static token_t *list;           // last token in the list
+static token_t *list_head;      // empty token at the start of list
+static token_t *next_token;     // token that get_next_token() returns next
+static char *lexer_source;      // whole stdin stored in string
+static size_t *indent_stack;    // indentation levels (number of spaces), first one is always 0
 static BSTNode keyword_tree;
-
-char *read_stdin(void)
-{
-    size_t capacity = 4096;
-    size_t size = 0;
-
-    char *buffer = malloc(capacity);
-    if (buffer == NULL)
-        lexer_error(99, "memory allocation failed");
-
-    int c;
-    while ((c = getchar()) != EOF) {
-        if (size + 1 >= capacity) {
-            capacity *= 2;
-            char *tmp = realloc(buffer, capacity);
-            if (tmp == NULL) {
-                free(buffer);
-                lexer_error(99, "memory allocation failed");
-            }
-            buffer = tmp;
-        }
-
-        buffer[size++] = (char)c;
-    }
-
-    if (ferror(stdin)) {
-        free(buffer);
-        lexer_error(99, "reading from stdin failed");
-    }
-
-    buffer[size] = '\0';
-    return buffer;
-}
-
-token_t *get_next_token(void)
-{
-    token_t *token = next_token;
-
-    if (token != NULL && token->next != NULL)
-        next_token = token->next;
-
-    return token;
-}
-
-void lexer_push(token_type_t type, const char *value)
-{
-    token_t *token = calloc(1, sizeof(token_t));
-    if (token == NULL)
-        lexer_error(99, "memory allocation failed");
-
-    token->type = type;
-    token->value = copy_string(value, strlen(value));
-
-    list->next = token;
-    list = token;
-}
 
 void lexer_free_tokens(token_t *head)
 {
@@ -89,13 +35,19 @@ void lexer_free_tokens(token_t *head)
 }
 
 /**
- * @brief Frees token list and keyword tree.
+ * @brief Frees token list, source code, indentation stack and keyword tree.
  */
 static void lexer_cleanup(void)
 {
     lexer_free_tokens(list_head);
     list_head = NULL;
     list = NULL;
+
+    free(lexer_source);
+    lexer_source = NULL;
+
+    free(indent_stack);
+    indent_stack = NULL;
 
     if (keyword_tree != NULL) {
         BST_destroy_tree(keyword_tree);
@@ -190,6 +142,114 @@ static size_t skip_digits(const char *source, size_t length, size_t i)
     return i;
 }
 
+/**
+ * @brief Skips a (nested) block comment.
+ * @param source Source code.
+ * @param length Length of the source.
+ * @param i Position of the first '/' of the comment.
+ * @param new_line Set to `true` if the comment contains a new line.
+ * @return Position after the end of the comment.
+ */
+static size_t skip_block_comment(const char *source, size_t length, size_t i, bool *new_line)
+{
+    i += 2;
+    size_t depth = 1; // comments can be inside of other comments
+    *new_line = false;
+
+    while (i < length && depth > 0) {
+        if (source[i] == '\n') {
+            *new_line = true;
+            i++;
+        }
+        else if (i + 1 < length && source[i] == '/' && source[i + 1] == '*') {
+            depth++;
+            i += 2;
+        }
+        else if (i + 1 < length && source[i] == '*' && source[i + 1] == '/') {
+            depth--;
+            i += 2;
+        }
+        else {
+            i++;
+        }
+    }
+
+    if (depth != 0)
+        lexer_error(1, "unterminated block comment");
+
+    return i;
+}
+
+/**
+ * @brief Checks whether the current logical line already contains a token.
+ * @return `true` if the last token is not NEW_LINE, INDENT or DEDENT.
+ */
+static bool line_has_token(void)
+{
+    return list != list_head && list->type != NEW_LINE && list->type != INDENT && list->type != DEDENT;
+}
+
+/**
+ * @brief Reads whole standard input and stores it in newly allocated string.
+ * @return Newly allocated string with the input.
+ */
+static char *read_stdin(void)
+{
+    size_t capacity = 4096;
+    size_t size = 0;
+
+    char *buffer = malloc(capacity);
+    if (buffer == NULL)
+        lexer_error(99, "memory allocation failed");
+
+    int c;
+    while ((c = getchar()) != EOF) {
+        // buffer is full (we need 1 byte for '\0'), so we need to make it 2x bigger
+        if (size + 1 >= capacity) {
+            capacity *= 2;
+            char *tmp = realloc(buffer, capacity);
+            if (tmp == NULL) {
+                free(buffer);
+                lexer_error(99, "memory allocation failed");
+            }
+            buffer = tmp;
+        }
+
+        buffer[size++] = (char)c;
+    }
+
+    if (ferror(stdin)) {
+        free(buffer);
+        lexer_error(99, "reading from stdin failed");
+    }
+
+    buffer[size] = '\0';
+    return buffer;
+}
+
+token_t *get_next_token(void)
+{
+    token_t *token = next_token;
+
+    if (token != NULL && token->next != NULL)
+        next_token = token->next;
+
+    return token;
+}
+
+void lexer_push(token_type_t type, const char *value)
+{
+    token_t *token = calloc(1, sizeof(token_t));
+    if (token == NULL)
+        lexer_error(99, "memory allocation failed");
+
+    token->type = type;
+    token->value = copy_string(value, strlen(value));
+
+    list->next = token;
+    list = token;
+}
+
 void fill_keyword_tree(BSTNode *keyword_tree)
 {
     /*
@@ -282,8 +342,11 @@ void fill_keyword_tree(BSTNode *keyword_tree)
     }
 }
 
-token_t *lexer_parse(char *source)
+token_t *lexer_parse(void)
 {
+    lexer_source = read_stdin();
+    char *source = lexer_source;
+
     list_head = calloc(1, sizeof(token_t));
     if (list_head == NULL)
         lexer_error(99, "memory allocation failed");
@@ -292,19 +355,138 @@ token_t *lexer_parse(char *source)
     keyword_tree = BST_new();
     fill_keyword_tree(&keyword_tree);
 
+    size_t indent_capacity = 16;
+    indent_stack = malloc(indent_capacity * sizeof(size_t));
+    if (indent_stack == NULL)
+        lexer_error(99, "memory allocation failed");
+    indent_stack[0] = 0;
+    size_t indent_top = 0;
+
+    size_t bracket_depth = 0;
+    bool at_line_start = true;
+
     size_t length = strlen(source);
     for (size_t i = 0; i < length; i++) {
+
+        // Indentation at the start of a logical line
+        if (at_line_start && bracket_depth == 0) {
+            // count spaces, first = first character that is not a space
+            size_t spaces = 0;
+            size_t first = i;
+            while (first < length && source[first] == ' ') {
+                first++;
+                spaces++;
+            }
+
+            // if there is only space, tab or comment → line is empty
+            size_t end = first;
+            while (end < length) {
+                if (source[end] == ' ' || source[end] == '\t' || source[end] == '\r') {
+                    end++;
+                }
+                else if (end + 1 < length && source[end] == '/' && source[end + 1] == '*') {
+                    bool new_line;
+                    end = skip_block_comment(source, length, end, &new_line);
+                }
+                else {
+                    break;
+                }
+            }
+
+            bool blank = end >= length || source[end] == '\n' || (end + 1 < length && source[end] == '/' && source[end + 1] == '/');
+
+            // empty line can not change indentation
+            if (blank) {
+                while (end < length && source[end] != '\n')
+                    end++;
+                i = end; // at the \n, the loop does i++ so we skip it
+                continue;
+            }
+
+            // tab can not be at start of a line
+            if (source[first] == '\t')
+                lexer_error(1, "tab in indentation");
+
+            at_line_start = false;
+            i = first;
+
+            // more spaces than before → new block
+            if (spaces > indent_stack[indent_top]) {
+                if (indent_top + 1 >= indent_capacity) {
+                    indent_capacity *= 2;
+                    size_t *tmp = realloc(indent_stack, indent_capacity * sizeof(size_t));
+                    if (tmp == NULL)
+                        lexer_error(99, "memory allocation failed");
+                    indent_stack = tmp;
+                }
+                indent_stack[++indent_top] = spaces;
+                lexer_push(INDENT, "");
+            }
+            // less spaces → block ends, one DEDENT for every level we leave
+            else if (spaces < indent_stack[indent_top]) {
+                while (indent_top > 0 && indent_stack[indent_top] > spaces) {
+                    indent_top--;
+                    lexer_push(DEDENT, "");
+                }
+
+                // we have to stop exactly on some older level else it is error
+                if (indent_stack[indent_top] != spaces)
+                    lexer_error(1, "inconsistent indentation");
+            }
+        }
+
         char current = source[i];
         char next = (i + 1 < length) ? source[i + 1] : '\0';
 
         // Single-char tokens
         switch (current) {
             case ',':
-            lexer_push(COMMA, ",");
+            {
+                // end comma = comma + new line + ')' -> we do not make token for it
+                size_t j = i + 1;
+                bool new_line_after = false;
+                while (j < length) {
+                    if (source[j] == '\n') {
+                        new_line_after = true;
+                        j++;
+                    }
+                    else if (source[j] == ' ' || source[j] == '\t' || source[j] == '\r') {
+                        j++;
+                    }
+                    else if (j + 1 < length && source[j] == '/' && source[j+1] == '/') {
+                        while (j < length && source[j] != '\n')
+                            j++;
+                    }
+                    else if (j + 1 < length && source[j] == '/' && source[j+1] == '*') {
+                        bool comment_new_line;
+                        j = skip_block_comment(source, length, j, &comment_new_line);
+                        if (comment_new_line)
+                            new_line_after = true;
+                    }
+                    else {
+                        break;
+                    }
+                }
+
+                // it has to be inside of brackets and after some item (not after '(' or another comma)
+                if (bracket_depth > 0 && new_line_after && j < length && source[j] == ')'
+                    && list != list_head && list->type != OPEN_BRACKET && list->type != COMMA)
+                    continue;
+
+                lexer_push(COMMA, ",");
+            }
             continue;
 
             case '@':
-            lexer_push(AT, "@");
+            // "@" can be only in "@main" and nothing can be after it
+            if (i + 4 < length && strncmp(source + i + 1, "main", 4) == 0
+                && !(i + 5 < length && (is_alpha(source[i+5]) || is_digit(source[i+5]) || source[i+5] == '_'))) {
+                lexer_push(AT_MAIN, "@main");
+                i += 4; // skip the word main
+            }
+            else {
+                lexer_error(1, "unexpected character '@'");
+            }
             continue;
 
             case ':':
@@ -315,20 +497,44 @@ token_t *lexer_parse(char *source)
             lexer_push(SEMICOLON, ";");
             continue;
 
+            // spaces inside of line does not have a meaning
             case ' ':
-            lexer_push(SPACE, " ");
+            case '\t':
+            case '\r':
             continue;
 
+            // we count brackets, inside of them new lines and indentation are ignored
             case ')':
-            lexer_push(CLOSE_BRACKET, ")");
+            if (bracket_depth > 0)
+                bracket_depth--;
+            lexer_push(CLOSE_BRACKET, ')');
             continue;
 
             case '(':
+            bracket_depth++;
             lexer_push(OPEN_BRACKET, "(");
             continue;
 
             case '\n':
-            lexer_push(NEW_LINE, "\n");
+            // new line ends the logical line, but empty line does not give NEW_LINE
+            if (bracket_depth == 0) {
+                at_line_start = true;
+                if (line_has_token())
+                    lexer_push(NEW_LINE, "\n");
+            }
+            else {
+                // inside brackets the next line has to be indented more than the start of the logical line
+                size_t j = i + 1;
+                size_t spaces = 0;
+                while (j < length && source[j] == ' ') {
+                    j++;
+                    spaces++;
+                }
+
+                if (j < length && source[j] != '\n' && source[j] != '\r' && source[j] != '/' && source[j] != ")" && spaces <= indent_stack[indent_top])
+                    lexer_error(1, "line inside brackets must be indented more");
+                // line with only ')' can be aligned with the start, because of the end comma
+            }
             continue;
 
             case '+':
@@ -388,50 +594,38 @@ token_t *lexer_parse(char *source)
                 while (i < length && source[i] != '\n'){
                     i++;
                 }
-                lexer_push(NEW_LINE, "\n");
+
+                if (bracket_depth == 0) {
+                    at_line_start = true;
+                    if (line_has_token())
+                        lexer_push(NEW_LINE, "\n");
+                }
+                else {
+                    i--; // leave \n for the switch above, it checks the indentation
+                }
             }
 
             // Nested comments
 
             else if (next == '*') {
-                i += 2;
-                size_t depth = 1;
                 bool new_line = false;
-
-                while (i < length && depth > 0) {
-                    if (source[i] == '\n') {
-                        new_line = true;
-                        i++;
-                    }
-                    else if (i + 1 < length && source[i] == '/' && source[i + 1] == '*') {
-                        depth++;
-                        i += 2;
-                    }
-                    else if (i + 1 < length && source[i] == '*' && source[i + 1] == '/') {
-                        depth--;
-                        i += 2;
-                    }
-                    else {
-                        i++;
-                    }
-                }
-
-                if (depth != 0)
-                    lexer_error(1, "unterminated block comment");
+                i = skip_block_comment(source, length, i, &new_line);
 
                 size_t after = i;
-                while (after < length && source[after] == ' ')
+                while (after < length && (source[after] == ' ' || source[after] == '\t' || source[after] == '\r'))
                     after++;
 
-                if (new_line && after < length && source[after] != '\n')
+                // after multi-line comment there can be only spaces until the end of line
+                if (new_line && bracket_depth == 0 && after < length && source[after] != '\n')
                     lexer_error(1, "token after multi-line block comment");
 
-                i--;
+                i--; // loop does i++ at the end
 
-                if (new_line)
-                    lexer_push(NEW_LINE, "\n");
-                else
-                    lexer_push(SPACE, " ");
+                if (new_line && bracket_depth == 0) {
+                    at_line_start = true;
+                    if (line_has_token())
+                        lexer_push(NEW_LINE, "\n");
+                }
             }
             else {
                 lexer_push(OP_DIV, "/");
@@ -513,20 +707,24 @@ token_t *lexer_parse(char *source)
             size_t number_start = i;
             token_type_t type = VAL_INT;
 
+            // zero can not be followed by another digit
             if (current == '0') {
                 i++;
                 if (i < length && (is_digit(source[i]) || source[i] == '_'))
                     lexer_error(1, "integer literal must not start with zero");
             }
+            // number can start with '.' (for example .5) → then there is no integer part
             else if (current != '.') {
                 i = skip_digits(source, length, i);
             }
 
+            // decimal part, dot needs a digit after it
             if (i + 1 < length && source[i] == '.' && is_digit(source[i+1])) {
                 type = VAL_DOUBLE;
                 i = skip_digits(source, length, i + 1);
             }
 
+            // exponent with optional sign, digit is needed
             if (i < length && (source[i] == 'e' || source[i] == 'E')) {
                 size_t exponent = i + 1;
                 if (exponent < length && (source[exponent] == '+' || source[exponent] == '-'))
@@ -536,8 +734,9 @@ token_t *lexer_parse(char *source)
                 i = skip_digits(source, length, exponent);
             }
 
-            size_t number_end = i;
-
+            size_t number_end = i; 
+            
+            // d/D is ignored 
             if (i < length && (source[i] == 'd' || source[i] == 'D')) {
                 type = VAL_DOUBLE;
                 i++;
@@ -547,6 +746,7 @@ token_t *lexer_parse(char *source)
             if (value == NULL)
                 lexer_error(99, "memory allocation failed");
 
+            // copy number without underscores
             size_t value_length = 0;
             for (size_t k = number_start; k < number_end; k++) {
                 if (source[k] != '_')
@@ -558,6 +758,10 @@ token_t *lexer_parse(char *source)
             free(value);
 
             i--;
+        }
+
+        else if (current == '.') {
+            lexer_push(DOT, ".");
         }
 
         // Identifiers and keywords
@@ -589,10 +793,26 @@ token_t *lexer_parse(char *source)
         }
     }
 
+    // the last line may not end with \n, so we add NEW_LINE here
+    if (line_has_token())
+        lexer_push(NEW_LINE, "\n");
+
+    // close all blocks that are still open
+    while (indent_top > 0) {
+        indent_top--;
+        lexer_push(DEDENT, "");
+    }
+
     lexer_push(END_OF_FILE, "");
 
     BST_destroy_tree(keyword_tree);
     keyword_tree = NULL;
+
+    free(indent_stack);
+    indent_stack = NULL;
+
+    free(lexer_source);
+    lexer_source = NULL;
 
     token_t *first = list_head->next;
     free(list_head);
