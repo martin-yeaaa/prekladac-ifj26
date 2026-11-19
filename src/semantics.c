@@ -242,8 +242,9 @@ ErrCode semantic_analysis(ASTNode root, SymbTables *st) {
 
   // Fill in symbol table with local symbols (variables),
   // do all type checking, type inference and semantic checks.
-  err = resolve_AST(root, st);
-  RETURN_ON_ERROR(err, "while calling resolve_and_check_AST.");
+  // Recursively calls "resolve" on all valid child nodes.
+  err = resolve_node(root, st);
+  RETURN_ON_ERROR(err, "program contains semantic error.");
 
   // Types are checked, symbols are defined, we are DONE
   return SUCCESS;
@@ -650,6 +651,87 @@ ErrCode define_func_symbols(ASTNode root, SymbTables *st) {
   return SUCCESS;
 }
 
+static ErrCode resolve_node(ASTNode node, SymbTables *st) {
+
+  // Assert node and define err
+  assert(node != NULL);
+  ErrCode err = SUCCESS;
+
+  // Find appropriate function
+  switch (node->node_type) {
+  case NODE_PROGRAM: {
+    err = resolve_AST(node, st);
+    break;
+  }
+  case NODE_FUNC_DEF:
+  case NODE_MAIN_FUNC_DEF: {
+    err = resolve_func_def(node, st);
+    break;
+  }
+  case NODE_BLOCK: {
+    err = resolve_block(node, st);
+    break;
+  }
+  case NODE_FUNC_CALL: {
+    err = resolve_func_call(node, st);
+    break;
+  }
+  case NODE_EXPR: {
+    err = resolve_expression(node, st);
+    break;
+  }
+  case NODE_VAR_DEF: {
+    err = resolve_var_def(node, st);
+    break;
+  }
+  case NODE_VAL_DEF: {
+    err = resolve_val_def(node, st);
+    break;
+  }
+  case NODE_ASSIGNMENT: {
+    err = resolve_assignment(node, st);
+    break;
+  }
+  case NODE_ADD:
+  case NODE_SUB:
+  case NODE_MUL:
+  case NODE_DIV: {
+    err = resolve_binary_op(node, st);
+    break;
+  }
+  case NODE_UN_PLUS:
+  case NODE_UN_MINUS: {
+    err = resolve_unary_op(node, st);
+    break;
+  }
+  case NODE_COND: {
+    err = resolve_condition(node, st);
+    break;
+  }
+  case NODE_IF: {
+    err = resolve_if(node, st);
+    break;
+  }
+  case NODE_WHILE: {
+    err = resolve_while(node, st);
+    break;
+  }
+  case NODE_RETURN: {
+    err = resolve_return(node, st);
+    break;
+  }
+  // If no function was matched, it's my fault
+  default: {
+    fprintf(stderr, "PROGRAMMING ERR: couldn't match node with resolve\n");
+    err = ERR_INTERNAL;
+    break;
+  }
+  }
+
+  // Returns SUCCESS or error code
+  return err;
+}
+
 static ErrCode resolve_AST(ASTNode root, SymbTables *st) {
 
   // symbol tables aren't empty
@@ -665,73 +747,8 @@ static ErrCode resolve_AST(ASTNode root, SymbTables *st) {
   // Loop over every function
   for (int i = 0; i < root->child_count; i++) {
 
-    // Func definition and its child nodes
-    ASTNode func_def = root->child_arr[i];
-    ASTNode func_id = func_def->child_arr[I_FD_ID];
-    ASTNode func_body = func_def->child_arr[I_FBODY];
-    ASTNode func_par = func_def->child_arr[I_FD_PAR];
-    int par_count = func_par->child_count;
-
-    // Assert correct AST structure
-    assert(func_body != NULL);
-    assert(func_body->node_type == NODE_BLOCK ||
-           func_body->node_type == NODE_FUNC_CALL ||
-           func_body->node_type == NODE_EXPR);
-
-    // Helper variable for scope enter/exit
-    bool scope_entered = false;
-
-    // It's worth entering scope only when func has parameters
-    // or its body is a block!
-    if (par_count > 0 || func_body->node_type == NODE_BLOCK) {
-
-      // Enter local scope
-      err = ST_enter_scope(st);
-      RETURN_ON_ERROR(err, "occurred on enter_scope in define_local_symbols");
-
-      scope_entered = true; // So we know that we should exit scope too
-    }
-
-    // Define parameters symbols
-    for (int p = 0; p < par_count; p++) {
-
-      // Parameter
-      ASTNode par_id = func_par->child_arr[p];
-
-      // Verify correctness of func symbols
-      assert(par_id->data_type == func_id->symbol_ptr->param_type_arr[p]);
-
-      // symbol type is SB_VAL because params are unmodifiable
-      err = define_variable_symbol(par_id, SB_VAL, st);
-      RETURN_ON_ERROR(err, "occurred when defining local symbol (param).");
-    }
-
-    // Resolve and check block
-    if (func_body->node_type == NODE_BLOCK) {
-      err = resolve_and_check_block(func_body, st);
-      RETURN_ON_ERROR(err, "occurred when checking block.");
-    }
-    // Resolve and check expression
-    else if (func_body->node_type == NODE_EXPR) {
-      err = resolve_and_check_expr(func_body, st);
-      RETURN_ON_ERROR(err, "occurred when checking expression.");
-    }
-    // Resolve and check function call
-    else if (func_body->node_type == NODE_FUNC_CALL) {
-      err = resolve_and_check_func_call(func_body, st);
-      RETURN_ON_ERROR(err, "occurred when checking function call.");
-    }
-
-    // After entering local scope, don't forget to exit it!
-    if (scope_entered == true) {
-      ST_exit_scope(st);
-    }
-
-    // At this point we know the type of value on the right side
-    // We need to compare or infer
-
-    // Check
-    
+    err = resolve_node(root->child_arr[i], st);
+    RETURN_ON_ERROR(err, "inside AST");
 
   } // func_def loop
 
@@ -783,6 +800,60 @@ static ErrCode resolve_func_def(ASTNode func_def, SymbTables *st) {
   assert(func_def->node_type == NODE_MAIN_FUNC_DEF ||
          func_def->node_type == NODE_FUNC_DEF);
   ErrCode err = SUCCESS;
+
+  // Func definition and its child nodes
+  ASTNode func_id = func_def->child_arr[I_FD_ID];
+  ASTNode func_body = func_def->child_arr[I_FBODY];
+  ASTNode func_par = func_def->child_arr[I_FD_PAR];
+  int par_count = func_par->child_count;
+  
+  // Func def identifiers must already be defined
+  assert(func_id->symbol_ptr != NULL);
+
+  // Helper variable for scope enter/exit
+  bool scope_entered = false;
+
+  // It's worth entering scope only when func has parameters
+  // or its body is a block!
+  if (par_count > 0 || func_body->node_type == NODE_BLOCK) {
+
+    // Enter local scope
+    err = ST_enter_scope(st);
+    RETURN_ON_ERROR(err, "occurred on enter_scope in func_def");
+
+    scope_entered = true; // So we know that we should exit scope too
+  }
+
+  // Define parameters symbols
+  for (int p = 0; p < par_count; p++) {
+
+    // Parameter
+    ASTNode par_id = func_par->child_arr[p];
+
+    // Verify correctness of func symbols
+    assert(par_id->data_type == func_id->symbol_ptr->param_type_arr[p]);
+
+    // symbol type is SB_VAL because params are unmodifiable
+    err = define_variable_symbol(par_id, SB_VAL, st);
+    RETURN_ON_ERROR(err, "occurred on defining symbol in func_def.");
+  }
+
+  // Resolve and check function body
+  err = resolve_node(func_body, st);
+  RETURN_ON_ERROR(err, "inside func_def");
+
+  // After entering local scope, don't forget to exit it!
+  if (scope_entered == true) {
+    ST_exit_scope(st);
+  }
+
+  // Check types of both sides
+  err = infer_or_check_types(func_id, func_body, st);
+  RETURN_ON_ERROR(err, "type error in func_def");
+
+  // Function def nodes data types is the same as its identifier node
+  // It's the only node that shares type with identifier node
+  func_def->data_type = func_id->data_type;
 
   return SUCCESS;
 }
@@ -1054,4 +1125,3 @@ void AST_destroy_tree(ASTNode root) {
   // Finally,
   free(root);
 }
-
