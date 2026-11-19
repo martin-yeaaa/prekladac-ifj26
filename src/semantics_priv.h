@@ -90,15 +90,19 @@ ErrCode define_func_symbols(ASTNode root, SymbTables *st);
 
 /**
  * @brief Fills the symbol table with local symbols of variables and function
- * parameters. Does NOT check the right side of definitions.
+ * parameters, resolves types, checks for semantic errors.
  * @param root Root of AST. Must be valid.
  * @param st Pointer to symbol tables structure filled with function symbols.
  * @return `SUCCESS` if definitions are successful, otherwise one of the
  * following error codes:
+ * `ERR_UNDEF_SYM` if a symbol is undefined,
  * `ERR_REDEFINITION` if a symbol is redefined,
+ * `ERR_FUN_ARGS` if func call has wrong arguments,
+ * `ERR_INCOMPATIBLE_TYPE` on type inncompatibility.
+ * `ERR_INVALID_ASSIGN` on invalid assingment,
  * `ERR_INTERNAL` if memory allocation fails.
  */
-ErrCode define_local_symbols(ASTNode root, SymbTables *st);
+static ErrCode resolve_AST(ASTNode root, SymbTables *st);
 
 /**
  * @brief Properly inserts variable symbol into symbol table.

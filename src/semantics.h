@@ -82,6 +82,7 @@ typedef enum {
 
 #define I_RET 0   // Return stmt
 #define I_FC_ID 0 // Func call identifier
+#define I_OP 0    // Operator in expr and cond
 
 // Union for AST node data
 typedef union node_data_union {
