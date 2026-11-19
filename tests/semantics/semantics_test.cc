@@ -91,6 +91,41 @@ TEST(build_AST, node_init_w_double_literal) {
   EXPECT_TRUE(tree->child_limit == 0);
 }
 
+TEST(build_AST, node_init_w_double_literal_exp) {
+
+  ASTNode tree;
+
+  // init node equivalent to: "12300.0"
+  int err = AST_init_node(&tree, NODE_LITERAL, DT_DOUBLE, "123e2");
+  ASSERT_TRUE(err == 0);
+
+  // Check correct initialization
+  EXPECT_TRUE(tree->node_type == NODE_LITERAL);
+  EXPECT_TRUE(tree->data_type == DT_DOUBLE);
+
+  EXPECT_DOUBLE_EQ(tree->data.double_val, 12300.0);
+
+  EXPECT_TRUE(tree->symbol_ptr == NULL);
+  EXPECT_TRUE(tree->child_arr == NULL);
+  EXPECT_TRUE(tree->child_count == 0);
+  EXPECT_TRUE(tree->child_limit == 0);
+
+
+  err = AST_init_node(&tree, NODE_LITERAL, DT_DOUBLE, "12456.7E-0003");
+  ASSERT_TRUE(err == 0);
+
+  // Check correct initialization
+  EXPECT_TRUE(tree->node_type == NODE_LITERAL);
+  EXPECT_TRUE(tree->data_type == DT_DOUBLE);
+
+  EXPECT_DOUBLE_EQ(tree->data.double_val, 12.4567);
+
+  EXPECT_TRUE(tree->symbol_ptr == NULL);
+  EXPECT_TRUE(tree->child_arr == NULL);
+  EXPECT_TRUE(tree->child_count == 0);
+  EXPECT_TRUE(tree->child_limit == 0);
+}
+
 TEST(build_AST, node_init_w_double_literal_invalid) {
 
   ASTNode tree;
