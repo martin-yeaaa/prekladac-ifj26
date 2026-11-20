@@ -266,7 +266,7 @@ ErrCode semantic_analysis(ASTNode root, SymbTables *st) {
   return SUCCESS;
 }
 
-ErrCode check_other_semantics(ASTNode root) {
+static ErrCode check_other_semantics(ASTNode root) {
 
   assert(root != NULL);
 
@@ -450,7 +450,7 @@ static ErrCode check_recursion(ASTNode func_body, char *func_name,
   return SUCCESS;
 }
 
-int find_func_calls(ASTNode func_body, BSTNode *call_list) {
+static int find_func_calls(ASTNode func_body, BSTNode *call_list) {
 
   // Assertions
   assert(func_body != NULL);
@@ -552,7 +552,7 @@ int find_func_calls(ASTNode func_body, BSTNode *call_list) {
   return -1;
 }
 
-ErrCode define_func_symbols(ASTNode root, SymbTables *st) {
+static ErrCode define_func_symbols(ASTNode root, SymbTables *st) {
 
   assert(root != NULL);
   // symbol tables aren't empty
@@ -863,57 +863,6 @@ static ErrCode resolve_any_rhs(ASTNode rhs_node, SymbTables *st) {
   return err;
 }
 
-static ErrCode resolve_arg(ASTNode arg, SymbTables *st) {
-
-  // Assert node and define err
-  assert(arg != NULL);
-  ErrCode err = SUCCESS;
-
-  // Resolve appropriately
-  switch (arg->node_type) {
-
-  case NODE_UN_MINUS:
-  case NODE_UN_PLUS: {
-
-    // In this case, unary operator can only be used on a literal
-    // Unary operator with identifier is an expression!
-    assert(arg->child_count == 1);
-    ASTNode literal = arg->child_arr[I_OP];
-    assert(literal->node_type == NODE_LITERAL);
-    assert(literal->data_type != DT_UNDEF);
-
-    // Unary operator can only be used on a number value
-    if (literal->node_type != DT_INTEGER && literal->node_type != DT_DOUBLE) {
-      RETURN_ON_ERROR(ERR_INCOMPATIBLE_TYPE,
-                      "unary operator can only be used on a number");
-    }
-
-    // Propagate data type
-    arg->data_type = literal->data_type;
-    break;
-  }
-  case NODE_IDENTIFIER: {
-
-    err = resolve_rhs_var_id(arg, st);
-    break;
-  }
-  case NODE_LITERAL: {
-    // We know everything there is about literals
-    // Nothing to do
-    break;
-  }
-
-  // If no type was matched, it's my fault
-  default: {
-    fprintf(stderr, "Failed matching resolve func for term.\n");
-    err = ERR_INTERNAL;
-    break;
-  }
-  }
-
-  return err;
-}
-
 static ErrCode resolve_any_subexpr(ASTNode subexpr, SymbTables *st) {
 
   // Assert node and define err
@@ -1193,6 +1142,57 @@ static ErrCode resolve_func_call(ASTNode func_call, SymbTables *st) {
   }
 
   return SUCCESS;
+}
+
+static ErrCode resolve_arg(ASTNode arg, SymbTables *st) {
+
+  // Assert node and define err
+  assert(arg != NULL);
+  ErrCode err = SUCCESS;
+
+  // Resolve appropriately
+  switch (arg->node_type) {
+
+  case NODE_UN_MINUS:
+  case NODE_UN_PLUS: {
+
+    // In this case, unary operator can only be used on a literal
+    // Unary operator with identifier is an expression!
+    assert(arg->child_count == 1);
+    ASTNode literal = arg->child_arr[I_OP];
+    assert(literal->node_type == NODE_LITERAL);
+    assert(literal->data_type != DT_UNDEF);
+
+    // Unary operator can only be used on a number value
+    if (literal->node_type != DT_INTEGER && literal->node_type != DT_DOUBLE) {
+      RETURN_ON_ERROR(ERR_INCOMPATIBLE_TYPE,
+                      "unary operator can only be used on a number");
+    }
+
+    // Propagate data type
+    arg->data_type = literal->data_type;
+    break;
+  }
+  case NODE_IDENTIFIER: {
+
+    err = resolve_rhs_var_id(arg, st);
+    break;
+  }
+  case NODE_LITERAL: {
+    // We know everything there is about literals
+    // Nothing to do
+    break;
+  }
+
+  // If no type was matched, it's my fault
+  default: {
+    fprintf(stderr, "Failed matching resolve func for term.\n");
+    err = ERR_INTERNAL;
+    break;
+  }
+  }
+
+  return err;
 }
 
 static ErrCode resolve_expression(ASTNode expr, SymbTables *st) {
@@ -1650,7 +1650,8 @@ static ErrCode resolve_return(ASTNode return_stmt, SymbTables *st) {
   return SUCCESS;
 }
 
-ErrCode define_variable_symbol(ASTNode idtf, SymbType sb_type, SymbTables *st) {
+static ErrCode define_variable_symbol(ASTNode idtf, SymbType sb_type,
+                                      SymbTables *st) {
 
   assert(idtf != NULL);
   assert(idtf->node_type == NODE_IDENTIFIER);

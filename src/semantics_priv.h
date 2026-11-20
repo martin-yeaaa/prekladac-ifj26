@@ -45,7 +45,7 @@ static ErrCode set_string_node_data(ASTNode node, char *data_string);
  * @return `SUCCESS` if everything is valid,
  * `ERR_OTHER_SEMANTIC` if an invalid return statement or recursion is found.
  */
-ErrCode check_other_semantics(ASTNode root);
+static ErrCode check_other_semantics(ASTNode root);
 
 /**
  * @brief Recursively searches block node for return statements.
@@ -73,7 +73,7 @@ static ErrCode check_recursion(ASTNode func_body, char *func_name,
  * @return `-1` if an error occurs, or amount of found function calls if
  * everything goes right.
  */
-int find_func_calls(ASTNode func_body, BSTNode *call_list);
+static int find_func_calls(ASTNode func_body, BSTNode *call_list);
 
 /**
  * @brief Fills the symbol table with function symbols, also saves func_def
@@ -87,7 +87,24 @@ int find_func_calls(ASTNode func_body, BSTNode *call_list);
  * `ERR_FUN_ARGS` if @main function has invalid parameters,
  * `ERR_INTERNAL` if memory allocation fails.
  */
-ErrCode define_func_symbols(ASTNode root, SymbTables *st);
+static ErrCode define_func_symbols(ASTNode root, SymbTables *st);
+
+
+
+
+
+static ErrCode infer_or_check_types(ASTNode lhs, ASTNode rhs, ASTNode parent);
+
+static ErrCode convert_int_to_double(ASTNode child, ASTNode parent);
+
+
+
+
+
+static ErrCode resolve_any_func_body(ASTNode func_body, SymbTables *st);
+static ErrCode resolve_any_stmt(ASTNode stmt, SymbTables *st);
+static ErrCode resolve_any_rhs(ASTNode rhs_node, SymbTables *st);
+static ErrCode resolve_any_subexpr(ASTNode subexpr, SymbTables *st);
 
 /**
  * @brief Fills the symbol table with local symbols of variables and function
@@ -104,6 +121,22 @@ ErrCode define_func_symbols(ASTNode root, SymbTables *st);
  * `ERR_INTERNAL` if memory allocation fails.
  */
 static ErrCode resolve_AST(ASTNode root, SymbTables *st);
+static ErrCode resolve_func_def(ASTNode func_def, SymbTables *st);
+static ErrCode resolve_block(ASTNode block, SymbTables *st, bool check_end_if);
+static ErrCode resolve_func_call(ASTNode func_call, SymbTables *st);
+static ErrCode resolve_arg(ASTNode arg, SymbTables *st);
+static ErrCode resolve_expression(ASTNode expr, SymbTables *st);
+static ErrCode resolve_var_def(ASTNode var_def, SymbTables *st);
+static ErrCode resolve_val_def(ASTNode val_def, SymbTables *st);
+static ErrCode resolve_assignment(ASTNode assign, SymbTables *st);
+static ErrCode resolve_binary_op(ASTNode bin_op, SymbTables *st);
+static ErrCode resolve_unary_op(ASTNode un_op, SymbTables *st);
+static ErrCode resolve_rhs_var_id(ASTNode idtf, SymbTables *st);
+static ErrCode resolve_condition(ASTNode cond, SymbTables *st);
+static ErrCode resolve_if(ASTNode if_stmt, SymbTables *st,
+                          bool is_func_result);
+static ErrCode resolve_while(ASTNode while_stmt, SymbTables *st);
+static ErrCode resolve_return(ASTNode return_stmt, SymbTables *st);
 
 /**
  * @brief Checks if block is guaranteed to execute a return statement at some
@@ -125,6 +158,9 @@ static bool block_ends_with_return(ASTNode block);
  * `ERR_REDEFINITION` if a symbol is redefined,
  * `ERR_INTERNAL` if memory allocation fails.
  */
-ErrCode define_variable_symbol(ASTNode idtf, SymbType sb_type, SymbTables *st);
+static ErrCode define_variable_symbol(ASTNode idtf, SymbType sb_type,
+                                      SymbTables *st);
+
+// Declarations to sort out
 
 #endif
