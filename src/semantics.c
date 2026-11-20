@@ -824,22 +824,45 @@ static ErrCode resolve_any_rhs(ASTNode rhs_node, SymbTables *st) {
   return err;
 }
 
-static ErrCode resolve_any_term(ASTNode term, SymbTables *st) {
+static ErrCode resolve_arg(ASTNode arg, SymbTables *st) {
 
   // Assert node and define err
-  assert(term != NULL);
+  assert(arg != NULL);
   ErrCode err = SUCCESS;
 
-  // Find appropriate resolve function
-  switch (term->node_type) {
+  // Resolve appropriately
+  switch (arg->node_type) {
 
   case NODE_UN_MINUS:
   case NODE_UN_PLUS: {
-    err = resolve_unary_op(term, st);
+
+    assert(arg->child_count == 1);
+    ASTNode literal = arg->child_arr[I_OP];
+    assert(literal->node_type == NODE_LITERAL);
+    assert(literal->data_type != DT_UNDEF);
+
+    // Unary operator can only be used on a number value
+    if (literal->node_type != DT_INTEGER && literal->node_type != DT_DOUBLE) {
+      RETURN_ON_ERROR(ERR_INCOMPATIBLE_TYPE,
+                      "unary operator can only be used on a number");
+    }
+
+    // Propagate data type
+    arg->data_type = literal->data_type;
     break;
   }
   case NODE_IDENTIFIER: {
-    err = resolve_rhs_var_id(term, st);
+
+    Symbol *var_symb = ST_get_symbol(st, arg->data.string_val);
+    // Variable must be defined by now
+    if (var_symb == NULL) {
+      RETURN_ON_ERROR(ERR_UNDEF_SYM, "undefined variable.");
+    }
+    // Data type should be defined with the symbol
+    assert(var_symb->data_type != DT_UNDEF);
+
+    // Propagate data type
+    arg->data_type = var_symb->data_type;
     break;
   }
   case NODE_LITERAL: {
@@ -1107,7 +1130,7 @@ static ErrCode resolve_func_call(ASTNode func_call, SymbTables *st) {
     ASTNode arg = func_arg->child_arr[a];
 
     // Resolve its type
-    err = resolve_any_term(arg, st);
+    err = resolve_arg(arg, st);
     RETURN_ON_ERROR(err, "inside function call in argument");
 
     assert(arg->data_type != DT_UNDEF);
@@ -1138,29 +1161,6 @@ static ErrCode resolve_expression(ASTNode expr, SymbTables *st) {
   assert(expr != NULL);
   assert(expr->node_type == NODE_EXPR);
   ErrCode err = SUCCESS;
-
-  return SUCCESS;
-}
-
-// This is intended only for variable identifiers in expressions and arguments
-static ErrCode resolve_rhs_var_id(ASTNode idtf, SymbTables *st) {
-
-  // Assert node and define err
-  assert(idtf != NULL);
-  assert(idtf->node_type == NODE_IDENTIFIER);
-  ErrCode err = SUCCESS;
-
-  Symbol *var_symb = ST_get_symbol(st, idtf->data.string_val);
-  // Variable must be defined by now
-  if (var_symb == NULL) {
-    RETURN_ON_ERROR(ERR_UNDEF_SYM, "undefined variable.");
-  }
-
-  // Data type should be defined with the symbol
-  assert(var_symb->data_type != DT_UNDEF);
-
-  // Infer data type of symbol
-  idtf->data_type = var_symb->data_type;
 
   return SUCCESS;
 }
@@ -1265,7 +1265,6 @@ static ErrCode resolve_condition(ASTNode cond, SymbTables *st) {
          rel_op->node_type == NODE_GT || rel_op->node_type == NODE_GT_EQ ||
          rel_op->node_type == NODE_LT || rel_op->node_type == NODE_LT_EQ);
 
-  
   ASTNode left_expr = rel_op->child_arr[I_L_O];
   ASTNode right_expr = rel_op->child_arr[I_R_O];
 
@@ -1287,14 +1286,13 @@ static ErrCode resolve_condition(ASTNode cond, SymbTables *st) {
     if (left_dt == DT_DOUBLE && right_dt == DT_INTEGER) {
 
       // TODO Convert right_expr to double
-    }
-    else if (left_dt == DT_INTEGER && right_dt == DT_DOUBLE) {
+    } else if (left_dt == DT_INTEGER && right_dt == DT_DOUBLE) {
 
       // TODO Convert left_expr to double
-    }
-    else {
+    } else {
       // Type incompatibility
-      RETURN_ON_ERROR(ERR_INCOMPATIBLE_TYPE, "incompatible types in condition.");
+      RETURN_ON_ERROR(ERR_INCOMPATIBLE_TYPE,
+                      "incompatible types in condition.");
     }
   }
   // Else types are compatible

@@ -88,9 +88,9 @@ typedef enum {
 #define I_OP 0  // Operator in expr and cond
 #define I_R_O 1 // Left operand
 #define I_L_O 0 // Right operand
+#define I_UN 0  // Child of unary operator
 
 #define I_RET 0 // Return stmt
-
 
 // Union for AST node data
 typedef union node_data_union {
