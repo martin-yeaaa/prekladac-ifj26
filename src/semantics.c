@@ -939,6 +939,11 @@ static ErrCode resolve_any_subexpr(ASTNode subexpr, SymbTables *st) {
     err = resolve_rhs_var_id(subexpr, st);
     break;
   }
+  case NODE_LITERAL: {
+    // We know everything there is about literals
+    // Nothing to do
+    break;
+  }
   // If no function was matched, it's my fault
   default: {
     fprintf(stderr, "Failed matching resolve func for subexpression.\n");
@@ -1057,6 +1062,8 @@ static ErrCode resolve_func_def(ASTNode func_def, SymbTables *st) {
     // Check types of both sides, or infer type
     err = infer_or_check_types(func_id, func_body, func_def);
     RETURN_ON_ERROR(err, "type error in func_def");
+    // func body might have changed
+    func_body = func_def->child_arr[I_FBODY];
   }
 
   // Function def nodes data types is the same as its identifier node
@@ -1195,6 +1202,13 @@ static ErrCode resolve_expression(ASTNode expr, SymbTables *st) {
   assert(expr->node_type == NODE_EXPR);
   ErrCode err = SUCCESS;
 
+  ASTNode subexpr = expr->child_arr[I_OP];
+  err = resolve_any_subexpr(subexpr, st);
+  RETURN_ON_ERROR(err, "inside expression");
+
+  // Propagate data type
+  expr->data_type = subexpr->data_type;
+
   return SUCCESS;
 }
 
@@ -1287,6 +1301,68 @@ static ErrCode resolve_binary_op(ASTNode bin_op, SymbTables *st) {
   assert(bin_op->node_type == NODE_ADD || bin_op->node_type == NODE_SUB ||
          bin_op->node_type == NODE_MUL || bin_op->node_type == NODE_DIV);
   ErrCode err = SUCCESS;
+
+  // Basically copied code from resolve_condition but whateverrr
+  // Also there ARE differences
+
+  ASTNode left_subexpr = bin_op->child_arr[I_L_O];
+  ASTNode right_subexpr = bin_op->child_arr[I_R_O];
+
+  // Resolve both sides
+  err = resolve_any_subexpr(left_subexpr, st);
+  RETURN_ON_ERROR(err, "inside expression, left side");
+  err = resolve_any_subexpr(right_subexpr, st);
+  RETURN_ON_ERROR(err, "inside expression, right side");
+
+  // Data types
+  DataType left_dt = left_subexpr->data_type;
+  DataType right_dt = right_subexpr->data_type;
+  assert(left_dt != DT_UNDEF);
+  assert(right_dt != DT_UNDEF);
+
+  // Check types:
+  // Unit types cannot be operands
+  if (left_dt == DT_UNIT || right_dt == DT_UNIT) {
+    RETURN_ON_ERROR(ERR_INCOMPATIBLE_TYPE,
+                    "Unit type cannot be used in operations in expression.");
+  }
+  // The only allowed operator for strings is +
+  if (left_dt == DT_STRING && right_dt == DT_STRING) {
+    if (bin_op->node_type != NODE_ADD) {
+      RETURN_ON_ERROR(ERR_INCOMPATIBLE_TYPE, "invalid string operation.");
+    }
+  }
+
+  // Check type compatibility
+  if (left_dt != right_dt) {
+
+    // Check for possible implicit conversion
+    if (left_dt == DT_DOUBLE && right_dt == DT_INTEGER) {
+
+      // Convert right side to double
+      err = convert_int_to_double(right_subexpr, bin_op);
+      RETURN_ON_ERROR(err, "conversion of right expression failed"); 
+
+    } else if (left_dt == DT_INTEGER && right_dt == DT_DOUBLE) {
+
+      // Convert left side to double
+      err = convert_int_to_double(left_subexpr, bin_op);
+      RETURN_ON_ERROR(err, "conversion of left expression failed");
+    } else {
+      // Type incompatibility
+      RETURN_ON_ERROR(ERR_INCOMPATIBLE_TYPE,
+                      "incompatible types in expression.");
+    }
+  }
+  // Else types are compatible
+
+  // Conversion creates new AST nodes, we need to update our variables
+  left_subexpr = bin_op->child_arr[I_L_O];
+  right_subexpr = bin_op->child_arr[I_R_O];
+
+  // Propagate type
+  assert(left_subexpr->data_type == right_subexpr->data_type);
+  bin_op->data_type = left_subexpr->data_type;
 
   return SUCCESS;
 }

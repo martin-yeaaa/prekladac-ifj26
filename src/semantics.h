@@ -88,7 +88,7 @@ typedef enum {
 #define I_LHS 0 // identifier
 
 // Operations
-#define I_OP 0  // Operator in expr and cond
+#define I_OP 0  // Child in expr and cond
 #define I_R_O 1 // Left operand
 #define I_L_O 0 // Right operand
 #define I_UN 0  // Child of unary operator
