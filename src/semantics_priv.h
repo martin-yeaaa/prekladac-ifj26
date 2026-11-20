@@ -116,25 +116,4 @@ static ErrCode resolve_AST(ASTNode root, SymbTables *st);
  */
 ErrCode define_variable_symbol(ASTNode idtf, SymbType sb_type, SymbTables *st);
 
-/**
- * @brief Fills the symbol table with local symbols of variables inside block.
- * Does NOT check the right side of definitions. Recursive.
- * @param block ASTNode of type NODE_BLOCK. Must be valid.
- * @param st Pointer to symbol tables structure. Expects to be in correct scope!
- * @return `SUCCESS` if definitions are successful, otherwise one of the
- * following error codes:
- * `ERR_REDEFINITION` if a symbol is redefined,
- * `ERR_INTERNAL` if memory allocation fails.
- */
-ErrCode define_symbols_in_blocks(ASTNode block, SymbTables *st);
-
 #endif
-
-// TODO MAAYBE DELETE
-/**
- * @brief Goes through children of `node`, looks for node with `searched_type`.
- * @param node Node whose children will be checked. Not `NULL`.
- * @param searched_type Value of `NodeType` which is searched,
- * @return Node with type if found, otherwise `NULL`.
- */
-// static ASTNode get_node_of_type(ASTNode node, NodeType searched_type);

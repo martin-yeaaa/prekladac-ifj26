@@ -29,7 +29,7 @@
   } while (0)
 
 // Variable that holds currently resolved function definition.
-// It's only used to simplify inferring or comparing data types of functions
+// It's only used to simplify comparing data types of functions
 // and their return statements.
 static ASTNode current_func_def;
 
@@ -231,6 +231,9 @@ ErrCode semantic_analysis(ASTNode root, SymbTables *st) {
   // Error code return variable
   ErrCode err = SUCCESS;
 
+  // Initialize global variable
+  current_func_def = NULL;
+
   // Check unallowed return statements and recursion, right now we can tell
   // if function type was explicitly declared
   err = check_other_semantics(root);
@@ -242,8 +245,8 @@ ErrCode semantic_analysis(ASTNode root, SymbTables *st) {
 
   // Fill in symbol table with local symbols (variables),
   // do all type checking, type inference and semantic checks.
-  // Recursively calls "resolve" on all valid child nodes.
-  err = resolve_node(root, st);
+  // Recursively calls "resolve" functions on all valid child nodes.
+  err = resolve_AST(root, st);
   RETURN_ON_ERROR(err, "program contains semantic error.");
 
   // Types are checked, symbols are defined, we are DONE
@@ -651,111 +654,6 @@ ErrCode define_func_symbols(ASTNode root, SymbTables *st) {
   return SUCCESS;
 }
 
-static ErrCode resolve_node(ASTNode node, SymbTables *st) {
-
-  // Assert node and define err
-  assert(node != NULL);
-  ErrCode err = SUCCESS;
-
-  // Find appropriate function
-  switch (node->node_type) {
-  case NODE_PROGRAM: {
-    err = resolve_AST(node, st);
-    break;
-  }
-  case NODE_FUNC_DEF:
-  case NODE_MAIN_FUNC_DEF: {
-    err = resolve_func_def(node, st);
-    break;
-  }
-  case NODE_BLOCK: {
-    err = resolve_block(node, st);
-    break;
-  }
-  case NODE_FUNC_CALL: {
-    err = resolve_func_call(node, st);
-    break;
-  }
-  case NODE_EXPR: {
-    err = resolve_expression(node, st);
-    break;
-  }
-  case NODE_VAR_DEF: {
-    err = resolve_var_def(node, st);
-    break;
-  }
-  case NODE_VAL_DEF: {
-    err = resolve_val_def(node, st);
-    break;
-  }
-  case NODE_ASSIGNMENT: {
-    err = resolve_assignment(node, st);
-    break;
-  }
-  case NODE_ADD:
-  case NODE_SUB:
-  case NODE_MUL:
-  case NODE_DIV: {
-    err = resolve_binary_op(node, st);
-    break;
-  }
-  case NODE_UN_PLUS:
-  case NODE_UN_MINUS: {
-    err = resolve_unary_op(node, st);
-    break;
-  }
-  case NODE_COND: {
-    err = resolve_condition(node, st);
-    break;
-  }
-  case NODE_IF: {
-    err = resolve_if(node, st);
-    break;
-  }
-  case NODE_WHILE: {
-    err = resolve_while(node, st);
-    break;
-  }
-  case NODE_RETURN: {
-    err = resolve_return(node, st);
-    break;
-  }
-  // If no function was matched, it's my fault
-  default: {
-    fprintf(stderr, "PROGRAMMING ERR: couldn't match node with resolve\n");
-    err = ERR_INTERNAL;
-    break;
-  }
-  }
-
-  // Returns SUCCESS or error code
-  return err;
-}
-
-static ErrCode resolve_AST(ASTNode root, SymbTables *st) {
-
-  // symbol tables aren't empty
-  // it should be in global scope
-  assert(st->stack_top != NULL);
-  assert(st->stack_top->prev_scope == NULL);
-
-  // Assert node and define err
-  assert(root != NULL);
-  assert(root->node_type == NODE_PROGRAM);
-  ErrCode err = SUCCESS;
-
-  // Loop over every function
-  for (int i = 0; i < root->child_count; i++) {
-
-    err = resolve_node(root->child_arr[i], st);
-    RETURN_ON_ERROR(err, "inside AST");
-
-  } // func_def loop
-
-  // AST is completed.
-  return SUCCESS;
-}
-
 static ErrCode infer_or_check_types(ASTNode lhs, ASTNode rhs, SymbTables *st) {
 
   // Assert nodes and define err
@@ -793,6 +691,182 @@ static ErrCode infer_or_check_types(ASTNode lhs, ASTNode rhs, SymbTables *st) {
   return SUCCESS;
 }
 
+static ErrCode resolve_any_func_body(ASTNode func_body, SymbTables *st) {
+
+  // Assert node and define err
+  assert(func_body != NULL);
+  ErrCode err = SUCCESS;
+
+  // Find appropriate resolve function
+  switch (func_body->node_type) {
+
+  case NODE_BLOCK: {
+    err = resolve_block(func_body, st, true);
+    break;
+  }
+  case NODE_FUNC_CALL: {
+    err = resolve_func_call(func_body, st);
+    break;
+  }
+  case NODE_EXPR: {
+    err = resolve_expression(func_body, st);
+    break;
+  }
+
+  // If no function was matched, it's my fault
+  default: {
+    fprintf(stderr, "Failed matching resolve func for func body.\n");
+    err = ERR_INTERNAL;
+    break;
+  }
+  }
+
+  return err;
+}
+
+static ErrCode resolve_any_stmt(ASTNode stmt, SymbTables *st) {
+
+  // Assert node and define err
+  assert(stmt != NULL);
+  ErrCode err = SUCCESS;
+
+  // Find appropriate resolve function
+  switch (stmt->node_type) {
+
+  case NODE_FUNC_CALL: {
+    err = resolve_func_call(stmt, st);
+    break;
+  }
+  case NODE_EXPR: {
+    err = resolve_expression(stmt, st);
+    break;
+  }
+  case NODE_VAR_DEF: {
+    err = resolve_var_def(stmt, st);
+    break;
+  }
+  case NODE_VAL_DEF: {
+    err = resolve_val_def(stmt, st);
+    break;
+  }
+  case NODE_ASSIGNMENT: {
+    err = resolve_assignment(stmt, st);
+    break;
+  }
+  case NODE_IF: {
+    err = resolve_if(stmt, st, false);
+    break;
+  }
+  case NODE_WHILE: {
+    err = resolve_while(stmt, st);
+    break;
+  }
+  case NODE_RETURN: {
+    err = resolve_return(stmt, st);
+    break;
+  }
+  // If no function was matched, it's my fault
+  default: {
+    fprintf(stderr, "Failed matching resolve func for statement.\n");
+    err = ERR_INTERNAL;
+    break;
+  }
+  }
+
+  return err;
+}
+
+static ErrCode resolve_any_rhs(ASTNode rhs_node, SymbTables *st) {
+
+  // Assert node and define err
+  assert(rhs_node != NULL);
+  ErrCode err = SUCCESS;
+
+  // Find appropriate resolve function
+  switch (rhs_node->node_type) {
+
+  case NODE_FUNC_CALL: {
+    err = resolve_func_call(rhs_node, st);
+    break;
+  }
+  case NODE_EXPR: {
+    err = resolve_expression(rhs_node, st);
+    break;
+  }
+
+  // If no function was matched, it's my fault
+  default: {
+    fprintf(stderr, "Failed matching resolve func for rhs node.\n");
+    err = ERR_INTERNAL;
+    break;
+  }
+  }
+
+  return err;
+}
+
+/*
+static ErrCode resolve_any_TODO(ASTNode node, SymbTables *st) {
+
+  // Assert node and define err
+  assert(node != NULL);
+  ErrCode err = SUCCESS;
+
+  // Find appropriate resolve function
+  switch (node->node_type) {
+
+  case NODE_ADD:
+  case NODE_SUB:
+  case NODE_MUL:
+  case NODE_DIV: {
+    err = resolve_binary_op(node, st);
+    break;
+  }
+  case NODE_UN_PLUS:
+  case NODE_UN_MINUS: {
+    err = resolve_unary_op(node, st);
+    break;
+  }
+
+
+  // If no function was matched, it's my fault
+  default: {
+    fprintf(stderr, "PROGRAMMING ERR: couldn't match node with resolve\n");
+    err = ERR_INTERNAL;
+    break;
+  }
+  }
+
+  // Returns SUCCESS or error code
+  return err;
+}
+
+*/
+
+static ErrCode resolve_AST(ASTNode root, SymbTables *st) {
+
+  // symbol tables aren't empty
+  // it should be in global scope
+  assert(st->stack_top != NULL);
+  assert(st->stack_top->prev_scope == NULL);
+
+  // Assert node and define err
+  assert(root != NULL);
+  assert(root->node_type == NODE_PROGRAM);
+  ErrCode err = SUCCESS;
+
+  // Loop over every function
+  for (int i = 0; i < root->child_count; i++) {
+
+    err = resolve_func_def(root->child_arr[i], st);
+    RETURN_ON_ERROR(err, "inside AST");
+
+  } // func_def loop
+
+  // AST is completed.
+  return SUCCESS;
+}
+
 static ErrCode resolve_func_def(ASTNode func_def, SymbTables *st) {
 
   // Assert node and define err
@@ -806,9 +880,13 @@ static ErrCode resolve_func_def(ASTNode func_def, SymbTables *st) {
   ASTNode func_body = func_def->child_arr[I_FBODY];
   ASTNode func_par = func_def->child_arr[I_FD_PAR];
   int par_count = func_par->child_count;
-  
+
   // Func def identifiers must already be defined
   assert(func_id->symbol_ptr != NULL);
+
+  // Set global variable to help resolve return statements
+  ASTNode prev_func_def = current_func_def; // Save previous value
+  current_func_def = func_def;              // Set new
 
   // Helper variable for scope enter/exit
   bool scope_entered = false;
@@ -839,7 +917,7 @@ static ErrCode resolve_func_def(ASTNode func_def, SymbTables *st) {
   }
 
   // Resolve and check function body
-  err = resolve_node(func_body, st);
+  err = resolve_any_func_body(func_body, st);
   RETURN_ON_ERROR(err, "inside func_def");
 
   // After entering local scope, don't forget to exit it!
@@ -855,15 +933,39 @@ static ErrCode resolve_func_def(ASTNode func_def, SymbTables *st) {
   // It's the only node that shares type with identifier node
   func_def->data_type = func_id->data_type;
 
+  // Before returning, revert global flag to its previous state
+  current_func_def = prev_func_def;
+
   return SUCCESS;
 }
 
-static ErrCode resolve_block(ASTNode block, SymbTables *st) {
+static ErrCode resolve_block(ASTNode block, SymbTables *st, bool check_end_if) {
 
   // Assert node and define err
   assert(block != NULL);
   assert(block->node_type == NODE_BLOCK);
   ErrCode err = SUCCESS;
+
+  // Loop over every statement
+  for (int i = 0; i < block->child_count; i++) {
+
+    ASTNode stmt = block->child_arr[i];
+
+    // TODO LAST statement type is block type!!
+    // Treat special case where last statement of function body is an if stmt
+    if (check_end_if == true && i == block->child_count - 1 &&
+        stmt->node_type == NODE_IF) {
+
+      err = resolve_if(stmt, st, true);
+      RETURN_ON_ERROR(err, "inside block, ending if stmt");
+    }
+    // Otherwise normally resolve statement
+    else {
+      // Resolve each one
+      err = resolve_any_stmt(stmt, st);
+      RETURN_ON_ERROR(err, "inside block");
+    }
+  }
 
   return SUCCESS;
 }
@@ -895,6 +997,20 @@ static ErrCode resolve_var_def(ASTNode var_def, SymbTables *st) {
   assert(var_def->node_type == NODE_VAR_DEF);
   ErrCode err = SUCCESS;
 
+  // Define symbol
+  ASTNode var_def_id = var_def->child_arr[I_LHS];
+  err = define_variable_symbol(var_def_id, SB_VAR, st);
+  RETURN_ON_ERROR(err, "inside var_def");
+
+  // Resolve right side of definition
+  ASTNode rhs_node = var_def->child_arr[I_RHS];
+  err = resolve_any_rhs(rhs_node, st);
+  RETURN_ON_ERROR(err, "inside var_def");
+
+  // Do type check
+  err = infer_or_check_types(var_def_id, rhs_node, st);
+  RETURN_ON_ERROR(err, "inside var_def");
+
   return SUCCESS;
 }
 
@@ -904,6 +1020,20 @@ static ErrCode resolve_val_def(ASTNode val_def, SymbTables *st) {
   assert(val_def != NULL);
   assert(val_def->node_type == NODE_VAL_DEF);
   ErrCode err = SUCCESS;
+
+  // Define symbol
+  ASTNode val_def_id = val_def->child_arr[I_LHS];
+  err = define_variable_symbol(val_def_id, SB_VAL, st);
+  RETURN_ON_ERROR(err, "inside val_def");
+
+  // Resolve right side of definition
+  ASTNode rhs_node = val_def->child_arr[I_RHS];
+  err = resolve_any_rhs(rhs_node, st);
+  RETURN_ON_ERROR(err, "inside val_def");
+
+  // Do type check
+  err = infer_or_check_types(val_def_id, rhs_node, st);
+  RETURN_ON_ERROR(err, "inside val_def");
 
   return SUCCESS;
 }
@@ -959,12 +1089,49 @@ static ErrCode resolve_condition(ASTNode cond, SymbTables *st) {
   return SUCCESS;
 }
 
-static ErrCode resolve_if(ASTNode if_stmt, SymbTables *st) {
+static ErrCode resolve_if(ASTNode if_stmt, SymbTables *st,
+                          bool is_func_result) {
 
   // Assert node and define err
   assert(if_stmt != NULL);
   assert(if_stmt->node_type == NODE_IF);
   ErrCode err = SUCCESS;
+
+  // Set child nodes
+  ASTNode cond = if_stmt->child_arr[I_COND];
+  ASTNode then_block = if_stmt->child_arr[I_IB1];
+  ASTNode else_block = if_stmt->child_arr[I_IB2];
+
+  // Condition
+  err = resolve_condition(cond, st);
+  RETURN_ON_ERROR(err, "inside if condition");
+
+  // SCOPE START
+  err = ST_enter_scope(st);
+  RETURN_ON_ERROR(err, "inside if, on entering scope of then");
+
+  // Block then
+  err = resolve_block(then_block, st, is_func_result);
+  RETURN_ON_ERROR(err, "inside if then block");
+
+  ST_exit_scope(st);
+  // SCOPE END
+
+  // SCOPE START
+  err = ST_enter_scope(st);
+  RETURN_ON_ERROR(err, "inside if, on entering scope of else");
+
+  // Block else
+  err = resolve_block(else_block, st, is_func_result);
+  RETURN_ON_ERROR(err, "inside if else block");
+
+  ST_exit_scope(st);
+  // SCOPE END
+
+  // Treat edge case
+  if (is_func_result == true) {
+    // TODO
+  }
 
   return SUCCESS;
 }
@@ -975,6 +1142,25 @@ static ErrCode resolve_while(ASTNode while_stmt, SymbTables *st) {
   assert(while_stmt != NULL);
   assert(while_stmt->node_type == NODE_WHILE);
   ErrCode err = SUCCESS;
+
+  // Set child nodes
+  ASTNode cond = while_stmt->child_arr[I_COND];
+  ASTNode block = while_stmt->child_arr[I_WB];
+
+  // Condition
+  err = resolve_condition(cond, st);
+  RETURN_ON_ERROR(err, "inside while condition");
+
+  // Caller deals with scopes
+  err = ST_enter_scope(st);
+  RETURN_ON_ERROR(err, "inside while, on entering scope");
+
+  // Block
+  err = resolve_block(block, st, false);
+  RETURN_ON_ERROR(err, "inside while block");
+
+  // After entering scope, exit it
+  ST_exit_scope(st);
 
   return SUCCESS;
 }
@@ -991,6 +1177,11 @@ static ErrCode resolve_return(ASTNode return_stmt, SymbTables *st) {
 
 ErrCode define_variable_symbol(ASTNode idtf, SymbType sb_type, SymbTables *st) {
 
+  assert(idtf != NULL);
+  assert(idtf->node_type == NODE_IDENTIFIER);
+  // Intended only for variables
+  assert(sb_type == SB_VAL || SB_VAR);
+
   // Make draft
   SymbDraft symb_draft = {
       .identifier = idtf->data.string_val,
@@ -1000,8 +1191,7 @@ ErrCode define_variable_symbol(ASTNode idtf, SymbType sb_type, SymbTables *st) {
 
   // Try defining it - this also checks redefinition!
   ErrCode err = ST_define_symbol(st, &symb_draft);
-  if (err != SUCCESS)
-    return err;
+  RETURN_ON_ERROR(err, "failed defining symbol");
 
   // Save symbol pointer
   Symbol *local_symb = ST_get_symbol(st, idtf->data.string_val);
@@ -1009,94 +1199,6 @@ ErrCode define_variable_symbol(ASTNode idtf, SymbType sb_type, SymbTables *st) {
   idtf->symbol_ptr = local_symb;
 
   // Symbol defined
-  return SUCCESS;
-}
-
-ErrCode define_symbols_in_blocks(ASTNode block, SymbTables *st) {
-
-  assert(block->node_type == NODE_BLOCK);
-
-  // Loop over every statement
-  for (int i = 0; i < block->child_count; i++) {
-
-    ASTNode stmt = block->child_arr[i];
-    ErrCode err;
-
-    // Recursively find calls based on node type of statement nodes
-    switch (stmt->node_type) {
-
-    // var id = expr_or_call
-    case NODE_VAR_DEF: {
-      ASTNode var_def_id = stmt->child_arr[I_LHS];
-      err = define_variable_symbol(var_def_id, SB_VAR, st);
-      if (err != SUCCESS)
-        return err;
-      break;
-    }
-
-    // val id = expr_or_call
-    case NODE_VAL_DEF: {
-      ASTNode val_def_id = stmt->child_arr[I_LHS];
-      err = define_variable_symbol(val_def_id, SB_VAL, st);
-      if (err != SUCCESS)
-        return err;
-      break;
-    }
-
-    // while loop
-    case NODE_WHILE: {
-
-      // Call this function on block inside loop
-      ASTNode while_block = stmt->child_arr[I_WB];
-
-      // Caller deals with scopes
-      err = ST_enter_scope(st);
-      if (err != SUCCESS)
-        return err;
-      // Recursion
-      err = define_symbols_in_blocks(while_block, st);
-      ST_exit_scope(st);
-      if (err != SUCCESS)
-        return err;
-
-      break;
-    }
-
-    // if stmt
-    case NODE_IF: {
-
-      // Call this function on both if blocks
-      ASTNode then_block = stmt->child_arr[I_IB1];
-      ASTNode else_block = stmt->child_arr[I_IB2];
-
-      // Caller deals with scopes
-      err = ST_enter_scope(st);
-      if (err != SUCCESS)
-        return err;
-      // Recursion
-      err = define_symbols_in_blocks(then_block, st);
-      ST_exit_scope(st);
-      if (err != SUCCESS)
-        return err;
-
-      // Same thing for second block
-      err = ST_enter_scope(st);
-      if (err != SUCCESS)
-        return err;
-      err = define_symbols_in_blocks(else_block, st);
-      ST_exit_scope(st);
-      if (err != SUCCESS)
-        return err;
-
-      break;
-    }
-
-    default:
-      // Other statements
-      break;
-    }
-  }
-
   return SUCCESS;
 }
 
