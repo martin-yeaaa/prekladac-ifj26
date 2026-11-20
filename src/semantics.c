@@ -1341,7 +1341,7 @@ static ErrCode resolve_binary_op(ASTNode bin_op, SymbTables *st) {
 
       // Convert right side to double
       err = convert_int_to_double(right_subexpr, bin_op);
-      RETURN_ON_ERROR(err, "conversion of right expression failed"); 
+      RETURN_ON_ERROR(err, "conversion of right expression failed");
 
     } else if (left_dt == DT_INTEGER && right_dt == DT_DOUBLE) {
 
@@ -1373,6 +1373,21 @@ static ErrCode resolve_unary_op(ASTNode un_op, SymbTables *st) {
   assert(un_op != NULL);
   assert(un_op->node_type == NODE_UN_PLUS || un_op->node_type == NODE_UN_MINUS);
   ErrCode err = SUCCESS;
+
+  // Resolve child
+  ASTNode subexpr = un_op->child_arr[I_UN];
+  err = resolve_any_subexpr(subexpr, st);
+  RETURN_ON_ERROR(err, "inside unary operator");
+
+  // Check if child has valid type
+  assert(subexpr->data_type != DT_UNDEF);
+  if (subexpr->data_type == DT_UNIT || subexpr->data_type == DT_STRING) {
+    RETURN_ON_ERROR(ERR_INCOMPATIBLE_TYPE,
+                    "unary operator can only be used on number values.");
+  }
+
+  // Propagate type
+  un_op->data_type = subexpr->data_type;
 
   return SUCCESS;
 }
