@@ -1265,6 +1265,40 @@ static ErrCode resolve_condition(ASTNode cond, SymbTables *st) {
          rel_op->node_type == NODE_GT || rel_op->node_type == NODE_GT_EQ ||
          rel_op->node_type == NODE_LT || rel_op->node_type == NODE_LT_EQ);
 
+  
+  ASTNode left_expr = rel_op->child_arr[I_L_O];
+  ASTNode right_expr = rel_op->child_arr[I_R_O];
+
+  // Resolve both sides
+  err = resolve_expression(left_expr, st);
+  RETURN_ON_ERROR(err, "inside condition, left expression");
+  err = resolve_expression(right_expr, st);
+  RETURN_ON_ERROR(err, "inside condition, right expression");
+
+  // Data types
+  DataType left_dt = left_expr->data_type;
+  DataType right_dt = left_expr->data_type;
+  assert(left_dt != DT_UNDEF);
+  assert(right_dt != DT_UNDEF);
+  // Check types
+  if (left_dt != right_dt) {
+
+    // Check for possible implicit conversion
+    if (left_dt == DT_DOUBLE && right_dt == DT_INTEGER) {
+
+      // TODO Convert right_expr to double
+    }
+    else if (left_dt == DT_INTEGER && right_dt == DT_DOUBLE) {
+
+      // TODO Convert left_expr to double
+    }
+    else {
+      // Type incompatibility
+      RETURN_ON_ERROR(ERR_INCOMPATIBLE_TYPE, "incompatible types in condition.");
+    }
+  }
+  // Else types are compatible
+
   return SUCCESS;
 }
 
