@@ -372,6 +372,117 @@ TEST_F(symbol_definitions, get_symbol) {
 
 }
 
+
+
+TEST_F(symbol_definitions, get_symbol_but_save_and_restore_stack) {
+
+  int ret = ST_enter_scope(&st);
+  ASSERT_TRUE(ret == 0);
+
+
+  // This should be harmless
+  LNode saved = ST_save_scope_stack(&st);
+  EXPECT_EQ(saved, st.stack_top);
+  ST_restore_scope_stack(&st, saved);
+  EXPECT_EQ(saved, st.stack_top);
+
+
+  ret = ST_define_symbol(&st, &foo_func);
+  ASSERT_TRUE(ret == 0);
+
+  // Get symbol
+  Symbol * sb = ST_get_symbol(&st, foo_func.identifier);
+  ASSERT_TRUE(sb != NULL);
+  // Check uniq_id
+  EXPECT_TRUE(sb->uniq_id == 1);
+
+  // Main func
+  ret = ST_define_symbol(&st, &foo_main_func);
+  ASSERT_TRUE(ret == 0);
+
+  sb = ST_get_symbol(&st, foo_main_func.identifier);
+  ASSERT_TRUE(sb != NULL);
+  // Check uniq_id - main must have uniq_id 0
+  EXPECT_TRUE(sb->uniq_id == 0);
+
+  // New block
+  ret = ST_enter_scope(&st);
+  ASSERT_TRUE(ret == 0);
+  ret = ST_define_symbol(&st, &x_val_int);
+  ASSERT_TRUE(ret == 0);
+
+  // Get symbol
+  sb = ST_get_symbol(&st, x_val_int.identifier);
+  ASSERT_TRUE(sb != NULL);
+  // Check uniq_id
+  EXPECT_TRUE(sb->uniq_id == 2);
+
+  // New block
+  ret = ST_enter_scope(&st);
+  ASSERT_TRUE(ret == 0);
+  // Try shadowing
+  ret = ST_define_symbol(&st, &x_val_int);
+  ASSERT_TRUE(ret == 0);
+
+  // Get symbol
+  sb = ST_get_symbol(&st, x_val_int.identifier);
+  ASSERT_TRUE(sb != NULL);
+  // Check uniq_id
+  EXPECT_TRUE(sb->uniq_id == 3);
+
+
+
+  // Exit local stack!
+  saved = ST_save_scope_stack(&st);
+  EXPECT_NE(saved, st.stack_top);
+
+  // Global symbols should be found
+  sb = ST_get_symbol(&st, foo_func.identifier);
+  ASSERT_TRUE(sb != NULL);
+  sb = ST_get_symbol(&st, foo_main_func.identifier);
+  ASSERT_TRUE(sb != NULL);
+
+  // Local symbols should NOT be found
+  sb = ST_get_symbol(&st, x_val_int.identifier);
+  ASSERT_TRUE(sb == NULL);
+  sb = ST_get_symbol(&st, x_val_int.identifier); // these are the same actually
+  ASSERT_TRUE(sb == NULL);
+
+
+  // Restore local stack
+  ST_restore_scope_stack(&st, saved);
+  EXPECT_EQ(saved, st.stack_top);
+
+  // Local symbol should be found again!
+
+  sb = ST_get_symbol(&st, x_val_int.identifier);
+  ASSERT_TRUE(sb != NULL);
+  // This is the one that shadows the other x
+  EXPECT_TRUE(sb->uniq_id == 3);
+
+
+  // We can access symbols further up the stack
+  // Get symbol
+  sb = ST_get_symbol(&st, foo_func.identifier);
+  ASSERT_TRUE(sb != NULL);
+  // Check uniq_id
+  EXPECT_TRUE(sb->uniq_id == 1);
+
+  // Try getting non-existent symbol
+  sb = ST_get_symbol(&st, "blabla");
+  ASSERT_TRUE(sb == NULL);
+
+  // Exit block
+  ST_exit_scope(&st);
+
+  // Get symbol
+  sb = ST_get_symbol(&st, x_val_int.identifier);
+  ASSERT_TRUE(sb != NULL);
+  // Check uniq_id - this should be the first "x"
+  EXPECT_TRUE(sb->uniq_id == 2);
+
+}
+
 // This tests ST_init(), it has to be in the end because it calls
 // other functions - enter_scope() and define_symbol()
 TEST(symbol_table_init, initialization) {

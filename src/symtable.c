@@ -203,6 +203,32 @@ void ST_exit_scope(SymbTables *tables) {
   tables->stack_top = tables->stack_top->prev_scope;
 }
 
+LNode ST_save_scope_stack(SymbTables *tables) {
+
+  assert(tables != NULL);
+  assert(tables->stack_top != NULL);
+
+  // Save value for returning
+  LNode saved_stack = tables->stack_top;
+
+  // Exit scopes until we are in global scope
+  while (tables->stack_top->prev_scope != NULL) {
+    ST_exit_scope(tables);
+  }
+
+  return saved_stack;
+}
+
+void ST_restore_scope_stack(SymbTables *tables, LNode saved_stack) {
+
+  assert(tables != NULL);
+  assert(saved_stack != NULL);
+
+  // It's that simple!
+  tables->stack_top = saved_stack;
+}
+
+
 ErrCode ST_define_symbol(SymbTables *tables, SymbDraft *symbol_draft) {
 
   // Assertions to prevent bugs
