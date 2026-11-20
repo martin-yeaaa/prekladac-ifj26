@@ -1614,6 +1614,39 @@ static ErrCode resolve_return(ASTNode return_stmt, SymbTables *st) {
   assert(return_stmt->node_type == NODE_RETURN);
   ErrCode err = SUCCESS;
 
+  // Resolve statement
+  ASTNode rhs = return_stmt->child_arr[I_RET];
+  err = resolve_any_rhs(rhs, st);
+  RETURN_ON_ERROR(err, "inside return statement.");
+  assert(rhs->data_type != DT_UNDEF);
+
+  DataType func_dt = current_func_def->data_type;
+  DataType return_dt = rhs->data_type;
+
+  // Compare type with function definition
+  // It must be explicitly declared!
+  assert(func_dt != DT_UNDEF);
+
+  if (func_dt != return_dt) {
+
+    // Check if conversion can happen
+    if (func_dt == DT_DOUBLE && return_dt == DT_INTEGER) {
+
+      err = convert_int_to_double(rhs, return_stmt);
+      RETURN_ON_ERROR(err, "conversion failed inside return.");
+      // Update rhs after conversion
+      rhs = return_stmt->child_arr[I_RET];
+    }
+    // Conversion cannot happen -> incompatible types
+    else {
+      RETURN_ON_ERROR(ERR_INCOMPATIBLE_TYPE,
+                      "incompatible type in return statement.");
+    }
+  }
+
+  // Propagate type
+  return_stmt->data_type = rhs->data_type;
+
   return SUCCESS;
 }
 
