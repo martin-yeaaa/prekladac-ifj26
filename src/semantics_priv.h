@@ -76,7 +76,8 @@ static ErrCode check_recursion(ASTNode func_body, char *func_name,
 int find_func_calls(ASTNode func_body, BSTNode *call_list);
 
 /**
- * @brief Fills the symbol table with function symbols.
+ * @brief Fills the symbol table with function symbols, also saves func_def
+ * nodes into global func_def_list.
  * @param root Root of AST. Must be valid.
  * @param st Pointer to FRESHLY INITIALIZED symbol tables structure.
  * @return `SUCCESS` if definitions are successful, otherwise one of the

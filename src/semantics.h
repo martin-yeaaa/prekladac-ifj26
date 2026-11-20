@@ -116,6 +116,10 @@ typedef struct ast_node_struct {
   // If node type is a , this points to matching symbol in symtable
   Symbol *symbol_ptr;
 
+  // Only used in function definition nodes, tells us if we resolved its
+  // children nodes or not
+  bool was_resolved;
+
   // Children nodes, there can be many
   int child_count;
   int child_limit; // Info for realloc

@@ -33,6 +33,10 @@
 // and their return statements.
 static ASTNode current_func_def;
 
+// Variable that holds all function definition nodes. Used for looking up func
+// def nodes using their identifier strings.
+static BSTNode func_def_list;
+
 // Function definitions
 
 ErrCode AST_init_node(ASTNode *node, NodeType node_type, DataType data_type,
@@ -88,6 +92,7 @@ ErrCode AST_init_node(ASTNode *node, NodeType node_type, DataType data_type,
   new_node->child_count = 0;
   new_node->child_limit = 0;
   new_node->child_arr = NULL;
+  new_node->was_resolved = false;
 
   // Don't forget to set the node!
   *node = new_node;
@@ -239,17 +244,25 @@ ErrCode semantic_analysis(ASTNode root, SymbTables *st) {
   err = check_other_semantics(root);
   RETURN_ON_ERROR(err, "found invalid return statement or invalid recursion.");
 
+  func_def_list = BST_new();
   // Fill in symbol table with function declarations
+  // Also fills global func_def_list!
   err = define_func_symbols(root, st);
-  RETURN_ON_ERROR(err, "failed defining function symbols.");
-
+  if (err != SUCCESS) {
+    BST_destroy_tree(func_def_list);
+    RETURN_ON_ERROR(err, "failed defining function symbols.");
+  }
   // Fill in symbol table with local symbols (variables),
   // do all type checking, type inference and semantic checks.
   // Recursively calls "resolve" functions on all valid child nodes.
   err = resolve_AST(root, st);
-  RETURN_ON_ERROR(err, "program contains semantic error.");
+  if (err != SUCCESS) {
+    BST_destroy_tree(func_def_list);
+    RETURN_ON_ERROR(err, "program contains semantic error.");
+  }
 
   // Types are checked, symbols are defined, we are DONE
+  BST_destroy_tree(func_def_list);
   return SUCCESS;
 }
 
@@ -546,6 +559,7 @@ ErrCode define_func_symbols(ASTNode root, SymbTables *st) {
   // it should be in global scope
   assert(st->stack_top != NULL);
   assert(st->stack_top->prev_scope == NULL);
+  ErrCode err = SUCCESS;
 
   bool main_was_defined = false;
 
@@ -564,6 +578,11 @@ ErrCode define_func_symbols(ASTNode root, SymbTables *st) {
            func_def->node_type == NODE_MAIN_FUNC_DEF);
     // A convention I decided to follow, even though it's useless
     assert(func_def->data_type == func_idtf->data_type);
+
+    // Insert pointer to func_def node into global list
+    err = BST_insert(&func_def_list, func_idtf->data.string_val, func_def,
+                     sizeof(ASTNode));
+    RETURN_ON_ERROR(err, ERR_INTERNAL);
 
     SymbType func_sym_type = SB_FUNC;
 
@@ -631,7 +650,7 @@ ErrCode define_func_symbols(ASTNode root, SymbTables *st) {
                             .param_type_arr = par_arr};
 
     // Try defining it - this also checks redefinition!
-    ErrCode err = ST_define_symbol(st, &func_draft);
+    err = ST_define_symbol(st, &func_draft);
     free(par_arr); // every malloc has a free :)
     RETURN_ON_ERROR(err, "occurred when defining function symbol.");
 
@@ -892,8 +911,13 @@ static ErrCode resolve_AST(ASTNode root, SymbTables *st) {
   // Loop over every function
   for (int i = 0; i < root->child_count; i++) {
 
-    err = resolve_func_def(root->child_arr[i], st);
-    RETURN_ON_ERROR(err, "inside AST");
+    ASTNode func_def = root->child_arr[i];
+
+    // Avoid repeated resolves
+    if (func_def->was_resolved == false) {
+      err = resolve_func_def(root->child_arr[i], st);
+      RETURN_ON_ERROR(err, "inside AST");
+    }
 
   } // func_def loop
 
@@ -987,6 +1011,9 @@ static ErrCode resolve_func_def(ASTNode func_def, SymbTables *st) {
   // Before returning, revert global flag to its previous state
   current_func_def = prev_func_def;
 
+  // Set flag so we don't resolve this again
+  func_def->was_resolved = true;
+
   return SUCCESS;
 }
 
@@ -1044,9 +1071,25 @@ static ErrCode resolve_func_call(ASTNode func_call, SymbTables *st) {
     RETURN_ON_ERROR(ERR_UNDEF_SYM, "called an undefined function.");
   }
 
-  // Functions are be resolved in such order where there are no dependencies
-  // on untyped function symbols
+  // If function call has undefined data type, we simply resolve it first!
+  if (func_symb->data_type == DT_UNDEF) {
+
+    // Save scope
+    LNode local_stack = ST_save_scope_stack(st);
+
+    // Get func def node to resolve
+    ASTNode unresolved = BST_get_data(func_def_list, func_id->data.string_val);
+    assert(unresolved != NULL); // This cannot fail!
+
+    err = resolve_func_def(unresolved, st);
+    RETURN_ON_ERROR(err, "inside func call");
+
+    // Restore scope and continue like nothing happened!
+    ST_restore_scope_stack(st, local_stack);
+  }
+  // Now funtion call must have defined data type
   assert(func_symb->data_type != DT_UNDEF);
+
   // Set data type
   func_call->data_type = func_symb->data_type;
   func_id->data_type = func_symb->data_type;
