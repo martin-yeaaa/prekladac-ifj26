@@ -925,9 +925,27 @@ static ErrCode resolve_func_def(ASTNode func_def, SymbTables *st) {
     ST_exit_scope(st);
   }
 
-  // Check types of both sides, or infer type
-  err = infer_or_check_types(func_id, func_body, st);
-  RETURN_ON_ERROR(err, "type error in func_def");
+  // If data type is set explicitly, and function body is a block ending with
+  // if statement, block will have inferred type Unit. This can cause an issue
+  // if the if-statement ends with return in every branch. We don't infer type
+  // of these returns into the if-statement, we always set if-statement to have
+  // data type Unit. Then, there could be incompatible types between explicitly
+  // set function type that is NOT Unit and type of block which IS Unit, even
+  // though according to specification, it should be vaild.
+  int last = func_body->child_count - 1;
+  assert(last >= 0);
+  if (func_id->node_type != DT_UNDEF && func_id->node_type != DT_UNIT &&
+      func_body->node_type == NODE_BLOCK &&
+      func_body->child_arr[last]->node_type == NODE_IF) {
+
+    // DON'T CHECK TYPES, they are checked in return statements.
+
+  } else {
+    // Check types of both sides, or infer type
+    err = infer_or_check_types(func_id, func_body, st);
+    RETURN_ON_ERROR(err, "type error in func_def");
+  }
+
   // Function def nodes data types is the same as its identifier node
   // It's the only node that shares type with identifier node
   func_def->data_type = func_id->data_type;
@@ -998,6 +1016,7 @@ static ErrCode resolve_var_def(ASTNode var_def, SymbTables *st) {
   // Assert node and define err
   assert(var_def != NULL);
   assert(var_def->node_type == NODE_VAR_DEF);
+  assert(var_def->data_type == DT_UNIT);
   ErrCode err = SUCCESS;
 
   // Define symbol
@@ -1022,6 +1041,7 @@ static ErrCode resolve_val_def(ASTNode val_def, SymbTables *st) {
   // Assert node and define err
   assert(val_def != NULL);
   assert(val_def->node_type == NODE_VAL_DEF);
+  assert(val_def->data_type == DT_UNIT);
   ErrCode err = SUCCESS;
 
   // Define symbol
@@ -1046,6 +1066,7 @@ static ErrCode resolve_assignment(ASTNode assign, SymbTables *st) {
   // Assert node and define err
   assert(assign != NULL);
   assert(assign->node_type == NODE_ASSIGNMENT);
+  assert(assign->data_type == DT_UNIT);
   ErrCode err = SUCCESS;
 
   return SUCCESS;
@@ -1077,6 +1098,7 @@ static ErrCode resolve_condition(ASTNode cond, SymbTables *st) {
   // Assert node and define err
   assert(cond != NULL);
   assert(cond->node_type == NODE_COND);
+  assert(cond->data_type == DT_BOOL);
   assert(cond->child_count == 1);
   ErrCode err = SUCCESS;
 
@@ -1202,6 +1224,7 @@ static ErrCode resolve_while(ASTNode while_stmt, SymbTables *st) {
   // Assert node and define err
   assert(while_stmt != NULL);
   assert(while_stmt->node_type == NODE_WHILE);
+  assert(while_stmt->data_type == DT_UNIT);
   ErrCode err = SUCCESS;
 
   // Set child nodes
