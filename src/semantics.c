@@ -875,6 +875,8 @@ static ErrCode resolve_arg(ASTNode arg, SymbTables *st) {
   case NODE_UN_MINUS:
   case NODE_UN_PLUS: {
 
+    // In this case, unary operator can only be used on a literal
+    // Unary operator with identifier is an expression!
     assert(arg->child_count == 1);
     ASTNode literal = arg->child_arr[I_OP];
     assert(literal->node_type == NODE_LITERAL);
@@ -892,16 +894,7 @@ static ErrCode resolve_arg(ASTNode arg, SymbTables *st) {
   }
   case NODE_IDENTIFIER: {
 
-    Symbol *var_symb = ST_get_symbol(st, arg->data.string_val);
-    // Variable must be defined by now
-    if (var_symb == NULL) {
-      RETURN_ON_ERROR(ERR_UNDEF_SYM, "undefined variable.");
-    }
-    // Data type should be defined with the symbol
-    assert(var_symb->data_type != DT_UNDEF);
-
-    // Propagate data type
-    arg->data_type = var_symb->data_type;
+    err = resolve_rhs_var_id(arg, st);
     break;
   }
   case NODE_LITERAL: {
@@ -910,7 +903,7 @@ static ErrCode resolve_arg(ASTNode arg, SymbTables *st) {
     break;
   }
 
-  // If no function was matched, it's my fault
+  // If no type was matched, it's my fault
   default: {
     fprintf(stderr, "Failed matching resolve func for term.\n");
     err = ERR_INTERNAL;
@@ -920,33 +913,35 @@ static ErrCode resolve_arg(ASTNode arg, SymbTables *st) {
 
   return err;
 }
-/*
-static ErrCode resolve_any_TODO(ASTNode node, SymbTables *st) {
+
+static ErrCode resolve_any_subexpr(ASTNode subexpr, SymbTables *st) {
 
   // Assert node and define err
-  assert(node != NULL);
+  assert(subexpr != NULL);
   ErrCode err = SUCCESS;
 
   // Find appropriate resolve function
-  switch (node->node_type) {
+  switch (subexpr->node_type) {
 
   case NODE_ADD:
   case NODE_SUB:
   case NODE_MUL:
   case NODE_DIV: {
-    err = resolve_binary_op(node, st);
+    err = resolve_binary_op(subexpr, st);
     break;
   }
   case NODE_UN_PLUS:
   case NODE_UN_MINUS: {
-    err = resolve_unary_op(node, st);
+    err = resolve_unary_op(subexpr, st);
     break;
   }
-
-
+  case NODE_IDENTIFIER: {
+    err = resolve_rhs_var_id(subexpr, st);
+    break;
+  }
   // If no function was matched, it's my fault
   default: {
-    fprintf(stderr, "PROGRAMMING ERR: couldn't match node with resolve\n");
+    fprintf(stderr, "Failed matching resolve func for subexpression.\n");
     err = ERR_INTERNAL;
     break;
   }
@@ -955,8 +950,6 @@ static ErrCode resolve_any_TODO(ASTNode node, SymbTables *st) {
   // Returns SUCCESS or error code
   return err;
 }
-
-*/
 
 static ErrCode resolve_AST(ASTNode root, SymbTables *st) {
 
@@ -1182,7 +1175,8 @@ static ErrCode resolve_func_call(ASTNode func_call, SymbTables *st) {
       // Check implicit conversion
       if (arg_type == DT_INTEGER && param_type == DT_DOUBLE) {
 
-        // TODO IMPLICIT CONVERSION
+        err = convert_int_to_double(arg, func_arg);
+        RETURN_ON_ERROR(err, "conversion failed inside argument");
       } else {
         RETURN_ON_ERROR(ERR_FUN_ARGS,
                         "function called with wrong data type of argument");
@@ -1307,6 +1301,28 @@ static ErrCode resolve_unary_op(ASTNode un_op, SymbTables *st) {
   return SUCCESS;
 }
 
+// This is intended only for variable identifiers in expressions and arguments
+static ErrCode resolve_rhs_var_id(ASTNode idtf, SymbTables *st) {
+
+  // Assert node and define err
+  assert(idtf != NULL);
+  assert(idtf->node_type == NODE_IDENTIFIER);
+
+  Symbol *var_symb = ST_get_symbol(st, idtf->data.string_val);
+  // Variable must be defined by now
+  if (var_symb == NULL) {
+    RETURN_ON_ERROR(ERR_UNDEF_SYM, "undefined variable.");
+  }
+
+  // Data type should be defined with the symbol
+  assert(var_symb->data_type != DT_UNDEF);
+
+  // Infer data type of symbol
+  idtf->data_type = var_symb->data_type;
+
+  return SUCCESS;
+}
+
 static ErrCode resolve_condition(ASTNode cond, SymbTables *st) {
 
   // Assert node and define err
@@ -1345,10 +1361,15 @@ static ErrCode resolve_condition(ASTNode cond, SymbTables *st) {
     // Check for possible implicit conversion
     if (left_dt == DT_DOUBLE && right_dt == DT_INTEGER) {
 
-      // TODO Convert right_expr to double
+      // Convert right side to double
+      err = convert_int_to_double(right_expr, cond);
+      RETURN_ON_ERROR(err, "conversion of right expression failed");
+
     } else if (left_dt == DT_INTEGER && right_dt == DT_DOUBLE) {
 
-      // TODO Convert left_expr to double
+      // Convert left side to double
+      err = convert_int_to_double(left_expr, cond);
+      RETURN_ON_ERROR(err, "conversion of left expression failed");
     } else {
       // Type incompatibility
       RETURN_ON_ERROR(ERR_INCOMPATIBLE_TYPE,
