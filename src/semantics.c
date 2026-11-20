@@ -925,10 +925,9 @@ static ErrCode resolve_func_def(ASTNode func_def, SymbTables *st) {
     ST_exit_scope(st);
   }
 
-  // Check types of both sides
+  // Check types of both sides, or infer type
   err = infer_or_check_types(func_id, func_body, st);
   RETURN_ON_ERROR(err, "type error in func_def");
-
   // Function def nodes data types is the same as its identifier node
   // It's the only node that shares type with identifier node
   func_def->data_type = func_id->data_type;
@@ -951,7 +950,6 @@ static ErrCode resolve_block(ASTNode block, SymbTables *st, bool check_end_if) {
 
     ASTNode stmt = block->child_arr[i];
 
-    // TODO LAST statement type is block type!!
     // Treat special case where last statement of function body is an if stmt
     if (check_end_if == true && i == block->child_count - 1 &&
         stmt->node_type == NODE_IF) {
@@ -964,6 +962,11 @@ static ErrCode resolve_block(ASTNode block, SymbTables *st, bool check_end_if) {
       // Resolve each one
       err = resolve_any_stmt(stmt, st);
       RETURN_ON_ERROR(err, "inside block");
+    }
+
+    // Last statement of block is result of block!
+    if (i == block->child_count - 1) {
+      block->data_type = stmt->data_type;
     }
   }
 
@@ -1095,6 +1098,7 @@ static ErrCode resolve_if(ASTNode if_stmt, SymbTables *st,
   // Assert node and define err
   assert(if_stmt != NULL);
   assert(if_stmt->node_type == NODE_IF);
+  assert(if_stmt->data_type == DT_UNIT);
   ErrCode err = SUCCESS;
 
   // Set child nodes
@@ -1128,12 +1132,69 @@ static ErrCode resolve_if(ASTNode if_stmt, SymbTables *st,
   ST_exit_scope(st);
   // SCOPE END
 
-  // Treat edge case
+  // Treat edge case where if statement is result of func body
   if (is_func_result == true) {
-    // TODO
+
+    // One of the following 3 conditions must be true:
+    // 1 - return type is explicitly Unit
+    bool func_is_unit = (current_func_def->data_type == DT_UNIT);
+
+    // 2 - all branches end with return
+    // I understood it as: both blocks are guaranteed to execute return
+    bool ends_with_return = (block_ends_with_return(then_block) &&
+                             block_ends_with_return(else_block));
+
+    // 3 - return type isn't explicitly set and results of all branches
+    // have result type Unit
+    bool third_cond =
+        (current_func_def->data_type == DT_UNDEF &&
+         then_block->data_type == DT_UNIT && else_block->data_type == DT_UNIT);
+
+    // Check validity
+    bool valid_if_result = (func_is_unit || ends_with_return || third_cond);
+    if (valid_if_result == false) {
+      RETURN_ON_ERROR(ERR_INCOMPATIBLE_TYPE,
+                      "function body result if statement is invalid.");
+    }
   }
 
   return SUCCESS;
+}
+
+static bool block_ends_with_return(ASTNode block) {
+
+  // Assert node and define err
+  assert(block != NULL);
+  assert(block->node_type == NODE_BLOCK);
+
+  // Loop over every statement
+  for (int i = 0; i < block->child_count; i++) {
+
+    ASTNode stmt = block->child_arr[i];
+
+    // This assures us that at least this return statement will be reached
+    // It doesn't HAVE to be this statement, this is just insurance
+    if (stmt->node_type == NODE_RETURN) {
+      return true;
+
+    }
+    // Check returns in if statement
+    else if (stmt->node_type == NODE_IF) {
+
+      ASTNode then_block = stmt->child_arr[I_IB1];
+      ASTNode else_block = stmt->child_arr[I_IB2];
+      bool both_branches_end = (block_ends_with_return(then_block) &&
+                                block_ends_with_return(else_block));
+
+      // Return is guaranteed ONLY if both branches end with return
+      if (both_branches_end == true) {
+        return true;
+      }
+    }
+  }
+
+  // No guaranteed return stmt found
+  return false;
 }
 
 static ErrCode resolve_while(ASTNode while_stmt, SymbTables *st) {

@@ -105,6 +105,16 @@ ErrCode define_func_symbols(ASTNode root, SymbTables *st);
 static ErrCode resolve_AST(ASTNode root, SymbTables *st);
 
 /**
+ * @brief Checks if block is guaranteed to execute a return statement at some
+ * point. Also recursively checks blocks inside if statements. Doesn't consider
+ * blocks inside while loops.
+ * @param block Node of type `NODE_BLOCK`
+ * @return `true` if block is guaranteed hit return, `false` if it's not trivial
+ * to tell whether a return will be executed or not.
+ */
+static bool block_ends_with_return(ASTNode block);
+
+/**
  * @brief Properly inserts variable symbol into symbol table.
  * @param block ASTNode of type NODE_IDENTIFIER. Must be valid.
  * @param sb_type Type of symbol (SB_VAL or SB_VAR)
