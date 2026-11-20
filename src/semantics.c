@@ -805,6 +805,40 @@ static ErrCode resolve_any_rhs(ASTNode rhs_node, SymbTables *st) {
   return err;
 }
 
+static ErrCode resolve_any_term(ASTNode term, SymbTables *st) {
+
+  // Assert node and define err
+  assert(term != NULL);
+  ErrCode err = SUCCESS;
+
+  // Find appropriate resolve function
+  switch (term->node_type) {
+
+  case NODE_UN_MINUS:
+  case NODE_UN_PLUS: {
+    err = resolve_unary_op(term, st);
+    break;
+  }
+  case NODE_IDENTIFIER: {
+    err = resolve_rhs_var_id(term, st);
+    break;
+  }
+  case NODE_LITERAL: {
+    // We know everything there is about literals
+    // Nothing to do
+    break;
+  }
+
+  // If no function was matched, it's my fault
+  default: {
+    fprintf(stderr, "Failed matching resolve func for term.\n");
+    err = ERR_INTERNAL;
+    break;
+  }
+  }
+
+  return err;
+}
 /*
 static ErrCode resolve_any_TODO(ASTNode node, SymbTables *st) {
 
@@ -875,7 +909,7 @@ static ErrCode resolve_func_def(ASTNode func_def, SymbTables *st) {
          func_def->node_type == NODE_FUNC_DEF);
   ErrCode err = SUCCESS;
 
-  // Func definition and its child nodes
+  // Func definition child nodes
   ASTNode func_id = func_def->child_arr[I_FD_ID];
   ASTNode func_body = func_def->child_arr[I_FBODY];
   ASTNode func_par = func_def->child_arr[I_FD_PAR];
@@ -998,6 +1032,60 @@ static ErrCode resolve_func_call(ASTNode func_call, SymbTables *st) {
   assert(func_call->node_type == NODE_FUNC_CALL);
   ErrCode err = SUCCESS;
 
+  // Func call child nodes
+  ASTNode func_id = func_call->child_arr[I_FC_ID];
+  ASTNode func_arg = func_call->child_arr[I_FC_ARG];
+  int arg_count = func_arg->child_count;
+
+  // Function symbols are made ahead of time
+  // Check if symbol exists
+  Symbol *func_symb = ST_get_symbol(st, func_id->data.string_val);
+  if (func_symb == NULL) {
+    RETURN_ON_ERROR(ERR_UNDEF_SYM, "called an undefined function.");
+  }
+
+  // Functions are be resolved in such order where there are no dependencies
+  // on untyped function symbols
+  assert(func_symb->data_type != DT_UNDEF);
+  // Set data type
+  func_call->data_type = func_symb->data_type;
+  func_id->data_type = func_symb->data_type;
+
+  // Check correct argument count
+  if (arg_count != func_symb->param_count) {
+    RETURN_ON_ERROR(ERR_FUN_ARGS,
+                    "function called with wrong amount of arguments");
+  }
+
+  // Resolve and verify argument types
+  for (int a = 0; a < arg_count; a++) {
+
+    // Argument
+    ASTNode arg = func_arg->child_arr[a];
+
+    // Resolve its type
+    err = resolve_any_term(arg, st);
+    RETURN_ON_ERROR(err, "inside function call in argument");
+
+    assert(arg->data_type != DT_UNDEF);
+
+    // Check if it matches param type
+    DataType arg_type = arg->data_type;
+    DataType param_type = func_symb->param_type_arr[a];
+    if (arg_type != param_type) {
+
+      // Check implicit conversion
+      if (arg_type == DT_INTEGER && param_type == DT_DOUBLE) {
+
+        // TODO IMPLICIT CONVERSION
+      } else {
+        RETURN_ON_ERROR(ERR_FUN_ARGS,
+                        "function called with wrong data type of argument");
+      }
+    }
+    // else data types are equal
+  }
+
   return SUCCESS;
 }
 
@@ -1007,6 +1095,29 @@ static ErrCode resolve_expression(ASTNode expr, SymbTables *st) {
   assert(expr != NULL);
   assert(expr->node_type == NODE_EXPR);
   ErrCode err = SUCCESS;
+
+  return SUCCESS;
+}
+
+// This is intended only for variable identifiers in expressions and arguments
+static ErrCode resolve_rhs_var_id(ASTNode idtf, SymbTables *st) {
+
+  // Assert node and define err
+  assert(idtf != NULL);
+  assert(idtf->node_type == NODE_IDENTIFIER);
+  ErrCode err = SUCCESS;
+
+  Symbol *var_symb = ST_get_symbol(st, idtf->data.string_val);
+  // Variable must be defined by now
+  if (var_symb == NULL) {
+    RETURN_ON_ERROR(ERR_UNDEF_SYM, "undefined variable.");
+  }
+
+  // Data type should be defined with the symbol
+  assert(var_symb->data_type != DT_UNDEF);
+
+  // Infer data type of symbol
+  idtf->data_type = var_symb->data_type;
 
   return SUCCESS;
 }

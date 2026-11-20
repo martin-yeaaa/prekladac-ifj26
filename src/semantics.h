@@ -72,6 +72,9 @@ typedef enum {
 #define I_FD_ID 0  // Func def identifier
 #define I_FD_PAR 1 // Func param list
 
+#define I_FC_ID 0  // Func call identifier
+#define I_FC_ARG 1 // Func call arg list
+
 #define I_COND 0 // Conditions in if and while
 #define I_WB 1   // While block
 #define I_IB1 1  // If - then block
@@ -81,9 +84,8 @@ typedef enum {
 #define I_RHS 1 // expr or funcall
 #define I_LHS 0 // identifier
 
-#define I_RET 0   // Return stmt
-#define I_FC_ID 0 // Func call identifier
-#define I_OP 0    // Operator in expr and cond
+#define I_RET 0 // Return stmt
+#define I_OP 0  // Operator in expr and cond
 
 // Union for AST node data
 typedef union node_data_union {
