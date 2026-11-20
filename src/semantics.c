@@ -673,10 +673,11 @@ ErrCode define_func_symbols(ASTNode root, SymbTables *st) {
   return SUCCESS;
 }
 
-static ErrCode infer_or_check_types(ASTNode lhs, ASTNode rhs, SymbTables *st) {
+static ErrCode infer_or_check_types(ASTNode lhs, ASTNode rhs, ASTNode parent) {
 
   // Assert nodes and define err
   assert(lhs != NULL);
+  assert(lhs->symbol_ptr != NULL);
   // Left side must be identifier
   assert(lhs->node_type == NODE_IDENTIFIER);
 
@@ -686,26 +687,64 @@ static ErrCode infer_or_check_types(ASTNode lhs, ASTNode rhs, SymbTables *st) {
 
   ErrCode err = SUCCESS;
 
-  /*
-    4 situacie
-    poznam typ funkcie aj typ tela
-    poznam typ funkcie ale nepoznam typ tela
-    nepoznam typ funkcie ale poznam typ tela
-    nepoznam typ funkcie ani tela
+  // Only 2 possibilities
 
-    1 - porovnam
-    2 - nestane sa nikdy, telo sa odvodi funkciami
-    3 - idk
-    4 - iste ako 2
+  // 1 - lhs type is undefined -> infer type from right side
+  if (lhs->data_type == DT_UNDEF) {
+    lhs->data_type = rhs->data_type;
+    // Update symbol inside symbol table
+    lhs->symbol_ptr->data_type = rhs->data_type;
+  }
+  // 2 - lhs type is defined -> compare both sides
+  else {
 
-    cize
-    1 poznam typ funkcie aj typ tela
-    2 nepoznam typ funkcie ale poznam typ tela
+    if (lhs->data_type != rhs->data_type) {
+      // Check if conversion is possible
+      if (lhs->data_type == DT_DOUBLE && rhs->data_type == DT_INTEGER) {
+        // Convert rhs to double
+        err = convert_int_to_double(rhs, parent);
+        RETURN_ON_ERROR(err, "implicit conversion int to double failed.");
 
-    1 - kontrola ci su rovnake
-    2 - nastavim typ funkcie
+      } else {
+        RETURN_ON_ERROR(ERR_INCOMPATIBLE_TYPE,
+                        "type incompatibility between rhs and lhs.");
+      }
+    }
+  }
 
-    */
+  return SUCCESS;
+}
+
+static ErrCode convert_int_to_double(ASTNode child, ASTNode parent) {
+
+  // Assert node and define err
+  assert(child != NULL);
+  assert(child->data_type == DT_INTEGER);
+  assert(parent != NULL);
+  ErrCode err = SUCCESS;
+
+  // Create new node
+  ASTNode conversion;
+  err = AST_init_node(&conversion, NODE_INT_TO_DBL, DT_DOUBLE, NULL);
+  RETURN_ON_ERROR(err, "conversion failed when initializing node.");
+
+  int child_idx = -1;
+  // Find child
+  for (int i = 0; i < parent->child_count; i++) {
+    if (parent->child_arr[i] == child) {
+      child_idx = i;
+      break;
+    }
+  }
+  assert(child_idx != -1);
+
+  // Relink parent to conversion node
+  parent->child_arr[child_idx] = conversion;
+
+  // Link conversion node to child
+  err = AST_node_add_child(conversion, child);
+  RETURN_ON_ERROR(err,
+                  "conversion failed when adding child to conversion node.");
 
   return SUCCESS;
 }
@@ -1023,7 +1062,7 @@ static ErrCode resolve_func_def(ASTNode func_def, SymbTables *st) {
 
   } else {
     // Check types of both sides, or infer type
-    err = infer_or_check_types(func_id, func_body, st);
+    err = infer_or_check_types(func_id, func_body, func_def);
     RETURN_ON_ERROR(err, "type error in func_def");
   }
 
@@ -1184,7 +1223,7 @@ static ErrCode resolve_var_def(ASTNode var_def, SymbTables *st) {
   RETURN_ON_ERROR(err, "inside var_def");
 
   // Do type check
-  err = infer_or_check_types(var_def_id, rhs_node, st);
+  err = infer_or_check_types(var_def_id, rhs_node, var_def);
   RETURN_ON_ERROR(err, "inside var_def");
 
   return SUCCESS;
@@ -1209,7 +1248,7 @@ static ErrCode resolve_val_def(ASTNode val_def, SymbTables *st) {
   RETURN_ON_ERROR(err, "inside val_def");
 
   // Do type check
-  err = infer_or_check_types(val_def_id, rhs_node, st);
+  err = infer_or_check_types(val_def_id, rhs_node, val_def);
   RETURN_ON_ERROR(err, "inside val_def");
 
   return SUCCESS;
@@ -1225,7 +1264,7 @@ static ErrCode resolve_assignment(ASTNode assign, SymbTables *st) {
 
   // Get symbol
   ASTNode assign_id = assign->child_arr[I_LHS];
-  Symbol * assign_symb = ST_get_symbol(st, assign_id->data.string_val);
+  Symbol *assign_symb = ST_get_symbol(st, assign_id->data.string_val);
 
   // Check symbol validity
   if (assign_symb == NULL) {
@@ -1241,7 +1280,7 @@ static ErrCode resolve_assignment(ASTNode assign, SymbTables *st) {
   RETURN_ON_ERROR(err, "resolving rhs inside assignment");
 
   // Do type check
-  err = infer_or_check_types(assign_id, rhs_node, st);
+  err = infer_or_check_types(assign_id, rhs_node, assign);
   RETURN_ON_ERROR(err, "checking types inside assignment");
 
   return SUCCESS;

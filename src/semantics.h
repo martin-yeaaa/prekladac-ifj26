@@ -58,12 +58,15 @@ typedef enum {
   NODE_ARG_LIST,
   NODE_RETURN, // return from function
 
-  // Indented block types
+  // Indented block
   NODE_BLOCK,
 
   NODE_IF,
   NODE_WHILE,
   NODE_COND, // Condition
+
+  // Conversion node
+  NODE_INT_TO_DBL,
 
 } NodeType;
 
