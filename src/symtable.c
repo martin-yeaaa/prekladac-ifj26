@@ -228,7 +228,6 @@ void ST_restore_scope_stack(SymbTables *tables, LNode saved_stack) {
   tables->stack_top = saved_stack;
 }
 
-
 ErrCode ST_define_symbol(SymbTables *tables, SymbDraft *symbol_draft) {
 
   // Assertions to prevent bugs

@@ -131,7 +131,8 @@ Symbol *ST_get_symbol(SymbTables *tables, BSTKey id);
 LNode ST_save_scope_stack(SymbTables *tables);
 
 /**
- * @brief Sets the symbol tables scope stack to stack saved in argument `saved_stack`.
+ * @brief Sets the symbol tables scope stack to stack saved in argument
+ * `saved_stack`.
  * @param tables Pointer to `SymbTables` structure.
  * @param saved_stack Pointer to saved scope stack.
  */
