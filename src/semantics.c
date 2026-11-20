@@ -1223,6 +1223,27 @@ static ErrCode resolve_assignment(ASTNode assign, SymbTables *st) {
   assert(assign->data_type == DT_UNIT);
   ErrCode err = SUCCESS;
 
+  // Get symbol
+  ASTNode assign_id = assign->child_arr[I_LHS];
+  Symbol * assign_symb = ST_get_symbol(st, assign_id->data.string_val);
+
+  // Check symbol validity
+  if (assign_symb == NULL) {
+    RETURN_ON_ERROR(ERR_UNDEF_SYM, "assignment to undefined variable.");
+  }
+  if (assign_symb->symb_type == SB_VAL) {
+    RETURN_ON_ERROR(ERR_INVALID_ASSIGN, "assignment to unmodifiable variable.");
+  }
+
+  // Resolve right side of definition
+  ASTNode rhs_node = assign->child_arr[I_RHS];
+  err = resolve_any_rhs(rhs_node, st);
+  RETURN_ON_ERROR(err, "resolving rhs inside assignment");
+
+  // Do type check
+  err = infer_or_check_types(assign_id, rhs_node, st);
+  RETURN_ON_ERROR(err, "checking types inside assignment");
+
   return SUCCESS;
 }
 
