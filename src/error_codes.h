@@ -29,8 +29,8 @@ typedef int ErrCode;
 // Invalid parameters of @main function.
 #define ERR_FUN_ARGS 5
 
-// Incompatible types in expression, assignment, initialization, return value
-// or control flow structures.
+// Incompatible types or type inference in expression, assignment,
+// initialization, return value or control flow structures.
 #define ERR_INCOMPATIBLE_TYPE 6
 
 // Assignment to unmodifiable variable or formal parameter of function.

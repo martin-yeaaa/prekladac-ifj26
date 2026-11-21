@@ -203,6 +203,31 @@ void ST_exit_scope(SymbTables *tables) {
   tables->stack_top = tables->stack_top->prev_scope;
 }
 
+LNode ST_save_scope_stack(SymbTables *tables) {
+
+  assert(tables != NULL);
+  assert(tables->stack_top != NULL);
+
+  // Save value for returning
+  LNode saved_stack = tables->stack_top;
+
+  // Exit scopes until we are in global scope
+  while (tables->stack_top->prev_scope != NULL) {
+    ST_exit_scope(tables);
+  }
+
+  return saved_stack;
+}
+
+void ST_restore_scope_stack(SymbTables *tables, LNode saved_stack) {
+
+  assert(tables != NULL);
+  assert(saved_stack != NULL);
+
+  // It's that simple!
+  tables->stack_top = saved_stack;
+}
+
 ErrCode ST_define_symbol(SymbTables *tables, SymbDraft *symbol_draft) {
 
   // Assertions to prevent bugs
@@ -224,7 +249,8 @@ ErrCode ST_define_symbol(SymbTables *tables, SymbDraft *symbol_draft) {
   // Allocate memory for symbol (it has flexible array member)
   size_t symbol_size =
       sizeof(Symbol) + sizeof(DataType) * symbol_draft->param_count;
-  Symbol *new_symbol = malloc(symbol_size);
+  // Calloc so uninitialized values don't hold garbage
+  Symbol *new_symbol = calloc(1, symbol_size);
   // Check allocation success
   if (new_symbol == NULL) {
     // Allocation failed :(
@@ -311,4 +337,9 @@ void ST_destroy(SymbTables *tables) {
     BST_destroy_tree(del_now->table);
     free(del_now);
   }
+
+  // Reset to NULL
+  tables->list_first = NULL;
+  tables->list_last = NULL;
+  tables->stack_top = NULL;
 }

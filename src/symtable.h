@@ -9,7 +9,6 @@
 
 #include "bst.h"
 #include "error_codes.h"
-#include <stdbool.h>
 
 // Enum for different types of symbols
 typedef enum symbol_type_enum {
@@ -79,7 +78,7 @@ struct symbol_tables_struct {
 typedef struct symbol_tables_struct SymbTables;
 
 /**
- * Creates a new structure for symbol tables, enters global scope,
+ * @brief Creates a new structure for symbol tables, enters global scope,
  * and prefills it with symbols of built-in functions.
  * @param tables Pointer to declared uninitialized `SymbTables` structure.
  * Will be initialized and modified. Must not be `NULL`.
@@ -89,8 +88,8 @@ typedef struct symbol_tables_struct SymbTables;
 ErrCode ST_init(SymbTables *tables);
 
 /**
- * Creates a new table. Call this after creating a new SymbTables structure or
- * when entering a new indented block.
+ * @brief Creates a new table. Call this after creating a new SymbTables
+ * structure or when entering a new indented block.
  * @param tables Pointer to `SymbTables` structure.
  * @return `SUCCESS` if no errors occur,
  * `ERR_INTERNAL` if memory allocation fails.
@@ -98,14 +97,14 @@ ErrCode ST_init(SymbTables *tables);
 ErrCode ST_enter_scope(SymbTables *tables);
 
 /**
- * Pops table from the top of symbol table stack. Call this when exiting an
- * indented block.
+ * @brief Pops table from the top of symbol table stack. Call this when exiting
+ * an indented block.
  * @param tables Pointer to `SymbTables` structure.
  */
 void ST_exit_scope(SymbTables *tables);
 
 /**
- * Creates a new entry in the symbol table on the top of stack.
+ * @brief Creates a new entry in the symbol table on the top of stack.
  * @param tables Pointer to `SymbTables` structure.
  * @param symbol_draft Pointer to symbol draft structure. This structure must be
  * properly initialized manually before calling this function.
@@ -116,7 +115,7 @@ void ST_exit_scope(SymbTables *tables);
 ErrCode ST_define_symbol(SymbTables *tables, SymbDraft *symbol_draft);
 
 /**
- * Finds the symbol closest to the top of symbol table stack.
+ * @brief Finds the symbol closest to the top of symbol table stack.
  * @param tables Pointer to `SymbTables` structure.
  * @param id String identifier of symbol.
  * @return Pointer to `Symbol` if symbol is defined, otherwise `NULL`.
@@ -124,7 +123,23 @@ ErrCode ST_define_symbol(SymbTables *tables, SymbDraft *symbol_draft);
 Symbol *ST_get_symbol(SymbTables *tables, BSTKey id);
 
 /**
- * Removes all tables from memory. After this, `tables` becomes unusable.
+ * @brief Returns pointer to top of scope stack, and sets symbol tables scope to
+ * global scope.
+ * @param tables Pointer to `SymbTables` structure.
+ * @return `LNode` Pointer to top of scope stack.
+ */
+LNode ST_save_scope_stack(SymbTables *tables);
+
+/**
+ * @brief Sets the symbol tables scope stack to stack saved in argument
+ * `saved_stack`.
+ * @param tables Pointer to `SymbTables` structure.
+ * @param saved_stack Pointer to saved scope stack.
+ */
+void ST_restore_scope_stack(SymbTables *tables, LNode saved_stack);
+
+/**
+ * @brief Removes all tables from memory. After this, `tables` becomes unusable.
  * @param tables Pointer to `SymbTables` structure.
  */
 void ST_destroy(SymbTables *tables);
