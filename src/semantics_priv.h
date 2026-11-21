@@ -89,17 +89,9 @@ static int find_func_calls(ASTNode func_body, BSTNode *call_list);
  */
 static ErrCode define_func_symbols(ASTNode root, SymbTables *st);
 
-
-
-
-
 static ErrCode infer_or_check_types(ASTNode lhs, ASTNode rhs, ASTNode parent);
 
 static ErrCode convert_int_to_double(ASTNode child, ASTNode parent);
-
-
-
-
 
 static ErrCode resolve_any_func_body(ASTNode func_body, SymbTables *st);
 static ErrCode resolve_any_stmt(ASTNode stmt, SymbTables *st);
@@ -133,8 +125,7 @@ static ErrCode resolve_binary_op(ASTNode bin_op, SymbTables *st);
 static ErrCode resolve_unary_op(ASTNode un_op, SymbTables *st);
 static ErrCode resolve_rhs_var_id(ASTNode idtf, SymbTables *st);
 static ErrCode resolve_condition(ASTNode cond, SymbTables *st);
-static ErrCode resolve_if(ASTNode if_stmt, SymbTables *st,
-                          bool is_func_result);
+static ErrCode resolve_if(ASTNode if_stmt, SymbTables *st, bool is_func_result);
 static ErrCode resolve_while(ASTNode while_stmt, SymbTables *st);
 static ErrCode resolve_return(ASTNode return_stmt, SymbTables *st);
 

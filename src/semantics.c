@@ -580,9 +580,12 @@ static ErrCode define_func_symbols(ASTNode root, SymbTables *st) {
     assert(func_def->data_type == func_idtf->data_type);
 
     // Insert pointer to func_def node into global list
-    err = BST_insert(&func_def_list, func_idtf->data.string_val, func_def,
-                     sizeof(ASTNode));
-    RETURN_ON_ERROR(err, ERR_INTERNAL);
+    bool success_ins = BST_insert(&func_def_list, func_idtf->data.string_val,
+                                  &func_def, sizeof(ASTNode));
+    if (success_ins == false) {
+      RETURN_ON_ERROR(ERR_INTERNAL,
+                      "failed to insert function definition into list.");
+    }
 
     SymbType func_sym_type = SB_FUNC;
 
@@ -1001,7 +1004,7 @@ static ErrCode resolve_func_def(ASTNode func_def, SymbTables *st) {
   // though according to specification, it should be vaild.
   int last = func_body->child_count - 1;
   assert(last >= 0);
-  if (func_id->node_type != DT_UNDEF && func_id->node_type != DT_UNIT &&
+  if (func_id->data_type != DT_UNDEF && func_id->data_type != DT_UNIT &&
       func_body->node_type == NODE_BLOCK &&
       func_body->child_arr[last]->node_type == NODE_IF) {
 
@@ -1081,11 +1084,17 @@ static ErrCode resolve_func_call(ASTNode func_call, SymbTables *st) {
   if (func_symb == NULL) {
     RETURN_ON_ERROR(ERR_UNDEF_SYM, "called an undefined function.");
   }
+  // Also check if it's a function and not a variable
+  if (func_symb->symb_type == SB_VAL || func_symb->symb_type == SB_VAR) {
+    RETURN_ON_ERROR(ERR_OTHER_SEMANTIC,
+                    "variable identifier in place of a function!");
+  }
 
   // If function call has undefined data type, we simply resolve it first!
   if (func_symb->data_type == DT_UNDEF) {
 
     // Save scope
+    // This also resets scope back to global scope
     LNode local_stack = ST_save_scope_stack(st);
 
     // Get func def node to resolve
@@ -1104,6 +1113,8 @@ static ErrCode resolve_func_call(ASTNode func_call, SymbTables *st) {
   // Set data type
   func_call->data_type = func_symb->data_type;
   func_id->data_type = func_symb->data_type;
+  // Also save symbol ptr
+  func_id->symbol_ptr = func_symb;
 
   // Check correct argument count
   if (arg_count != func_symb->param_count) {
@@ -1164,7 +1175,7 @@ static ErrCode resolve_arg(ASTNode arg, SymbTables *st) {
     assert(literal->data_type != DT_UNDEF);
 
     // Unary operator can only be used on a number value
-    if (literal->node_type != DT_INTEGER && literal->node_type != DT_DOUBLE) {
+    if (literal->data_type != DT_INTEGER && literal->data_type != DT_DOUBLE) {
       RETURN_ON_ERROR(ERR_INCOMPATIBLE_TYPE,
                       "unary operator can only be used on a number");
     }
@@ -1220,14 +1231,14 @@ static ErrCode resolve_var_def(ASTNode var_def, SymbTables *st) {
   assert(var_def->data_type == DT_UNIT);
   ErrCode err = SUCCESS;
 
-  // Define symbol
-  ASTNode var_def_id = var_def->child_arr[I_LHS];
-  err = define_variable_symbol(var_def_id, SB_VAR, st);
-  RETURN_ON_ERROR(err, "inside var_def");
-
-  // Resolve right side of definition
+  // Resolve right side of definition first
   ASTNode rhs_node = var_def->child_arr[I_RHS];
   err = resolve_any_rhs(rhs_node, st);
+  RETURN_ON_ERROR(err, "inside var_def");
+
+  // Define symbol second
+  ASTNode var_def_id = var_def->child_arr[I_LHS];
+  err = define_variable_symbol(var_def_id, SB_VAR, st);
   RETURN_ON_ERROR(err, "inside var_def");
 
   // Do type check
@@ -1245,14 +1256,14 @@ static ErrCode resolve_val_def(ASTNode val_def, SymbTables *st) {
   assert(val_def->data_type == DT_UNIT);
   ErrCode err = SUCCESS;
 
-  // Define symbol
-  ASTNode val_def_id = val_def->child_arr[I_LHS];
-  err = define_variable_symbol(val_def_id, SB_VAL, st);
-  RETURN_ON_ERROR(err, "inside val_def");
-
-  // Resolve right side of definition
+  // Resolve right side of definition first
   ASTNode rhs_node = val_def->child_arr[I_RHS];
   err = resolve_any_rhs(rhs_node, st);
+  RETURN_ON_ERROR(err, "inside val_def");
+
+  // Define symbol second
+  ASTNode val_def_id = val_def->child_arr[I_LHS];
+  err = define_variable_symbol(val_def_id, SB_VAL, st);
   RETURN_ON_ERROR(err, "inside val_def");
 
   // Do type check
@@ -1281,6 +1292,10 @@ static ErrCode resolve_assignment(ASTNode assign, SymbTables *st) {
   if (assign_symb->symb_type == SB_VAL) {
     RETURN_ON_ERROR(ERR_INVALID_ASSIGN, "assignment to unmodifiable variable.");
   }
+  // Symbol is valid, write it into assign_id
+  assign_id->symbol_ptr = assign_symb;
+  // Also set the data type
+  assign_id->data_type = assign_symb->data_type;
 
   // Resolve right side of definition
   ASTNode rhs_node = assign->child_arr[I_RHS];
@@ -1404,12 +1419,20 @@ static ErrCode resolve_rhs_var_id(ASTNode idtf, SymbTables *st) {
   if (var_symb == NULL) {
     RETURN_ON_ERROR(ERR_UNDEF_SYM, "undefined variable.");
   }
+  // Also check if it's a variable and not a function
+  if (var_symb->symb_type == SB_FUNC || var_symb->symb_type == SB_MAIN_FUNC ||
+      var_symb->symb_type == SB_BUILTIN) {
+    RETURN_ON_ERROR(ERR_OTHER_SEMANTIC,
+                    "function identifier in place of a variable!");
+  }
 
   // Data type should be defined with the symbol
   assert(var_symb->data_type != DT_UNDEF);
 
   // Infer data type of symbol
   idtf->data_type = var_symb->data_type;
+  // Also set symbol ptr
+  idtf->symbol_ptr = var_symb;
 
   return SUCCESS;
 }
@@ -1443,7 +1466,7 @@ static ErrCode resolve_condition(ASTNode cond, SymbTables *st) {
 
   // Data types
   DataType left_dt = left_expr->data_type;
-  DataType right_dt = left_expr->data_type;
+  DataType right_dt = right_expr->data_type;
   assert(left_dt != DT_UNDEF);
   assert(right_dt != DT_UNDEF);
   // Check types
@@ -1453,13 +1476,13 @@ static ErrCode resolve_condition(ASTNode cond, SymbTables *st) {
     if (left_dt == DT_DOUBLE && right_dt == DT_INTEGER) {
 
       // Convert right side to double
-      err = convert_int_to_double(right_expr, cond);
+      err = convert_int_to_double(right_expr, rel_op);
       RETURN_ON_ERROR(err, "conversion of right expression failed");
 
     } else if (left_dt == DT_INTEGER && right_dt == DT_DOUBLE) {
 
       // Convert left side to double
-      err = convert_int_to_double(left_expr, cond);
+      err = convert_int_to_double(left_expr, rel_op);
       RETURN_ON_ERROR(err, "conversion of left expression failed");
     } else {
       // Type incompatibility
@@ -1656,7 +1679,7 @@ static ErrCode define_variable_symbol(ASTNode idtf, SymbType sb_type,
   assert(idtf != NULL);
   assert(idtf->node_type == NODE_IDENTIFIER);
   // Intended only for variables
-  assert(sb_type == SB_VAL || SB_VAR);
+  assert(sb_type == SB_VAL || sb_type == SB_VAR);
 
   // Make draft
   SymbDraft symb_draft = {
