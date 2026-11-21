@@ -741,13 +741,16 @@ static ErrCode convert_int_to_double(ASTNode child, ASTNode parent) {
   }
   assert(child_idx != -1);
 
-  // Relink parent to conversion node
-  parent->child_arr[child_idx] = conversion;
-
   // Link conversion node to child
   err = AST_node_add_child(conversion, child);
-  RETURN_ON_ERROR(err,
-                  "conversion failed when adding child to conversion node.");
+  if (err != SUCCESS) {
+    free(conversion);
+    RETURN_ON_ERROR(err,
+                    "conversion failed when adding child to conversion node.");
+  }
+
+  // Relink parent to conversion node
+  parent->child_arr[child_idx] = conversion;
 
   return SUCCESS;
 }
@@ -1098,8 +1101,12 @@ static ErrCode resolve_func_call(ASTNode func_call, SymbTables *st) {
     LNode local_stack = ST_save_scope_stack(st);
 
     // Get func def node to resolve
-    ASTNode unresolved = BST_get_data(func_def_list, func_id->data.string_val);
-    assert(unresolved != NULL); // This cannot fail!
+    ASTNode *unresolved_ptr =
+        BST_get_data(func_def_list, func_id->data.string_val);
+    assert(unresolved_ptr != NULL); // This cannot fail!
+    // BST_get_data returns pointer to our data, need to dereference
+    ASTNode unresolved = *unresolved_ptr;
+    assert(unresolved != NULL);
 
     err = resolve_func_def(unresolved, st);
     RETURN_ON_ERROR(err, "inside func call");
@@ -1292,6 +1299,10 @@ static ErrCode resolve_assignment(ASTNode assign, SymbTables *st) {
   if (assign_symb->symb_type == SB_VAL) {
     RETURN_ON_ERROR(ERR_INVALID_ASSIGN, "assignment to unmodifiable variable.");
   }
+  // Assignment can only happen to var
+  else if (assign_symb->symb_type != SB_VAR) {
+    RETURN_ON_ERROR(ERR_INVALID_ASSIGN, "assignment to function identifier!");
+  }
   // Symbol is valid, write it into assign_id
   assign_id->symbol_ptr = assign_symb;
   // Also set the data type
@@ -1469,6 +1480,16 @@ static ErrCode resolve_condition(ASTNode cond, SymbTables *st) {
   DataType right_dt = right_expr->data_type;
   assert(left_dt != DT_UNDEF);
   assert(right_dt != DT_UNDEF);
+
+  // Operators == and != work with every type
+  // Other operators do NOT work with Unit type
+  if (rel_op->node_type != NODE_EQ && rel_op->node_type != NODE_NOT_EQ) {
+    if (left_dt == DT_UNIT || right_dt == DT_UNIT) {
+      RETURN_ON_ERROR(ERR_INCOMPATIBLE_TYPE,
+                      "inside condition, cannot compare Unit data type.");
+    }
+  }
+
   // Check types
   if (left_dt != right_dt) {
 
@@ -1643,6 +1664,8 @@ static ErrCode resolve_return(ASTNode return_stmt, SymbTables *st) {
   RETURN_ON_ERROR(err, "inside return statement.");
   assert(rhs->data_type != DT_UNDEF);
 
+  // Check types against currently resolved function
+  assert(current_func_def != NULL);
   DataType func_dt = current_func_def->data_type;
   DataType return_dt = rhs->data_type;
 
