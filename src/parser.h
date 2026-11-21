@@ -6,6 +6,7 @@
 #define PARSER_H
 
 #include "error_codes.h"
+#include "semantics.h"
 
 /**
  * @brief Compiles program. Input program is in language IFJ26. Output program
@@ -16,10 +17,16 @@
  */
 ErrCode compile(void);
 
-static ErrCode parse_program(ASTNode *ast);
-static ErrCode parse_prolog(void);
-static ErrCode parse_fun_def_list(void);
-static ErrCode parse_fun_def_any(void);
+/**
+ * @brief Syntax analysis functions parse_x. Each function matches
+ * one grammar rule.
+ * @param ast_node AST parent node of currently analyzed rule.
+ * @return `SUCCESS` if program has no syntax errors, `ERR_SYNTAX` otherwise.
+ */
+static ErrCode parse_program(ASTNode *ast_root);
+static ErrCode parse_prolog(ASTNode *ast_root);
+static ErrCode parse_fun_def_list(ASTNode *ast_root);
+static ErrCode parse_fun_def_any(ASTNode *ast_root);
 static ErrCode parse_fun_def(void);
 static ErrCode parse_param_list(void);
 static ErrCode parse_param_sep(void);
