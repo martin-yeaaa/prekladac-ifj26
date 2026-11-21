@@ -289,7 +289,15 @@ Then there was a little back and forth where i fed it my code
 namespace ast {
 
 // ---------- basic builders ----------
-inline ASTNode N(NodeType t, DataType dt = DT_UNDEF, const char *data = nullptr) {
+inline ASTNode N(NodeType t, DataType dt = DT_UNIT, const char *data = nullptr) {
+  ASTNode n = nullptr;
+  if (AST_init_node(&n, t, dt, const_cast<char *>(data)) != SUCCESS)
+    throw std::runtime_error("AST_init_node failed");
+  return n;
+}
+
+// Same as above but for condition it's data type bool
+inline ASTNode CN(NodeType t, DataType dt = DT_BOOL, const char *data = nullptr) {
   ASTNode n = nullptr;
   if (AST_init_node(&n, t, dt, const_cast<char *>(data)) != SUCCESS)
     throw std::runtime_error("AST_init_node failed");
@@ -341,9 +349,9 @@ inline ASTNode Div(ASTNode l, ASTNode r) { return Bin(NODE_DIV, l, r); }
 inline ASTNode Neg(ASTNode x)  { return With(N(NODE_UN_MINUS), x); }
 inline ASTNode Plus(ASTNode x) { return With(N(NODE_UN_PLUS), x); }
 
-// Condition: Cond(NODE_LT, lhs, rhs); operands are NOT wrapped in NODE_EXPR
+// Condition: Cond(NODE_LT, lhs, rhs); operands ARE wrapped in NODE_EXPR
 inline ASTNode Cond(NodeType rel, ASTNode l, ASTNode r) {
-  return With(N(NODE_COND), Bin(rel, l, r));
+  return With(CN(NODE_COND), Bin(rel, Wrap(l), Wrap(r)));
 }
 
 // Function call; args must be Id(...) or literals, added directly
@@ -423,6 +431,7 @@ protected:
         
       
     */
+   
     return Program(
         Func("add", DT_INTEGER, Params(Param("x", DT_INTEGER), Param("y", DT_INTEGER)),
              Block(Return(Add(Id("x"), Id("y"))))),
@@ -440,6 +449,29 @@ protected:
                     Assign("a", Add(Id("a"), Int("1")))
                 )))),
         Func("lolz", DT_UNIT, Params(), Expr(Unit())));
+      
+
+     // Another version
+     // This will cause InvalidReturn test to fail tho
+     /*
+    return Program(
+        Func("add", DT_UNDEF, Params(Param("x", DT_INTEGER), Param("y", DT_INTEGER)),
+             Block(Wrap(Add(Id("x"), Id("y"))))),
+        Func("twice", DT_UNDEF, Params(Param("x", DT_INTEGER)),
+             Block(Call("add", Id("x"), Id("x")))),
+        MainFunc(Block(
+            Var("a", DT_INTEGER, Int("1")),
+            Val("b", DT_INTEGER, Call("add", Id("a"), Int("2"))),
+            If(Cond(NODE_LT, Id("a"), Id("b")),
+               Block(Assign("a", Add(Id("a"), Int("1")))),
+               Block(Assign("a", Int("0")))),
+            While(Cond(NODE_LT, Id("a"), Int("10")),
+                  Block(
+                    Var("c", DT_DOUBLE, Expr(Add(Id("a"), Dbl("5.5")))), // Implicit conversion
+                    Assign("a", Add(Id("a"), Int("1")))
+                )))),
+        Func("lolz", DT_UNIT, Params(), Expr(Unit())));
+        */
   }
 
   void SetUp() override {
@@ -699,5 +731,247 @@ TEST_F(IndirectRecursionFixture, NoRecursion) {
   char * change_call_name = changed_fn->child_arr[I_FBODY]->child_arr[I_FC_ID]->data.string_val;
   strcpy(change_call_name, "b");
 
+  EXPECT_EQ(semantic_analysis(root, &st), SUCCESS);
+}
+
+
+
+
+/*
+   More AI tests
+   Prompt happened within the same conversation, AI had some context
+
+   Prompt: Can you make a big test program and then various tests for it
+
+   tests didn't assume main function Unit type, so I prompted to fix it
+
+   Prompt: Please remake test program, main function must have data type Unit
+
+   Then there was one bad test, so again.
+
+   Prompt: 
+   "TEST_F(BigProgramFixture, UndefinedVariableInExpr) {
+      // while (i < 10) -> while (q < 10)
+      ASTNode cond = At(MainBody(), {S_WHILE, 0, 0});  // NODE_LT
+      Rename(cond->child_arr[0], "q");
+      EXPECT_EQ(semantic_analysis(root, &st), ERR_UNDEF_SYM);
+    }
+
+    is this correct? Condition node has child relation operator, which has children expr, 
+    and those expr have children identifier q and literal 10. The test is not passing"
+
+    After this all tests worked, verifying my code :)
+
+*/
+
+namespace ast {
+inline ASTNode At(ASTNode n, std::initializer_list<int> path) {
+  for (int i : path) n = n->child_arr[i];
+  return n;
+}
+// Replace identifier/literal string (any length)
+inline void Rename(ASTNode n, const char *name) {
+  free(n->data.string_val);
+  n->data.string_val = strdup(name);
+}
+}  // namespace ast
+
+class BigProgramFixture : public AstFixture {
+protected:
+  // Child indices in root
+  static constexpr int F_ADD = 0, F_SCALE = 1, F_FACT = 2, F_PING = 3,
+                       F_PONG = 4, F_MAIN = 5;
+  // Child indices in main's block
+  static constexpr int S_VAR_I = 0, S_VAR_ACC = 1, S_WHILE = 2, S_VAL_F = 3,
+                       S_VAL_D = 4, S_VAR_S = 5, S_ASSIGN_S = 6, S_IF = 7,
+                       S_VAL_MIXED = 8, S_EXPR_STMT = 9, S_UNIT = 10;
+
+  ASTNode MainBody() { return ast::At(root, {F_MAIN, I_FBODY}); }
+
+  ASTNode BuildProgram() override {
+    using namespace ast;
+    /*
+      def add(x: Int, y: Int): Int { return x + y }
+      def scale(x: Double, k: Double): Double = x * k
+      def fact(n: Int): Int {
+        if (n <= 1) { return 1 }
+        else { val m: Int = n - 1; val r: Int = fact(m); return n * r }
+      }
+      def ping(n: Int): Int { val t: Int = n - 1; pong(t) }
+      def pong(n: Int): Int = ping(n)
+      def main(): Unit {
+        var i: Int = 0
+        var acc: Int = 0
+        while (i < 10) { acc = add(acc, i); i = i + 1 }
+        val f: Int = fact(5)
+        val d: Double = scale(2.5, 2.0)
+        var s: String = "hi"
+        s = "bye"
+        if (acc >= f) { acc = acc - f } else { acc = 0 }
+        val mixed: Double = i + 1.5
+        i + 1
+        ()            // last statement is Unit, so main returns Unit
+      }
+    */
+    return Program(
+        Func("add", DT_INTEGER,
+             Params(Param("x", DT_INTEGER), Param("y", DT_INTEGER)),
+             Block(Return(Add(Id("x"), Id("y"))))),
+        Func("scale", DT_DOUBLE,
+             Params(Param("x", DT_DOUBLE), Param("k", DT_DOUBLE)),
+             Mul(Id("x"), Id("k"))),
+        Func("fact", DT_INTEGER, Params(Param("n", DT_INTEGER)),
+             Block(If(Cond(NODE_LT_EQ, Id("n"), Int("1")),
+                      Block(Return(Int("1"))),
+                      Block(Val("m", DT_INTEGER, Sub(Id("n"), Int("1"))),
+                            Val("r", DT_INTEGER, Call("fact", Id("m"))),
+                            Return(Mul(Id("n"), Id("r"))))))),
+        Func("ping", DT_INTEGER, Params(Param("n", DT_INTEGER)),
+             Block(Val("t", DT_INTEGER, Sub(Id("n"), Int("1"))),
+                   Call("pong", Id("t")))),
+        Func("pong", DT_INTEGER, Params(Param("n", DT_INTEGER)),
+             Call("ping", Id("n"))),
+        MainFunc(Block(
+            Var("i", DT_INTEGER, Int("0")),
+            Var("acc", DT_INTEGER, Int("0")),
+            While(Cond(NODE_LT, Id("i"), Int("10")),
+                  Block(Assign("acc", Call("add", Id("acc"), Id("i"))),
+                        Assign("i", Add(Id("i"), Int("1"))))),
+            Val("f", DT_INTEGER, Call("fact", Int("5"))),
+            Val("d", DT_DOUBLE, Call("scale", Dbl("2.5"), Dbl("2.0"))),
+            Var("s", DT_STRING, Str("hi")),
+            Assign("s", Str("bye")),
+            If(Cond(NODE_GT_EQ, Id("acc"), Id("f")),
+               Block(Assign("acc", Sub(Id("acc"), Id("f")))),
+               Block(Assign("acc", Int("0")))),
+            Val("mixed", DT_DOUBLE, Add(Id("i"), Dbl("1.5"))),
+            Expr(Add(Id("i"), Int("1"))),
+            Expr(Unit()))));
+  }
+};
+
+using namespace ast;
+
+TEST_F(BigProgramFixture, ValidProgramPasses) {
+  EXPECT_EQ(semantic_analysis(root, &st), SUCCESS);
+}
+
+// ---- main ----
+TEST_F(BigProgramFixture, MainIsUnit) {
+  EXPECT_EQ(root->child_arr[F_MAIN]->data_type, DT_UNIT);
+  EXPECT_EQ(At(root, {F_MAIN, 0})->data_type, DT_UNIT);
+}
+
+TEST_F(BigProgramFixture, MainEndsWithNonUnit) {
+  // main(): Unit but last statement is Int (adjust expected code to your rules)
+  AddChild(MainBody(), Expr(Int("1")));
+  EXPECT_EQ(semantic_analysis(root, &st), ERR_INCOMPATIBLE_TYPE);
+}
+
+// ---- undefined symbols ----
+TEST_F(BigProgramFixture, UndefinedFunctionCall) {
+  ASTNode call = At(MainBody(), {S_VAL_F, I_RHS});
+  Rename(call->child_arr[0], "nope");
+  EXPECT_EQ(semantic_analysis(root, &st), ERR_UNDEF_SYM);
+}
+
+TEST_F(BigProgramFixture, UndefinedVariableInExpr) {
+  // while (i < 10) -> while (q < 10)
+  ASTNode id = At(MainBody(), {S_WHILE, 0, 0, 0, 0});  // WHILE -> COND -> LT -> EXPR -> ID
+  ASSERT_EQ(id->node_type, NODE_IDENTIFIER);
+  Rename(id, "q");
+  EXPECT_EQ(semantic_analysis(root, &st), ERR_UNDEF_SYM);
+}
+
+// ---- redefinition ----
+TEST_F(BigProgramFixture, RedefinedVariable) {
+  AddChild(MainBody(), Var("i", DT_INTEGER, Int("1")));
+  EXPECT_EQ(semantic_analysis(root, &st), ERR_REDEFINITION);
+}
+
+TEST_F(BigProgramFixture, RedefinedFunction) {
+  AddChild(root, Func("add", DT_INTEGER, Params(), Block(Return(Int("0")))));
+  EXPECT_EQ(semantic_analysis(root, &st), ERR_REDEFINITION);
+}
+
+TEST_F(BigProgramFixture, RedefinedParameter) {
+  // add(x, x)
+  ASTNode params = At(root, {F_ADD, 1});
+  Rename(params->child_arr[1], "x");
+  EXPECT_EQ(semantic_analysis(root, &st), ERR_REDEFINITION);
+}
+
+// ---- function calls ----
+TEST_F(BigProgramFixture, TooManyArgs) {
+  ASTNode call = At(MainBody(), {S_VAL_F, I_RHS});
+  AddChild(call->child_arr[1], Int("3"));
+  EXPECT_EQ(semantic_analysis(root, &st), ERR_FUN_ARGS);
+}
+
+TEST_F(BigProgramFixture, TooFewArgs) {
+  ASTNode call = At(MainBody(), {S_VAL_D, I_RHS});
+  ASTNode args = call->child_arr[1];
+  AST_destroy_tree(args->child_arr[1]);
+  args->child_count--;  // scale(2.5)
+  EXPECT_EQ(semantic_analysis(root, &st), ERR_FUN_ARGS);
+}
+
+TEST_F(BigProgramFixture, WrongArgType) {
+  // fact("five")
+  ASTNode args = At(MainBody(), {S_VAL_F, I_RHS, 1});
+  AST_destroy_tree(args->child_arr[0]);
+  args->child_arr[0] = Str("five");
+  EXPECT_EQ(semantic_analysis(root, &st), ERR_FUN_ARGS);
+}
+
+// ---- types ----
+TEST_F(BigProgramFixture, DeclaredTypeMismatch) {
+  // val f: String = fact(5)
+  At(MainBody(), {S_VAL_F})->child_arr[0]->data_type = DT_STRING;
+  EXPECT_EQ(semantic_analysis(root, &st), ERR_INCOMPATIBLE_TYPE);
+}
+
+TEST_F(BigProgramFixture, AssignStringToInt) {
+  AddChild(MainBody(), Assign("i", Str("x")));
+  EXPECT_EQ(semantic_analysis(root, &st), ERR_INCOMPATIBLE_TYPE);
+}
+
+TEST_F(BigProgramFixture, StringInArithmetic) {
+  // i + 1 -> i + "a"
+  ASTNode add = At(MainBody(), {S_EXPR_STMT, 0});
+  AST_destroy_tree(add->child_arr[1]);
+  add->child_arr[1] = Str("a");
+  EXPECT_EQ(semantic_analysis(root, &st), ERR_INCOMPATIBLE_TYPE);
+}
+
+TEST_F(BigProgramFixture, WrongFunctionReturnType) {
+  // def add(...): String { return x + y }
+  At(root, {F_ADD, 0})->data_type = DT_STRING;
+  root->child_arr[F_ADD]->data_type = DT_STRING;
+  EXPECT_EQ(semantic_analysis(root, &st), ERR_INCOMPATIBLE_TYPE);
+}
+
+// ---- assignment ----
+TEST_F(BigProgramFixture, AssignToVal) {
+  AddChild(MainBody(), Assign("f", Int("1")));
+  EXPECT_EQ(semantic_analysis(root, &st), ERR_INVALID_ASSIGN);
+}
+
+TEST_F(BigProgramFixture, AssignToFunction) {
+  AddChild(MainBody(), Assign("add", Int("1")));
+  EXPECT_EQ(semantic_analysis(root, &st), ERR_INVALID_ASSIGN);
+}
+
+// ---- scoping ----
+TEST_F(BigProgramFixture, VariableOutOfScope) {
+  // 'm' is defined only inside fact's else block
+  AddChild(MainBody(), Assign("i", Id("m")));
+  EXPECT_EQ(semantic_analysis(root, &st), ERR_UNDEF_SYM);
+}
+
+TEST_F(BigProgramFixture, ShadowingInNestedBlock) {
+  // Match your language rules: change to ERR_REDEFINITION if shadowing is forbidden
+  ASTNode while_block = At(MainBody(), {S_WHILE, I_WB});
+  AddChild(while_block, Var("i", DT_INTEGER, Int("0")));
   EXPECT_EQ(semantic_analysis(root, &st), SUCCESS);
 }
