@@ -13,7 +13,6 @@
 #include "symtable.h"
 #include <stdbool.h>
 #include <stdint.h>
-// #include <stddef.h> TODO delete if useless
 
 // Node types for AST nodes
 typedef enum {
@@ -107,13 +106,14 @@ typedef union node_data_union {
 // Structure for one AST node
 typedef struct ast_node_struct {
 
-  // Type matching syntax rule i guess TODO
+  // Type of node representing an action or structure
   NodeType node_type;
 
   // If node contains:
   // - a literal, it will have data type of literal
   // - a symbol, it will have data type that will be inserted into symbol table
-  // - an expression, it will have data type of result
+  // Other: depending on node type, it might have data type
+  // of result of its body
   DataType data_type;
 
   // If node contains:

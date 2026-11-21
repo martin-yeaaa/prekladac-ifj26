@@ -89,14 +89,25 @@ static int find_func_calls(ASTNode func_body, BSTNode *call_list);
  */
 static ErrCode define_func_symbols(ASTNode root, SymbTables *st);
 
+/**
+ * @brief Checks if data types are compatible, or if right side has undefined
+ * data type, it inherits the data type from the left side. Can do implicit
+ * conversion of integer to double.
+ * @param lhs Identifier type node on the left side.
+ * @param rhs Expression or function call node on the right side.
+ * @param parent Parent node of both sides.
+ * @return `SUCCESS` if types are compatible, error code otherwise.
+ */
 static ErrCode infer_or_check_types(ASTNode lhs, ASTNode rhs, ASTNode parent);
 
+/**
+ * @brief Does conversion of integer data type to double by inserting a special
+ * kind of type between parent and child node.
+ * @param child Node with integer data type to convert.
+ * @param parent Parent node of `child`.
+ * @return `SUCCESS` if conversion succeeds, error code otherwise.
+ */
 static ErrCode convert_int_to_double(ASTNode child, ASTNode parent);
-
-static ErrCode resolve_any_func_body(ASTNode func_body, SymbTables *st);
-static ErrCode resolve_any_stmt(ASTNode stmt, SymbTables *st);
-static ErrCode resolve_any_rhs(ASTNode rhs_node, SymbTables *st);
-static ErrCode resolve_any_subexpr(ASTNode subexpr, SymbTables *st);
 
 /**
  * @brief Fills the symbol table with local symbols of variables and function
@@ -113,7 +124,19 @@ static ErrCode resolve_any_subexpr(ASTNode subexpr, SymbTables *st);
  * `ERR_INTERNAL` if memory allocation fails.
  */
 static ErrCode resolve_AST(ASTNode root, SymbTables *st);
+
+// resolve_any_x functions choose the correct resolve_x function depending on
+// node type.
+static ErrCode resolve_any_func_body(ASTNode func_body, SymbTables *st);
+static ErrCode resolve_any_stmt(ASTNode stmt, SymbTables *st);
+static ErrCode resolve_any_rhs(ASTNode rhs_node, SymbTables *st);
+static ErrCode resolve_any_subexpr(ASTNode subexpr, SymbTables *st);
+
+// resolve_x functions do the same as resolve_AST, just personalized based on
+// node type.
 static ErrCode resolve_func_def(ASTNode func_def, SymbTables *st);
+// `check_end_if` - boolean, set to `true` if the last statement should be
+// checked if it's if statement and do the appropriate checks.
 static ErrCode resolve_block(ASTNode block, SymbTables *st, bool check_end_if);
 static ErrCode resolve_func_call(ASTNode func_call, SymbTables *st);
 static ErrCode resolve_arg(ASTNode arg, SymbTables *st);
@@ -125,6 +148,8 @@ static ErrCode resolve_binary_op(ASTNode bin_op, SymbTables *st);
 static ErrCode resolve_unary_op(ASTNode un_op, SymbTables *st);
 static ErrCode resolve_rhs_var_id(ASTNode idtf, SymbTables *st);
 static ErrCode resolve_condition(ASTNode cond, SymbTables *st);
+// `is_func_result` - boolean, set to `true` if the if statement is a result of
+// function and the appropriate checks should be done.
 static ErrCode resolve_if(ASTNode if_stmt, SymbTables *st, bool is_func_result);
 static ErrCode resolve_while(ASTNode while_stmt, SymbTables *st);
 static ErrCode resolve_return(ASTNode return_stmt, SymbTables *st);
@@ -151,7 +176,5 @@ static bool block_ends_with_return(ASTNode block);
  */
 static ErrCode define_variable_symbol(ASTNode idtf, SymbType sb_type,
                                       SymbTables *st);
-
-// Declarations to sort out
 
 #endif
