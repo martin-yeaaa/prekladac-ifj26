@@ -1,12 +1,113 @@
+// Project: prekladac-ifj26
+// File: lexer.h
+// Author: Michal Bína (xbinami00), Jiří Švec (xsvecji00)
+
+// Header for lexer
+
+#ifndef LEXER_H
+#define LEXER_H
+
+#include "bst.h"
+#include <stddef.h>
+
 typedef enum token_type {
-  PLUS,
-  MINUS,
-  INTEGER
-  // TODO doplnit vsechny typy tokenu
+  IDENTIFIER,
+
+  // Values
+  VAL_INT,
+  VAL_DOUBLE,
+  VAL_STRING,
+  VAL_BOOL,
+
+  // Required keywords
+  KW_DEF,
+  KW_DO,
+  KW_DOUBLE,
+  KW_ELSE,
+  KW_IF,
+  KW_IMPORT,
+  KW_INT,
+  KW_RETURN,
+  KW_STRING,
+  KW_THEN,
+  KW_UNIT,
+  KW_VAL,
+  KW_VAR,
+  KW_WHILE,
+
+  // Keywords from extensions
+  KW_BOOLEAN,
+  KW_CASE,
+  KW_CLASS,
+  KW_EXTENSION,
+  KW_FOR,
+  KW_LIST,
+  KW_MATCH,
+  KW_TYPE,
+
+  // Operators
+  OP_PLUS,
+  OP_MINUS,
+  OP_MULT,
+  OP_DIV,
+  OP_LESS,
+  OP_LESS_EQ,
+  OP_GREATER,
+  OP_GREATER_EQ,
+  OP_EQ,
+  OP_NOT_EQ,
+
+  // Separators
+  ASSIGNMENT,
+  COMMA,
+  SEMICOLON,
+  AT_MAIN,
+  COLON,
+  DOT,
+  INDENT,
+  DEDENT,
+  NEW_LINE,
+  END_OF_FILE,
+  OPEN_BRACKET,
+  CLOSE_BRACKET
 } token_type_t;
 
 typedef struct token {
-  token_type_t t;
+  token_type_t type;
   char *value;
-  // odkaz na dalsi token
+  struct token *next;
 } token_t;
+
+/**
+ * @brief Returns next token from the list created by lexer_parse().
+ * @return Next token, END_OF_FILE token repeatedly at the end, `NULL` if there
+ * is no list.
+ */
+token_t *get_next_token(void);
+
+/**
+ * @brief Appends new token to the end of token list.
+ * @param type Type of token.
+ * @param value Value of token, the function stores its own copy.
+ */
+void lexer_push(token_type_t type, const char *value);
+
+/**
+ * @brief Frees the whole token list.
+ * @param head Pointer to first token of the list.
+ */
+void lexer_free_tokens(token_t *head);
+
+/**
+ * @brief Inserts all keywords into the tree.
+ * @param keyword_tree Pointer to the tree root.
+ */
+void fill_keyword_tree(BSTNode *keyword_tree);
+
+/**
+ * @brief Reads whole standard input and splits it into list of tokens.
+ * @return First token of the list, last one is END_OF_FILE.
+ */
+token_t *lexer_parse(void);
+
+#endif // LEXER_H
