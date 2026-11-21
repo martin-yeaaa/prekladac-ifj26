@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "bst.h"
+#include "error_codes.h"
 
 
 static token_t *list;           // last token in the list
@@ -57,10 +58,10 @@ static void lexer_cleanup(void)
 
 /**
  * @brief Prints an error to stderr, frees memory and exits.
- * @param code Exit code (1 = lexical error, 99 = internal error).
+ * @param code Exit code, one of the macros from error_codes.h.
  * @param message Error description.
  */
-static void lexer_error(int code, const char *message)
+static void lexer_error(ErrCode code, const char *message)
 {
     fprintf(stderr, "Lexer error: %s\n", message);
     lexer_cleanup();
@@ -77,7 +78,7 @@ static char *copy_string(const char *src, size_t length)
 {
     char *copy = malloc(length + 1);
     if (copy == NULL)
-        lexer_error(99, "memory allocation failed");
+        lexer_error(ERR_INTERNAL, "memory allocation failed");
 
     memcpy(copy, src, length);
     copy[length] = '\0';
@@ -131,13 +132,13 @@ static int decode_escape(char c)
 static size_t skip_digits(const char *source, size_t length, size_t i)
 {
     if (i >= length || !is_digit(source[i]))
-        lexer_error(1, "digit expected in number literal");
+        lexer_error(ERR_LEXICAL, "digit expected in number literal");
 
     while (i < length && (is_digit(source[i]) || source[i] == '_'))
         i++;
 
     if (source[i - 1] == '_')
-        lexer_error(1, "underscore must be between two digits");
+        lexer_error(ERR_LEXICAL, "underscore must be between two digits");
 
     return i;
 }
@@ -175,7 +176,7 @@ static size_t skip_block_comment(const char *source, size_t length, size_t i, bo
     }
 
     if (depth != 0)
-        lexer_error(1, "unterminated block comment");
+        lexer_error(ERR_LEXICAL, "unterminated block comment");
 
     return i;
 }
@@ -200,7 +201,7 @@ static char *read_stdin(void)
 
     char *buffer = malloc(capacity);
     if (buffer == NULL)
-        lexer_error(99, "memory allocation failed");
+        lexer_error(ERR_INTERNAL, "memory allocation failed");
 
     int c;
     while ((c = getchar()) != EOF) {
@@ -210,7 +211,7 @@ static char *read_stdin(void)
             char *tmp = realloc(buffer, capacity);
             if (tmp == NULL) {
                 free(buffer);
-                lexer_error(99, "memory allocation failed");
+                lexer_error(ERR_INTERNAL, "memory allocation failed");
             }
             buffer = tmp;
         }
@@ -220,7 +221,7 @@ static char *read_stdin(void)
 
     if (ferror(stdin)) {
         free(buffer);
-        lexer_error(99, "reading from stdin failed");
+        lexer_error(ERR_INTERNAL, "reading from stdin failed");
     }
 
     buffer[size] = '\0';
@@ -241,7 +242,7 @@ void lexer_push(token_type_t type, const char *value)
 {
     token_t *token = calloc(1, sizeof(token_t));
     if (token == NULL)
-        lexer_error(99, "memory allocation failed");
+        lexer_error(ERR_INTERNAL, "memory allocation failed");
 
     token->type = type;
     token->value = copy_string(value, strlen(value));
@@ -338,7 +339,7 @@ void fill_keyword_tree(BSTNode *keyword_tree)
     for (size_t i = 0; i < count; i++) {
         token_type_t type = keywords[i].type;
         if (!BST_insert(keyword_tree, (char *)keywords[i].str, &type, sizeof(token_type_t)))
-            lexer_error(99, "inserting keyword into tree failed");
+            lexer_error(ERR_INTERNAL, "inserting keyword into tree failed");
     }
 }
 
@@ -349,7 +350,7 @@ token_t *lexer_parse(void)
 
     list_head = calloc(1, sizeof(token_t));
     if (list_head == NULL)
-        lexer_error(99, "memory allocation failed");
+        lexer_error(ERR_INTERNAL, "memory allocation failed");
     list = list_head;
 
     keyword_tree = BST_new();
@@ -358,7 +359,7 @@ token_t *lexer_parse(void)
     size_t indent_capacity = 16;
     indent_stack = malloc(indent_capacity * sizeof(size_t));
     if (indent_stack == NULL)
-        lexer_error(99, "memory allocation failed");
+        lexer_error(ERR_INTERNAL, "memory allocation failed");
     indent_stack[0] = 0;
     size_t indent_top = 0;
 
@@ -405,7 +406,7 @@ token_t *lexer_parse(void)
 
             // tab can not be at start of a line
             if (source[first] == '\t')
-                lexer_error(1, "tab in indentation");
+                lexer_error(ERR_LEXICAL, "tab in indentation");
 
             at_line_start = false;
             i = first;
@@ -416,7 +417,7 @@ token_t *lexer_parse(void)
                     indent_capacity *= 2;
                     size_t *tmp = realloc(indent_stack, indent_capacity * sizeof(size_t));
                     if (tmp == NULL)
-                        lexer_error(99, "memory allocation failed");
+                        lexer_error(ERR_INTERNAL, "memory allocation failed");
                     indent_stack = tmp;
                 }
                 indent_stack[++indent_top] = spaces;
@@ -431,7 +432,7 @@ token_t *lexer_parse(void)
 
                 // we have to stop exactly on some older level else it is error
                 if (indent_stack[indent_top] != spaces)
-                    lexer_error(1, "inconsistent indentation");
+                    lexer_error(ERR_SYNTAX, "inconsistent indentation");
             }
         }
 
@@ -485,7 +486,7 @@ token_t *lexer_parse(void)
                 i += 4; // skip the word main
             }
             else {
-                lexer_error(1, "unexpected character '@'");
+                lexer_error(ERR_SYNTAX, "unexpected character '@'");
             }
             continue;
 
@@ -507,7 +508,7 @@ token_t *lexer_parse(void)
             case ')':
             if (bracket_depth > 0)
                 bracket_depth--;
-            lexer_push(CLOSE_BRACKET, ')');
+            lexer_push(CLOSE_BRACKET, ")");
             continue;
 
             case '(':
@@ -531,8 +532,8 @@ token_t *lexer_parse(void)
                     spaces++;
                 }
 
-                if (j < length && source[j] != '\n' && source[j] != '\r' && source[j] != '/' && source[j] != ")" && spaces <= indent_stack[indent_top])
-                    lexer_error(1, "line inside brackets must be indented more");
+                if (j < length && source[j] != '\n' && source[j] != '\r' && source[j] != '/' && source[j] != ')' && spaces <= indent_stack[indent_top])
+                    lexer_error(ERR_SYNTAX, "line inside brackets must be indented more");
                 // line with only ')' can be aligned with the start, because of the end comma
             }
             continue;
@@ -567,7 +568,7 @@ token_t *lexer_parse(void)
                 i++;
             }
             else
-                lexer_error(1, "unexpected character '!'");
+                lexer_error(ERR_LEXICAL, "unexpected character '!'");
         }
         else if (current == '<'){
             if (next == '='){
@@ -617,7 +618,7 @@ token_t *lexer_parse(void)
 
                 // after multi-line comment there can be only spaces until the end of line
                 if (new_line && bracket_depth == 0 && after < length && source[after] != '\n')
-                    lexer_error(1, "token after multi-line block comment");
+                    lexer_error(ERR_LEXICAL, "token after multi-line block comment");
 
                 i--; // loop does i++ at the end
 
@@ -644,7 +645,7 @@ token_t *lexer_parse(void)
                     string_end++;
                 }
                 if (string_end + 2 >= length) {
-                    lexer_error(1, "unterminated multi-line string");
+                    lexer_error(ERR_LEXICAL, "unterminated multi-line string");
                 }
 
                 char *value = copy_string(source + string_start, string_end - string_start);
@@ -660,12 +661,12 @@ token_t *lexer_parse(void)
 
                 while (string_end < length && source[string_end] != '"'){
                     if (source[string_end] == '\n') {
-                        lexer_error(1, "new line in one-line string");
+                        lexer_error(ERR_LEXICAL, "new line in one-line string");
                     }
                     // Escape sequencions
                     if (source[string_end] == '\\') {
                         if (string_end + 1 >= length || decode_escape(source[string_end+1]) < 0) {
-                            lexer_error(1, "invalid escape sequence");
+                            lexer_error(ERR_LEXICAL, "invalid escape sequence");
                         }
                         string_end += 2;
                     }
@@ -674,12 +675,12 @@ token_t *lexer_parse(void)
                     }
                 }
                 if (string_end >= length) {
-                    lexer_error(1, "unterminated string");
+                    lexer_error(ERR_LEXICAL, "unterminated string");
                 }
 
                 char *value = malloc(string_end - string_start + 1);
                 if (value == NULL) {
-                    lexer_error(99, "memory allocation failed");
+                    lexer_error(ERR_INTERNAL, "memory allocation failed");
                 }
 
                 size_t value_length = 0;
@@ -711,7 +712,7 @@ token_t *lexer_parse(void)
             if (current == '0') {
                 i++;
                 if (i < length && (is_digit(source[i]) || source[i] == '_'))
-                    lexer_error(1, "integer literal must not start with zero");
+                    lexer_error(ERR_LEXICAL, "integer literal must not start with zero");
             }
             // number can start with '.' (for example .5) → then there is no integer part
             else if (current != '.') {
@@ -744,7 +745,7 @@ token_t *lexer_parse(void)
 
             char *value = malloc(number_end - number_start + 1);
             if (value == NULL)
-                lexer_error(99, "memory allocation failed");
+                lexer_error(ERR_INTERNAL, "memory allocation failed");
 
             // copy number without underscores
             size_t value_length = 0;
@@ -776,7 +777,7 @@ token_t *lexer_parse(void)
             char *value = copy_string(source + identifier_start, identifier_length);
             if (identifier_length == 1 && value[0] == '_'){
                 free(value);
-                lexer_error(1, "single underscore is not an identifier");
+                lexer_error(ERR_LEXICAL, "single underscore is not an identifier");
             }
 
             // checking for keywords
@@ -789,7 +790,7 @@ token_t *lexer_parse(void)
             free(value);
         }
         else {
-            lexer_error(1, "unknown character");
+            lexer_error(ERR_LEXICAL, "unknown character");
         }
     }
 
