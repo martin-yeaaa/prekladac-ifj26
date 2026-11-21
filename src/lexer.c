@@ -1,6 +1,9 @@
 // Project: prekladac-ifj26
 // File: lexer.c
-// Author: Michal Bína (xbinami00), Jiří Švec (xsvecji00)
+// Authors:
+// - Jiří Švec (xsvecji00)
+// - Michal Bína (xbinami00)
+// - Martin Vaško (vaskom00) - only final touches
 
 // Implementation of lexer
 
@@ -9,24 +12,39 @@
 #include "error_codes.h"
 #include <stdbool.h>
 #include <stddef.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-static token_t *list;        // last token in the list
-static token_t *list_head;   // empty token at the start of list
-static token_t *next_token;  // token that get_next_token() returns next
+static Token *list;          // last token in the list
+static Token *list_head;     // empty token at the start of list
+static Token *next_token;    // token that get_next_token() returns next
 static char *lexer_source;   // whole stdin stored in string
 static size_t *indent_stack; // indentation levels (number of spaces), first one
                              // is always 0
 static BSTNode keyword_tree;
 
-void lexer_free_tokens(token_t *head) {
+// Static declarations moved from public header
+/**
+ * @brief Appends new token to the end of token list.
+ * @param type Type of token.
+ * @param value Value of token, the function stores its own copy.
+ */
+static void lexer_push(TokenType type, const char *value);
+
+/**
+ * @brief Inserts all keywords into the tree.
+ * @param root Pointer to the tree root.
+ */
+static void fill_keyword_tree(BSTNode *root);
+
+// Implementation
+
+void lexer_free_tokens(Token *head) {
   next_token = NULL;
 
   while (head != NULL) {
-    token_t *next = head->next;
+    Token *next = head->next;
     free(head->value);
     free(head);
     head = next;
@@ -219,8 +237,8 @@ static char *read_stdin(void) {
   return buffer;
 }
 
-token_t *get_next_token(void) {
-  token_t *token = next_token;
+Token *get_next_token(void) {
+  Token *token = next_token;
 
   if (token != NULL && token->next != NULL)
     next_token = token->next;
@@ -228,8 +246,8 @@ token_t *get_next_token(void) {
   return token;
 }
 
-void lexer_push(token_type_t type, const char *value) {
-  token_t *token = calloc(1, sizeof(token_t));
+void lexer_push(TokenType type, const char *value) {
+  Token *token = calloc(1, sizeof(Token));
   if (token == NULL)
     lexer_error(ERR_INTERNAL, "memory allocation failed");
 
@@ -240,7 +258,7 @@ void lexer_push(token_type_t type, const char *value) {
   list = token;
 }
 
-void fill_keyword_tree(BSTNode *keyword_tree) {
+void fill_keyword_tree(BSTNode *root) {
   /*
    * AI helped here to complete keyword list so we did not have to
    * fill it by hand.
@@ -282,7 +300,7 @@ void fill_keyword_tree(BSTNode *keyword_tree) {
    * potřebuju, abys mi to doplnil zbytek do tohoto pole:
    * struct {
    *  const char *str;
-   *  token_type_t type;
+   *  TokenType type;
    * } keywords[] = {
    * { "def",     KW_DEF },
    * { "do",      KW_DO },
@@ -292,7 +310,7 @@ void fill_keyword_tree(BSTNode *keyword_tree) {
 
   struct {
     const char *str;
-    token_type_t type;
+    TokenType type;
   } keywords[] = {{"def", KW_DEF},         {"do", KW_DO},
                   {"Double", KW_DOUBLE},   {"else", KW_ELSE},
                   {"if", KW_IF},           {"import", KW_IMPORT},
@@ -311,18 +329,17 @@ void fill_keyword_tree(BSTNode *keyword_tree) {
   size_t count = sizeof(keywords) / sizeof(keywords[0]);
 
   for (size_t i = 0; i < count; i++) {
-    token_type_t type = keywords[i].type;
-    if (!BST_insert(keyword_tree, (char *)keywords[i].str, &type,
-                    sizeof(token_type_t)))
+    TokenType type = keywords[i].type;
+    if (!BST_insert(root, (char *)keywords[i].str, &type, sizeof(TokenType)))
       lexer_error(ERR_INTERNAL, "inserting keyword into tree failed");
   }
 }
 
-token_t *lexer_parse(void) {
+Token *lexer_parse(void) {
   lexer_source = read_stdin();
   char *source = lexer_source;
 
-  list_head = calloc(1, sizeof(token_t));
+  list_head = calloc(1, sizeof(Token));
   if (list_head == NULL)
     lexer_error(ERR_INTERNAL, "memory allocation failed");
   list = list_head;
@@ -678,7 +695,7 @@ token_t *lexer_parse(void) {
 
     else if (is_digit(current) || (current == '.' && is_digit(next))) {
       size_t number_start = i;
-      token_type_t type = VAL_INT;
+      TokenType type = VAL_INT;
 
       // zero can not be followed by another digit
       if (current == '0') {
@@ -757,8 +774,8 @@ token_t *lexer_parse(void) {
       }
 
       // checking for keywords
-      token_type_t type = IDENTIFIER;
-      token_type_t *keyword = BST_get_data(keyword_tree, value);
+      TokenType type = IDENTIFIER;
+      TokenType *keyword = BST_get_data(keyword_tree, value);
       if (keyword != NULL)
         type = *keyword;
 
@@ -790,7 +807,7 @@ token_t *lexer_parse(void) {
   free(lexer_source);
   lexer_source = NULL;
 
-  token_t *first = list_head->next;
+  Token *first = list_head->next;
   free(list_head);
   list_head = NULL;
   list = NULL;

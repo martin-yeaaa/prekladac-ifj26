@@ -1,16 +1,16 @@
 // Project: prekladac-ifj26
 // File: lexer.h
-// Author: Michal Bína (xbinami00), Jiří Švec (xsvecji00)
+// Authors:
+// - Jiří Švec (xsvecji00)
+// - Michal Bína (xbinami00)
+// - Martin Vaško (vaskom00) - only final touches
 
 // Header for lexer
 
 #ifndef LEXER_H
 #define LEXER_H
 
-#include "bst.h"
-#include <stddef.h>
-
-typedef enum token_type {
+typedef enum token_type_enum {
   IDENTIFIER,
 
   // Values
@@ -70,44 +70,31 @@ typedef enum token_type {
   END_OF_FILE,
   OPEN_BRACKET,
   CLOSE_BRACKET
-} token_type_t;
+} TokenType;
 
-typedef struct token {
-  token_type_t type;
+typedef struct token_struct {
+  TokenType type;
   char *value;
-  struct token *next;
-} token_t;
+  struct token_struct *next;
+} Token;
+
+/**
+ * @brief Reads whole standard input and splits it into list of tokens.
+ * @return First token of the list, last one is END_OF_FILE.
+ */
+Token *lexer_parse(void);
+
+/**
+ * @brief Frees the whole token list.
+ * @param head Pointer to first token of the list.
+ */
+void lexer_free_tokens(Token *head);
 
 /**
  * @brief Returns next token from the list created by lexer_parse().
  * @return Next token, END_OF_FILE token repeatedly at the end, `NULL` if there
  * is no list.
  */
-token_t *get_next_token(void);
-
-/**
- * @brief Appends new token to the end of token list.
- * @param type Type of token.
- * @param value Value of token, the function stores its own copy.
- */
-void lexer_push(token_type_t type, const char *value);
-
-/**
- * @brief Frees the whole token list.
- * @param head Pointer to first token of the list.
- */
-void lexer_free_tokens(token_t *head);
-
-/**
- * @brief Inserts all keywords into the tree.
- * @param keyword_tree Pointer to the tree root.
- */
-void fill_keyword_tree(BSTNode *keyword_tree);
-
-/**
- * @brief Reads whole standard input and splits it into list of tokens.
- * @return First token of the list, last one is END_OF_FILE.
- */
-token_t *lexer_parse(void);
+Token *get_next_token(void);
 
 #endif // LEXER_H
