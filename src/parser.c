@@ -640,36 +640,122 @@ static ErrCode parse_stmts(ASTNode block) {
   ErrCode err = SUCCESS;
   UPDATE_CUR_TOKEN();
 
+  // 22 <stmts> -> <stmt> <stmt_sep>
+  //  Match rule
+  switch (cur_token->type) {
+  case IDENTIFIER:
+  case OPEN_BRACKET:
+  case KW_RETURN:
+  case KW_VAL:
+  case KW_VAR:
+  case OP_MINUS:
+  case OP_PLUS:
+  case KW_IF:
+  case KW_WHILE:
+  case VAL_INT:
+  case VAL_DOUBLE:
+  case VAL_STRING: {
+
     // 22 <stmts> -> <stmt> <stmt_sep>
-    //  Match rule
-    switch (cur_token->type) {
-    case IDENTIFIER:
-    case OPEN_BRACKET:
-    case KW_RETURN:
-    case KW_VAL:
-    case KW_VAR:
-    case OP_MINUS:
-    case OP_PLUS:
-    case KW_IF:
-    case KW_WHILE:
-    case VAL_INT:
-    case VAL_DOUBLE:
-    case VAL_STRING: {
+    // <stmt>
+    err = parse_stmt(block);
+    RETURN_ON_ERROR(err, "inside statements");
 
-      // 22 <stmts> -> <stmt> <stmt_sep>
-      // <stmt>
-      err = parse_stmt(block);
-      RETURN_ON_ERROR(err, "inside statements");
+    // <stmt_sep>
+    err = parse_stmt_sep(block);
+    RETURN_ON_ERROR(err, "inside statements separator");
 
-      // <stmt_sep>
-      err = parse_stmt_sep(block);
-      RETURN_ON_ERROR(err, "inside statements");
+    return SUCCESS;
+  }
+  default:
+    break;
+  }
 
-      return SUCCESS;
-    }
-    default:
-      break;
-    }
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing statement");
+}
+
+static ErrCode parse_stmt(ASTNode block) {
+
+  ErrCode err = SUCCESS;
+  UPDATE_CUR_TOKEN();
+
+  // 27 <stmt> -> <val_def>
+  // 28 <stmt> -> <var_def>
+  // 29 <stmt> -> return <return_stmt>
+  // 30 <stmt> -> <if_stmt>
+  // 31 <stmt> -> <while_loop>
+  // 100 <stmt> -> <expr_or_call>
+  // 200 <stmt> -> <expr>
+  //  Match rule
+  switch (cur_token->type) {
+  case IDENTIFIER: {
+
+    // 100 <stmt> -> <expr_or_call>
+    err = parse_expr_or_call(block);
+    RETURN_ON_ERROR(err, "inside expression or call");
+
+    return SUCCESS;
+  }
+  case OPEN_BRACKET:
+  case OP_MINUS:
+  case OP_PLUS:
+  case VAL_INT:
+  case VAL_DOUBLE:
+  case VAL_STRING: {
+
+    // 200 <stmt> -> <expr>
+    err = parse_expr(block);
+    RETURN_ON_ERROR(err, "inside expression");
+
+    return SUCCESS;
+  }
+  case KW_RETURN: {
+
+    // 29 <stmt> -> return <return_stmt>
+    // return was parsed
+    cur_token = NULL;
+
+    err = parse_return_stmt(block);
+    RETURN_ON_ERROR(err, "inside return");
+
+    return SUCCESS;
+  }
+  case KW_VAL: {
+
+    // 27 <stmt> -> <val_def>
+    err = parse_val_def(block);
+    RETURN_ON_ERROR(err, "inside if");
+
+    return SUCCESS;
+  }
+  case KW_VAR: {
+
+    // 28 <stmt> -> <var_def>
+    err = parse_var_def(block);
+    RETURN_ON_ERROR(err, "inside if");
+
+    return SUCCESS;
+  }
+
+  case KW_IF: {
+
+    // 30 <stmt> -> <if_stmt>
+    err = parse_if_stmt(block);
+    RETURN_ON_ERROR(err, "inside if");
+
+    return SUCCESS;
+  }
+  case KW_WHILE: {
+
+    // 31 <stmt> -> <while_loop>
+    err = parse_while_loop(block);
+    RETURN_ON_ERROR(err, "inside while");
+
+    return SUCCESS;
+  }
+  default:
+    break;
+  }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing statements");
 }
@@ -678,16 +764,11 @@ static ErrCode parse_expr_or_call(ASTNode parent) {
 
   ErrCode err = SUCCESS;
   UPDATE_CUR_TOKEN();
+
+      // DECIDE IF THIS IS A FUNCTION CALL OR EXPRESSION
+
   return SUCCESS;
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing expr or call");
-}
-
-static ErrCode parse_stmt(ASTNode block) {
-
-  ErrCode err = SUCCESS;
-  UPDATE_CUR_TOKEN();
-  return SUCCESS;
-  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing statement");
 }
 
 static ErrCode parse_stmt_sep(ASTNode block) {
