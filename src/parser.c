@@ -825,6 +825,18 @@ static ErrCode parse_stmt_sep(ASTNode block) {
 
     return SUCCESS;
   }
+  case NEW_LINE: {
+    
+    // 24 <stmt_sep> -> \NL <stmt_next>
+    // \NL was parsed
+    cur_token = NULL;
+
+    // <stmt_next>
+    err = parse_stmt_next(block);
+    RETURN_ON_ERROR(err, "inside next statement");
+
+    return SUCCESS;
+  }
   default:
     break;
   }
