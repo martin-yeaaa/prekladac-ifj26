@@ -685,17 +685,9 @@ static ErrCode parse_stmt(ASTNode block) {
   // 30 <stmt> -> <if_stmt>
   // 31 <stmt> -> <while_loop>
   // 100 <stmt> -> <expr_or_call>
-  // 200 <stmt> -> <expr>
   //  Match rule
   switch (cur_token->type) {
-  case IDENTIFIER: {
-
-    // 100 <stmt> -> <expr_or_call>
-    err = parse_expr_or_call(block);
-    RETURN_ON_ERROR(err, "inside expression or call");
-
-    return SUCCESS;
-  }
+  case IDENTIFIER:
   case OPEN_BRACKET:
   case OP_MINUS:
   case OP_PLUS:
@@ -703,9 +695,9 @@ static ErrCode parse_stmt(ASTNode block) {
   case VAL_DOUBLE:
   case VAL_STRING: {
 
-    // 200 <stmt> -> <expr>
-    err = parse_expr(block);
-    RETURN_ON_ERROR(err, "inside expression");
+    // 100 <stmt> -> <expr_or_call>
+    err = parse_expr_or_call(block);
+    RETURN_ON_ERROR(err, "inside expression or call");
 
     return SUCCESS;
   }
@@ -765,9 +757,46 @@ static ErrCode parse_expr_or_call(ASTNode parent) {
   ErrCode err = SUCCESS;
   UPDATE_CUR_TOKEN();
 
-      // DECIDE IF THIS IS A FUNCTION CALL OR EXPRESSION
+  // DECIDE IF THIS IS A FUNCTION CALL OR EXPRESSION
+  // TODO DOCUMENT!!!
+  // 101 <expr_or_call> -> <fun_call>
+  // 102 <expr_or_call> -> <expr>
+  //  Match rule
+  switch (cur_token->type) {
+  case IDENTIFIER: {
 
-  return SUCCESS;
+    // We can't choose another rule right now, we need to look ahead
+    if (cur_token->next != NULL && cur_token->next->type == OPEN_BRACKET) {
+      // Now we can decide
+      // 101 <expr_or_call> -> <fun_call>
+      err = parse_fun_call(parent);
+      RETURN_ON_ERROR(err, "inside function call");
+
+      return SUCCESS;
+
+    } else {
+      // 102 <expr_or_call> -> <expr>
+      err = parse_expr(parent);
+      RETURN_ON_ERROR(err, "inside expression");
+
+      return SUCCESS;
+    }
+  }
+  case OPEN_BRACKET:
+  case OP_MINUS:
+  case OP_PLUS:
+  case VAL_INT:
+  case VAL_DOUBLE:
+  case VAL_STRING: {
+
+    // 102 <expr_or_call> -> <expr>
+    err = parse_expr(parent);
+    RETURN_ON_ERROR(err, "inside expression");
+
+    return SUCCESS;
+  }
+  }
+
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing expr or call");
 }
 

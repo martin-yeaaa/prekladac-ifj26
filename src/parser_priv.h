@@ -82,7 +82,6 @@ static ErrCode parse_expr_rest(void);
 static ErrCode parse_unary_op(void);
 static ErrCode parse_binary_op(void);
 
-
 static ErrCode parse_rel_op(void);
 static ErrCode parse_literal(void);
 
