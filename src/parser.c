@@ -855,6 +855,8 @@ static ErrCode parse_stmt_sep(ASTNode block) {
 
   // 23 <stmt_sep> -> ; <stmt_next> <stmt_sep>
   // 24 <stmt_sep> -> \NL <stmt_next>
+  // TODO DOCUMENT
+  // 300 <stmt_sep> -> epsilon
   //  Match rule
   switch (cur_token->type) {
   case SEMICOLON: {
@@ -883,6 +885,12 @@ static ErrCode parse_stmt_sep(ASTNode block) {
     err = parse_stmt_next(block);
     RETURN_ON_ERROR(err, "inside next statement");
 
+    return SUCCESS;
+  }
+  case DEDENT: {
+
+    // TODO VERIFY THIS AND ADD IT TO GRAMMAR/TABLE
+    // 300 <stmt_sep> -> epsilon
     return SUCCESS;
   }
   default:
@@ -1076,14 +1084,14 @@ static ErrCode parse_assignment(ASTNode block) {
 
     err = parse_expr_or_call(assign);
     RETURN_ON_ERROR(err, "inside assignment, expr or call");
-    
+
     return SUCCESS;
   }
   default:
     break;
   }
 
-  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing REPLACETEMPLATE");
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing assignment");
 }
 
 static ErrCode parse_return_stmt(ASTNode block) {
@@ -1139,6 +1147,62 @@ static ErrCode parse_return_stmt(ASTNode block) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing return statement");
+}
+
+
+static ErrCode parse_if_stmt(ASTNode block) {
+
+  ErrCode err = SUCCESS;
+  UPDATE_CUR_TOKEN();
+
+  ASTNode if_stmt;
+  err = make_child_node(block, &if_stmt, NODE_IF, DT_UNIT, NULL);
+  RETURN_ON_ERROR(err, "inside if statement");
+
+  // 72 <if_stmt> -> if <cond> then <block> else <block>
+  // Match rule
+  switch (cur_token->type) {
+  case KW_IF: {
+
+    // 72 <if_stmt> -> if <cond> then <block> else <block>
+    // if was parsed
+    cur_token = NULL;
+
+    err = parse_cond(if_stmt);
+    RETURN_ON_ERROR(err, "inside if, condition");
+    // Function might have "consumed" token, renew it
+    UPDATE_CUR_TOKEN();
+
+    // then
+    if (cur_token->type != KW_THEN)
+      RETURN_ON_ERROR(ERR_SYNTAX, "inside if, expected \"then\"");
+    // then was parsed
+    cur_token = NULL;
+
+    // <block> - creates new block node
+    err = parse_block(if_stmt);
+    RETURN_ON_ERROR(err, "inside if, then block");
+    // Function might have "consumed" token, renew it
+    UPDATE_CUR_TOKEN();
+
+    // else
+    if (cur_token->type != KW_ELSE)
+      RETURN_ON_ERROR(ERR_SYNTAX, "inside if, expected \"else\"");
+    // else was parsed
+    cur_token = NULL;
+
+    // <block> - creates new block node
+    err = parse_block(if_stmt);
+    RETURN_ON_ERROR(err, "inside if, else block");
+
+    return SUCCESS;
+  }
+
+  default:
+    break;
+  }
+
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing if statement");
 }
 
 static ErrCode parse_template(ASTNode template_node) {
