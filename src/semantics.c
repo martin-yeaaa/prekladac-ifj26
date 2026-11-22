@@ -1144,6 +1144,12 @@ static ErrCode resolve_func_call(ASTNode func_call, SymbTables *st) {
     // Check if it matches param type
     DataType arg_type = arg->data_type;
     DataType param_type = func_symb->param_type_arr[a];
+
+    // Some built in functions accept any data type
+    if (param_type == DT_ANY) {
+      // Don't check parameter type
+      continue;
+    }
     if (arg_type != param_type) {
 
       // Check implicit conversion
