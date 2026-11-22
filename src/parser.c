@@ -640,9 +640,38 @@ static ErrCode parse_stmts(ASTNode block) {
   ErrCode err = SUCCESS;
   UPDATE_CUR_TOKEN();
 
-  return SUCCESS;
+    // 22 <stmts> -> <stmt> <stmt_sep>
+    //  Match rule
+    switch (cur_token->type) {
+    case IDENTIFIER:
+    case OPEN_BRACKET:
+    case KW_RETURN:
+    case KW_VAL:
+    case KW_VAR:
+    case OP_MINUS:
+    case OP_PLUS:
+    case KW_IF:
+    case KW_WHILE:
+    case VAL_INT:
+    case VAL_DOUBLE:
+    case VAL_STRING: {
 
-  RETURN_ON_ERROR(ERR_SYNTAX, "replace template message!");
+      // 22 <stmts> -> <stmt> <stmt_sep>
+      // <stmt>
+      err = parse_stmt(block);
+      RETURN_ON_ERROR(err, "inside statements");
+
+      // <stmt_sep>
+      err = parse_stmt_sep(block);
+      RETURN_ON_ERROR(err, "inside statements");
+
+      return SUCCESS;
+    }
+    default:
+      break;
+    }
+
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing statements");
 }
 
 static ErrCode parse_expr_or_call(ASTNode parent) {
@@ -651,6 +680,22 @@ static ErrCode parse_expr_or_call(ASTNode parent) {
   UPDATE_CUR_TOKEN();
   return SUCCESS;
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing expr or call");
+}
+
+static ErrCode parse_stmt(ASTNode block) {
+
+  ErrCode err = SUCCESS;
+  UPDATE_CUR_TOKEN();
+  return SUCCESS;
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing statement");
+}
+
+static ErrCode parse_stmt_sep(ASTNode block) {
+
+  ErrCode err = SUCCESS;
+  UPDATE_CUR_TOKEN();
+  return SUCCESS;
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing statement separator");
 }
 
 static ErrCode parse_template(ASTNode template_node) {
