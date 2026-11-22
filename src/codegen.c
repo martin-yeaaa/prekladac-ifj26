@@ -2,13 +2,22 @@
 // File: codegen.c
 // Author: Lukáš Dvořák (xdvoral00)
 
-// how this file works (in order of calls):
-// 1. generate_code() - prints header, temp vars and starts going thru the AST
-// 2. generate_statement() - runs commands (var/val, =, if, while, blocks)
-// 3. generate_expression() - computes math, strings and comparisons on stack
-// 4. generate_builtin() - prints code for builtin functions directly (print,
-// read...)
-// 5. print_escaped_string() - helper for formatting strings to \XYZ ascii codes
+/* AI usage: Gemini was used to consult IFJcode26 string escaping, DEFVAR
+   hoisting, user function stack frames, and to generate most of the comments in
+   this file becouse i suck in makeing good comments but the "how this file
+   works" and marknig of key fitures was my makeing */
+
+/* how this file works (in order of calls):
+1. generate_code() - prints header, temp vars and jumps to $main
+2. generate_function() - creates frame, declares vars, pops params and runs
+   body
+3. generate_statement() - runs commands (var/val, =, if, while, return,
+   blocks)
+4. generate_expression() - computes math, strings, func calls and comparisons
+   on stack
+5. generate_builtin() - prints code for builtin functions directly (print,
+   read...)
+6. helper functions - print_escaped_string() and declare_local_vars() */
 
 #include "codegen.h"
 #include <stdio.h>
@@ -21,16 +30,22 @@
 // if two ifs had the same label name, the ifjcode26 interpreter would crash
 int label_id = 0;
 
-// forward declaration because generate_builtin and generate_expression call
-// each other (math expressions can contain function calls, and function args
-// can be math expressions)
-void generate_expression(ASTNode node);
+// flag to know if we are currently inside main() function
+// main uses EXIT instead of RETURN because we jump to $main without CALL
+int is_main_func = 0;
 
-// HELPER FUNCTIONS
-// ----------------
-// prints string in ifjcode26 format (like PUSHS string@hello\032world)
-// ifjcode26 cant have raw spaces, newlines, '#' or '\' inside strings,
-// so we have to convert them to \XYZ decimal ascii codes
+// forward declarations because functions call each other recursively
+void generate_expression(ASTNode node);
+void generate_statement(ASTNode node);
+
+/* HELPER FUNCTIONS
+   ----------------
+   prints string in ifjcode26 format (like PUSHS string@hello\032world)
+   ifjcode26 cant have raw spaces, newlines, '#' or '\' inside strings,
+   so we have to convert them to \XYZ decimal ascii codes
+   (AI-assisted, prompt: "potřebuju v C napsat funkci, která mi vypíše string ve
+   formátu pro ifjcode26 a všechny mezery, odřádkování, křížky a lomítka v něm
+   převede na dekadický ascii kód \XYZ, protože to interpret jinak nevezme") */
 void print_escaped_string(char *str) {
   printf("PUSHS string@");
   if (str != NULL) {
@@ -47,14 +62,42 @@ void print_escaped_string(char *str) {
   printf("\n");
 }
 
-// BUILTIN FUNCTIONS
-// -----------------
-// instead of generating normal function CALL and setting up call frames,
-// we print the ifjcode26 instructions for builtin functions directly in place
+/* scans the whole function body before running it and prints DEFVAR for every
+   local variable at the top of the function
+   we have to do this because ifjcode26 crashes if DEFVAR runs twice inside a
+   while loop
+   (AI-assisted, prompt: "interpret ifjcode26 mi padá na redefinici proměnné
+   když udělám DEFVAR uvnitř while cyklu a proběhne to podruhé, jak mám projít
+   AST strom celé funkce dopředu a vypsat všechny DEFVAR hned na začátek
+   funkce?") */
+void declare_local_vars(ASTNode node) {
+  if (node == NULL) {
+    return;
+  }
+
+  // if we found var or val definition, declare it in local frame right now
+  if (node->node_type == NODE_VAR_DEF || node->node_type == NODE_VAL_DEF) {
+    if (node->child_count >= 1 && node->child_arr[0] != NULL &&
+        node->child_arr[0]->symbol_ptr != NULL) {
+      printf("DEFVAR LF@var_%d\n", node->child_arr[0]->symbol_ptr->id);
+    }
+  }
+
+  // keep searching in all children (blocks, ifs, whiles...)
+  for (int i = 0; i < node->child_count; i++) {
+    declare_local_vars(node->child_arr[i]);
+  }
+}
+
+/* BUILTIN FUNCTIONS
+   -----------------
+   instead of generating normal function CALL and setting up call frames,
+   we print the ifjcode26 instructions for builtin functions directly in place
+ */
 void generate_builtin(ASTNode node) {
-  // safety check: according to AST reference, NODE_FUNC_CALL always has 2
-  // children child_arr[0] = identifier with function name, child_arr[1] = arg
-  // list with parameters
+  /* safety check: according to AST reference, NODE_FUNC_CALL always has 2
+     children child_arr[0] = identifier with function name, child_arr[1] = arg
+     list with parameters */
   if (node == NULL || node->child_count < 2) {
     return;
   }
@@ -80,9 +123,9 @@ void generate_builtin(ASTNode node) {
       printf("POPS GF@temp_result\n");
       printf("WRITE GF@temp_result\n");
     }
-    // print returns void/Unit, but every function call in an expression must
-    // leave 1 return value on the stack, so we push nil (if print is alone on a
-    // line, generate_statement will immediately pop and throw away this nil)
+    /* print returns void/Unit, but every function call in an expression must
+       leave 1 return value on the stack, so we push nil (if print is alone on a
+       line, generate_statement will immediately pop and throw away this nil) */
     printf("PUSHS nil@nil\n");
   }
   // readInt() - reads integer from user input into temp_result and pushes it on
@@ -136,31 +179,49 @@ void generate_builtin(ASTNode node) {
       printf("PUSHS GF@temp_result\n");
     }
   }
+  // TODO: add substring, strcmp and ord builtin functions here
 }
 
-// EXPRESSIONS AND STACK MATH
-// --------------------------
-// calculates expressions bottom-up using the ifjcode26 data stack
-// first we push operands (numbers and variables) on stack, and then stack
-// instructions (like ADDS or LTS) take top 2 values, compute and push result
-// back
+/* EXPRESSIONS AND STACK MATH
+   --------------------------
+   calculates expressions bottom-up using the ifjcode26 data stack
+   first we push operands (numbers and variables) on stack, and then stack
+   instructions (like ADDS or LTS) take top 2 values, compute and push result
+   back */
 void generate_expression(ASTNode node) {
   if (node == NULL) {
     return;
   }
 
-  // we must check function call FIRST before going into children below!
-  // because NODE_FUNC_CALL has 2 children (name and arg list), letting it
-  // continue to child_count == 2 would treat it like binary math and evaluate
-  // args twice
+  /* we must check function call FIRST before going into children below!
+     because NODE_FUNC_CALL has 2 children (name and arg list), letting it
+     continue to child_count == 2 would treat it like binary math and evaluate
+     args twice */
   if (node->node_type == NODE_FUNC_CALL) {
-    // check symtable via child 0 (identifier) to see if its a builtin function
-    if (node->child_count > 0 && node->child_arr[0]->symbol_ptr != NULL) {
-      if (node->child_arr[0]->symbol_ptr->symb_type == SB_BUILTIN) {
+    if (node->child_count >= 2 && node->child_arr[0] != NULL) {
+      // check symtable via child 0 (identifier) to see if its a builtin
+      // function
+      if (node->child_arr[0]->symbol_ptr != NULL &&
+          node->child_arr[0]->symbol_ptr->symb_type == SB_BUILTIN) {
         generate_builtin(node);
+      } else {
+        // user defined function call:
+        // 1. push all arguments onto stack from left to right
+        ASTNode args = node->child_arr[1];
+        if (args != NULL) {
+          for (int i = 0; i < args->child_count; i++) {
+            generate_expression(args->child_arr[i]);
+          }
+        }
+        // 2. prepare empty frame for the function and jump to its label
+        char *func_name = node->child_arr[0]->data.string_val;
+        if (func_name != NULL) {
+          printf("CREATEFRAME\n");
+          printf("CALL $%s\n", func_name);
+        }
       }
     }
-    // stop here because generate_builtin already handled all children
+    // stop here because we already handled all children
     return;
   }
 
@@ -171,9 +232,9 @@ void generate_expression(ASTNode node) {
     generate_expression(node->child_arr[0]);
     generate_expression(node->child_arr[1]);
   }
-  // unary op (like -x) or wrapper nodes (NODE_EXPR / NODE_COND from reference)
-  // wrapper nodes have 1 child so this just passes straight down to the actual
-  // math
+  /* unary op (like -x) or wrapper nodes (NODE_EXPR / NODE_COND from reference)
+     wrapper nodes have 1 child so this just passes straight down to the actual
+     math */
   else if (node->child_count == 1) {
     generate_expression(node->child_arr[0]);
   }
@@ -189,16 +250,17 @@ void generate_expression(ASTNode node) {
       // strings need ascii escape codes for spaces and special chars
       print_escaped_string(node->data.string_val);
     } else if (node->data_type == DT_BOOL) {
-      if (node->data.int_val != 0) {
+      // ifjcode26 expects bool@true or bool@false instead of 1/0
+      if (node->data.bool_val) {
         printf("PUSHS bool@true\n");
       } else {
         printf("PUSHS bool@false\n");
       }
     }
   }
-  // push variable value from local frame (LF) onto stack
-  // we use unique symbol_ptr->id instead of variable name so variables with
-  // the same name in different blocks dont overwrite each other
+  /* push variable value from local frame (LF) onto stack
+     we use unique symbol_ptr->id instead of variable name so variables with
+     the same name in different blocks dont overwrite each other */
   else if (node->node_type == NODE_IDENTIFIER) {
     if (node->symbol_ptr != NULL) {
       printf("PUSHS LF@var_%d\n", node->symbol_ptr->id);
@@ -231,8 +293,12 @@ void generate_expression(ASTNode node) {
     // unary plus (+x) doesnt change anything, child is already on stack
   } else if (node->node_type == NODE_UN_MINUS) {
     // multiply by minus one trick because ifjcode26 has no stack negate
-    // instruction
-    printf("PUSHS int@-1\n");
+    // instruction (must match operand type, otherwise interpreter crashes)
+    if (node->data_type == DT_DOUBLE) {
+      printf("PUSHS float@-0x1p+0\n");
+    } else {
+      printf("PUSHS int@-1\n");
+    }
     printf("MULS\n");
   }
   // implicit conversion from int to double on stack (child already pushed int)
@@ -262,16 +328,117 @@ void generate_expression(ASTNode node) {
   }
 }
 
-// STATEMENTS AND CONTROL FLOW
-// ---------------------------
-// handles individual commands (var definitions, assignments, if/while, blocks)
+/* USER FUNCTIONS
+   --------------
+   generates code for a function definition (both main and normal functions)
+   child 0 = function identifier, child 1 = param list, child 2 = body
+   (AI-assisted, prompt: "jak mám v ifjcode26 řešit volání uživatelských
+   funkcí a hlavní funkce main, když main se nevolá přes CALL ale skáče se na
+   něj přes JUMP, a v jakém pořadí mám ze zásobníku vybírat parametry funkce?")
+ */
+void generate_function(ASTNode node) {
+  if (node == NULL || node->child_count < 3) {
+    return;
+  }
+
+  ASTNode func_id = node->child_arr[0];
+  ASTNode params = node->child_arr[1];
+  ASTNode body = node->child_arr[2];
+
+  if (func_id == NULL || func_id->data.string_val == NULL || body == NULL) {
+    return;
+  }
+
+  // check if this is the main function
+  if (node->node_type == NODE_MAIN_FUNC_DEF) {
+    is_main_func = 1;
+    printf("\nLABEL $main\n");
+    // main wasnt called via CALL, so it has to create its own frame first
+    printf("CREATEFRAME\n");
+    printf("PUSHFRAME\n");
+  } else {
+    is_main_func = 0;
+    printf("\nLABEL $%s\n", func_id->data.string_val);
+    // caller already did CREATEFRAME before CALL, so just push it to LF
+    printf("PUSHFRAME\n");
+  }
+
+  // declare all local variables at the top of the function before loops run
+  declare_local_vars(body);
+
+  // pop parameters from stack in reverse order (last arg is on top of stack!)
+  if (params != NULL) {
+    for (int i = params->child_count - 1; i >= 0; i--) {
+      ASTNode param = params->child_arr[i];
+      if (param != NULL && param->symbol_ptr != NULL) {
+        printf("DEFVAR LF@var_%d\n", param->symbol_ptr->id);
+        printf("POPS LF@var_%d\n", param->symbol_ptr->id);
+      }
+    }
+  }
+
+  // function body can be a normal block { ... } or a single expression (= expr)
+  if (body->node_type == NODE_BLOCK) {
+    generate_statement(body);
+  } else {
+    // expression body (like fun f() = 5): compute value onto stack and return
+    // it
+    generate_expression(body);
+    if (is_main_func == 1) {
+      printf("POPFRAME\n");
+      printf("EXIT int@0\n");
+    } else {
+      printf("POPFRAME\n");
+      printf("RETURN\n");
+    }
+    return;
+  }
+
+  // fallback end of function if it didnt hit a return statement
+  if (is_main_func == 1) {
+    printf("POPFRAME\n");
+    printf("EXIT int@0\n");
+  } else {
+    // push nil@nil so caller always gets 1 return value on stack to pop
+    printf("PUSHS nil@nil\n");
+    printf("POPFRAME\n");
+    printf("RETURN\n");
+  }
+}
+
+/* STATEMENTS AND CONTROL FLOW
+   ---------------------------
+   handles individual commands (var definitions, assignments, if/while, blocks)
+ */
 void generate_statement(ASTNode node) {
   if (node == NULL) {
     return;
   }
 
-  // standalone function call on its own line (like print("hi"))
-  if (node->node_type == NODE_FUNC_CALL) {
+  // function definitions (NODE_MAIN_FUNC_DEF or NODE_FUNC_DEF)
+  if (node->node_type == NODE_MAIN_FUNC_DEF ||
+      node->node_type == NODE_FUNC_DEF) {
+    generate_function(node);
+  }
+  // return statement: evaluate return expression onto stack, clean frame and
+  // return
+  else if (node->node_type == NODE_RETURN) {
+    if (node->child_count > 0 && node->child_arr[0] != NULL) {
+      generate_expression(node->child_arr[0]);
+    } else {
+      printf("PUSHS nil@nil\n");
+    }
+
+    if (is_main_func == 1) {
+      printf("POPFRAME\n");
+      printf("EXIT int@0\n");
+    } else {
+      printf("POPFRAME\n");
+      printf("RETURN\n");
+    }
+  }
+  // standalone function call on its own line (like print("hi") or foo(1))
+  else if (node->node_type == NODE_FUNC_CALL) {
     generate_expression(node);
     // every function leaves a return value on stack, so throw it away into
     // temp_result so the stack doesnt fill up with unused values
@@ -279,20 +446,19 @@ void generate_statement(ASTNode node) {
   }
   // new variable definition (var x = ... or val x = ...)
   else if (node->node_type == NODE_VAR_DEF || node->node_type == NODE_VAL_DEF) {
-    // in AST reference: child_arr[0] is identifier (with id), child_arr[1] is
-    // value expression
+    /* NOTE: DEFVAR was already printed at the top of the function by
+       declare_local_vars() so here we just compute the initial value and pop it
+       into the variable */
     if (node->child_count == 2 && node->child_arr[0]->symbol_ptr != NULL) {
-      // declare variable in local frame, compute initial value, then pop it
-      // into the var
-      printf("DEFVAR LF@var_%d\n", node->child_arr[0]->symbol_ptr->id);
       generate_expression(node->child_arr[1]);
       printf("POPS LF@var_%d\n", node->child_arr[0]->symbol_ptr->id);
     }
   }
   // assignment to an already existing variable (x = ...)
   else if (node->node_type == NODE_ASSIGNMENT) {
-    // same child layout as VAR_DEF, but NO DEFVAR because variable already
-    // exists (calling DEFVAR twice on the same variable causes a runtime error)
+    /* same child layout as VAR_DEF, but NO DEFVAR because variable already
+       exists (calling DEFVAR twice on the same variable causes a runtime error)
+     */
     if (node->child_count == 2 && node->child_arr[0]->symbol_ptr != NULL) {
       generate_expression(node->child_arr[1]);
       printf("POPS LF@var_%d\n", node->child_arr[0]->symbol_ptr->id);
@@ -340,7 +506,7 @@ void generate_statement(ASTNode node) {
       printf("LABEL $while_end_%d\n", lbl);
     }
   }
-  // container nodes (NODE_PROGRAM, NODE_MAIN_FUNC_DEF, NODE_BLOCK, etc.)
+  // container nodes (NODE_PROGRAM, NODE_BLOCK, etc.)
   else {
     // just loop thru all children in order from left to right
     for (int i = 0; i < node->child_count; i++) {
@@ -349,24 +515,22 @@ void generate_statement(ASTNode node) {
   }
 }
 
-// MAIN CODE GENERATOR
-// -------------------
-// entry point called from main.c after parser and semantic analysis finish
+/* MAIN CODE GENERATOR
+   -------------------
+   entry point called from main.c after parser and semantic analysis finish */
 void generate_code(ASTNode root) {
   // mandatory header required at the very top of every ifjcode26 output
   printf(".IFJcode26\n");
 
-  // global helper variables (GF = Global Frame, accessible from anywhere)
-  // used when instructions cant work directly with stack (like WRITE, STRLEN,
-  // CONCAT) and for throwing away unused function return values
+  /* global helper variables (GF = Global Frame, accessible from anywhere)
+     used when instructions cant work directly with stack (like WRITE, STRLEN,
+     CONCAT) and for throwing away unused function return values */
   printf("DEFVAR GF@temp_result\n");
   printf("DEFVAR GF@temp_op1\n");
   printf("DEFVAR GF@temp_op2\n");
 
-  // temp frame setup: create a frame and push it so LF (Local Frame) variables
-  // work for testing before we implement user functions (CALL and RETURN)
-  printf("CREATEFRAME\n");
-  printf("PUSHFRAME\n");
+  // jump straight to $main so other functions defined above main dont run first
+  printf("JUMP $main\n");
 
   // start traversing the AST from root
   if (root != NULL) {
