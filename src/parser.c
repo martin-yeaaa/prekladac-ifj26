@@ -684,7 +684,7 @@ static ErrCode parse_stmt(ASTNode block) {
   // 29 <stmt> -> return <return_stmt>
   // 30 <stmt> -> <if_stmt>
   // 31 <stmt> -> <while_loop>
-  // 100 <stmt> -> <expr_or_call>
+  // 100 <stmt> -> <decision>
   //  Match rule
   switch (cur_token->type) {
   case IDENTIFIER:
@@ -695,9 +695,9 @@ static ErrCode parse_stmt(ASTNode block) {
   case VAL_DOUBLE:
   case VAL_STRING: {
 
-    // 100 <stmt> -> <expr_or_call>
-    err = parse_expr_or_call(block);
-    RETURN_ON_ERROR(err, "inside stmt, expression or call");
+    // 100 <stmt> -> <decision>
+    err = parse_decision(block);
+    RETURN_ON_ERROR(err, "inside stmt, decision");
 
     return SUCCESS;
   }
@@ -750,6 +750,54 @@ static ErrCode parse_stmt(ASTNode block) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing statement");
+}
+
+static ErrCode parse_decision(ASTNode block) {
+
+  ErrCode err = SUCCESS;
+  UPDATE_CUR_TOKEN();
+
+  // DECIDE IF THIS IS A FUNCTION CALL OR EXPRESSION
+  // TODO DOCUMENT!!!
+  // 103 <decision> -> <expr_or_call>
+  // 104 <decision> -> <assignment>
+  //  Match rule
+  switch (cur_token->type) {
+  case IDENTIFIER: {
+
+    // We can't choose another rule right now, we need to look ahead
+    if (cur_token->next != NULL && cur_token->next->type == ASSIGNMENT) {
+      // Now we can decide
+      // 104 <decision> -> <assignment>
+      err = parse_assignment(block);
+      RETURN_ON_ERROR(err, "inside decision, assignment");
+
+      return SUCCESS;
+
+    } else {
+      // 103 <decision> -> <expr_or_call>
+      err = parse_expr_or_call(block);
+      RETURN_ON_ERROR(err, "inside decision, expr or call");
+
+      return SUCCESS;
+    }
+  }
+  case OPEN_BRACKET:
+  case OP_MINUS:
+  case OP_PLUS:
+  case VAL_INT:
+  case VAL_DOUBLE:
+  case VAL_STRING: {
+
+    // 103 <decision> -> <expr_or_call>
+    err = parse_expr_or_call(block);
+    RETURN_ON_ERROR(err, "inside decision, expr or call");
+
+    return SUCCESS;
+  }
+  }
+
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing decision");
 }
 
 static ErrCode parse_expr_or_call(ASTNode parent) {
