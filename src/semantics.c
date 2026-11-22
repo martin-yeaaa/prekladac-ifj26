@@ -18,16 +18,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Macro for checking for errors and returning if error occurred
-#define RETURN_ON_ERROR(error_code, error_msg)                                 \
-  do {                                                                         \
-    ErrCode evaluated_err = (error_code);                                      \
-    if (evaluated_err != SUCCESS) {                                            \
-      fprintf(stderr, "Error: %s\n", error_msg);                               \
-      return evaluated_err;                                                    \
-    }                                                                          \
-  } while (0)
-
 // Variable that holds currently resolved function definition.
 // It's only used to simplify comparing data types of functions
 // and their return statements.

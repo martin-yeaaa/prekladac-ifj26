@@ -14,16 +14,6 @@
 #include <stdio.h>
 #include <string.h>
 
-// Macro for checking for errors and returning if error occurred
-// Similar to macro from semantics.c, but without error message.
-#define IF_ERROR_RETURN(error_code)                                            \
-  do {                                                                         \
-    ErrCode evaluated_err = (error_code);                                      \
-    if (evaluated_err != SUCCESS) {                                            \
-      return evaluated_err;                                                    \
-    }                                                                          \
-  } while (0)
-
 // Global variable that holds current token.
 // It's easier to keep track of it this way, otherwise we would need to pass
 // a pointer to pointer to token in every parsing function.
@@ -95,7 +85,7 @@ static ErrCode make_child_node(ASTNode parent, ASTNode *ptr_uninit,
 
   // Initialize new node
   ErrCode err = AST_init_node(ptr_uninit, n_type, d_type, n_data);
-  IF_ERROR_RETURN(err);
+  RETURN_ON_ERROR(err, "while initializing AST child node");
 
   // Dereference
   // It's ok because type ASTNode is a pointer to structure on heap
@@ -106,7 +96,7 @@ static ErrCode make_child_node(ASTNode parent, ASTNode *ptr_uninit,
   if (err != SUCCESS) {
     // If it fails, we need to get rid of the child
     AST_destroy_tree(child);
-    return err;
+    RETURN_ON_ERROR(err, "while adding AST child to parent");
   }
 
   return SUCCESS;
@@ -119,18 +109,20 @@ static ErrCode parse_program(ASTNode ast_root) {
   cur_token = get_next_token();
   assert(cur_token != NULL); // NULL means program wasn't tokenized
 
+  ErrCode err = SUCCESS;
+
   // Match rule
   switch (cur_token->type) {
   case KW_IMPORT: {
 
     // <program> -> <prolog> <fun_def_list>
     // <prolog> -> import ifj26.*
-    ErrCode err1 = parse_prolog();
-    IF_ERROR_RETURN(err1);
+    err = parse_prolog();
+    RETURN_ON_ERROR(err, "inside program");
 
-    //
-    ErrCode err2 = parse_fun_def_list(ast_root);
-    IF_ERROR_RETURN(err2);
+    // <fun_def_list>
+    err = parse_fun_def_list(ast_root);
+    RETURN_ON_ERROR(err, "inside program");
 
     return SUCCESS;
   }
@@ -138,11 +130,12 @@ static ErrCode parse_program(ASTNode ast_root) {
     break;
   }
 
-  return ERR_SYNTAX;
+  RETURN_ON_ERROR(ERR_SYNTAX, "expected \"import\"");
 }
 
 static ErrCode parse_prolog(void) {
 
+  ErrCode err = SUCCESS;
   if (cur_token == NULL)
     cur_token = get_next_token();
 
@@ -150,34 +143,38 @@ static ErrCode parse_prolog(void) {
   switch (cur_token->type) {
   case KW_IMPORT: {
 
-    // Token was parsed
-    cur_token = NULL;
-
     // <prolog> -> import ifj26.*
     // expected ifj26.* in tokens is identifier, dot, op_mult
     // we do a little bit of workaround here
-    Token *token_1 = get_next_token();
-    if (strcmp(token_1->value, "ifj26") == 0) {
+    cur_token = get_next_token();
+    bool success = (cur_token->type == IDENTIFIER &&
+                    strcmp(cur_token->value, "ifj26") == 0);
+    if (success == false)
+      RETURN_ON_ERROR(ERR_SYNTAX, "inside prolog, expected \"ifj26\"");
 
-      Token *token_2 = get_next_token();
-      Token *token_3 = get_next_token();
+    cur_token = get_next_token();
+    if (cur_token->type != DOT)
+      RETURN_ON_ERROR(ERR_SYNTAX, "inside prolog, expected \".\"");
 
-      if (token_2->type == DOT && token_3->type == OP_MULT) {
-        return SUCCESS;
-      }
-      // else falls through to error
-    }
-    // else falls through to error
+    cur_token = get_next_token();
+    if (cur_token->type != OP_MULT)
+      RETURN_ON_ERROR(ERR_SYNTAX, "inside prolog, expected \"*\"");
+
+    // Token was parsed
+    cur_token = NULL;
+
+    return SUCCESS;
   }
   default:
     break;
   }
 
-  return ERR_SYNTAX;
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing prolog");
 }
 
 static ErrCode parse_fun_def_list(ASTNode ast_root) {
 
+  ErrCode err = SUCCESS;
   if (cur_token == NULL)
     cur_token = get_next_token();
 
@@ -197,35 +194,36 @@ static ErrCode parse_fun_def_list(ASTNode ast_root) {
     cur_token = NULL; // Token was parsed
 
     // <fun_def_list> -> \NL <fun_def_any> <fun_def_list>
-    ErrCode err1 = parse_fun_def_any(ast_root);
-    IF_ERROR_RETURN(err1);
-    ErrCode err2 = parse_fun_def_list(ast_root);
-    IF_ERROR_RETURN(err2);
+    err = parse_fun_def_any(ast_root);
+    RETURN_ON_ERROR(err, "inside fun def list ");
+    err = parse_fun_def_list(ast_root);
+    RETURN_ON_ERROR(err, "further inside fun def list");
 
     return SUCCESS;
   }
   case END_OF_FILE: {
 
     //<fun_def_list> -> epsilon
+    // No need to cur_token = NULL; here
     return SUCCESS;
   }
   default:
     break;
   }
 
-  return ERR_SYNTAX;
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing fun def list");
 }
 
 static ErrCode parse_fun_def_any(ASTNode ast_root) {
 
+  ErrCode err = SUCCESS;
   if (cur_token == NULL)
     cur_token = get_next_token();
 
   // Prepare unfinished node for function definition
   ASTNode func_def;
-  ErrCode err =
-      make_child_node(ast_root, &func_def, NODE_FUNC_DEF, DT_UNDEF, NULL);
-  IF_ERROR_RETURN(err);
+  err = make_child_node(ast_root, &func_def, NODE_FUNC_DEF, DT_UNDEF, NULL);
+  RETURN_ON_ERROR(err, "inside fun def any");
 
   // 5 <fun_def_any> -> @main <fun_def>
   // 6 <fun_def_any> -> <fun_def>
@@ -236,26 +234,31 @@ static ErrCode parse_fun_def_any(ASTNode ast_root) {
     // <fun_def_any> -> @main <fun_def>
     cur_token = NULL;                         // Token was parsed
     func_def->node_type = NODE_MAIN_FUNC_DEF; // It is @main!
-    return parse_fun_def(func_def);
+    err = parse_fun_def(func_def);
+    RETURN_ON_ERROR(err, "inside @main func def");
+
+    return SUCCESS;
   }
   case KW_DEF: {
 
     // <fun_def_any> -> <fun_def>
-    return parse_fun_def(func_def);
+    err = parse_fun_def(func_def);
+    RETURN_ON_ERROR(err, "inside func def");
+
+    return SUCCESS;
   }
   default:
     break;
   }
 
-  return ERR_SYNTAX;
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing fun def any");
 }
 
 static ErrCode parse_fun_def(ASTNode func_def) {
 
+  ErrCode err = SUCCESS;
   if (cur_token == NULL)
     cur_token = get_next_token();
-
-  ErrCode err = SUCCESS;
 
   //  Match rule
   switch (cur_token->type) {
@@ -264,24 +267,24 @@ static ErrCode parse_fun_def(ASTNode func_def) {
     // <fun_def> -> def IDENTIFIER (<param_list>) <data_type_opt> = <fun_body>
     cur_token = get_next_token();
     if (cur_token->type != IDENTIFIER)
-      return ERR_SYNTAX;
+      RETURN_ON_ERROR(ERR_SYNTAX, "inside fun def, expected identifier");
 
     // Make identifier node
     ASTNode idtf;
     err = make_child_node(func_def, &idtf, NODE_IDENTIFIER, DT_UNDEF,
                           cur_token->value);
-    IF_ERROR_RETURN(err);
+    RETURN_ON_ERROR(err, "inside fun def");
 
     // Continue parsing
     // (
     cur_token = get_next_token();
     if (cur_token->type != OPEN_BRACKET)
-      return ERR_SYNTAX;
+      RETURN_ON_ERROR(ERR_SYNTAX, "inside fun def, expected \"(\"");
     cur_token = NULL; // Token was parsed, "consume" it
 
     // <param_list>
     err = parse_param_list(func_def);
-    IF_ERROR_RETURN(err);
+    RETURN_ON_ERROR(err, "inside fun def params");
     // Parsing function might have "consumed" token
     if (cur_token == NULL) {
       cur_token = get_next_token();
@@ -289,12 +292,12 @@ static ErrCode parse_fun_def(ASTNode func_def) {
 
     // )
     if (cur_token->type != CLOSE_BRACKET)
-      return ERR_SYNTAX;
+      RETURN_ON_ERROR(ERR_SYNTAX, "inside fun def, expected \")\"");
     cur_token = NULL; // Token was parsed, "consume" it
 
     // <data_type_opt>
     err = parse_data_type_opt(idtf, func_def);
-    IF_ERROR_RETURN(err);
+    RETURN_ON_ERROR(err, "inside fun def data type");
     // Parsing function might have "consumed" token
     if (cur_token == NULL) {
       cur_token = get_next_token();
@@ -302,12 +305,12 @@ static ErrCode parse_fun_def(ASTNode func_def) {
 
     // =
     if (cur_token->type != ASSIGNMENT)
-      return ERR_SYNTAX;
+      RETURN_ON_ERROR(ERR_SYNTAX, "inside fun def, expected \"=\"");
     cur_token = NULL; // Token was parsed, "consume" it
 
     // <fun_body>
     err = parse_fun_body(func_def);
-    IF_ERROR_RETURN(err);
+    RETURN_ON_ERROR(err, "inside fun def body");
 
     return SUCCESS;
   }
@@ -315,17 +318,21 @@ static ErrCode parse_fun_def(ASTNode func_def) {
     break;
   }
 
-  return ERR_SYNTAX;
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing fun def");
 }
 
 static ErrCode parse_param_list(ASTNode func_def) {
+
+  ErrCode err = SUCCESS;
   // TODO
 
-  cur_token = NULL;
+  //cur_token = NULL;
   return SUCCESS;
 }
 
 static ErrCode parse_data_type_opt(ASTNode idtf, ASTNode opt) {
+
+  ErrCode err = SUCCESS;
 
   // if (cur_token == NULL)
   //   cur_token = get_next_token();
@@ -334,14 +341,16 @@ static ErrCode parse_data_type_opt(ASTNode idtf, ASTNode opt) {
   assert(idtf != NULL);
 
   // TODO
-  cur_token = NULL;
+  //cur_token = NULL;
 
   return SUCCESS;
 }
 
 static ErrCode parse_fun_body(ASTNode func_def) {
 
+  ErrCode err = SUCCESS;
+
   // TODO
-  cur_token = NULL;
+  //cur_token = NULL;
   return SUCCESS;
 }
