@@ -933,6 +933,116 @@ static ErrCode parse_stmt_next(ASTNode block) {
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing statement next");
 }
 
+static ErrCode parse_val_def(ASTNode block) {
+
+  ErrCode err = SUCCESS;
+  UPDATE_CUR_TOKEN();
+
+   // Prepare unfinished node for val definition
+  ASTNode val_def;
+  err = make_child_node(block, &val_def, NODE_VAL_DEF, DT_UNIT, NULL);
+  RETURN_ON_ERROR(err, "inside val definition");
+
+  // 39 <val_def> -> val IDENTIFIER <data_type_opt> = <expr_or_call>
+  //  Match rule
+  switch (cur_token->type) {
+  case KW_VAL: {
+
+    // 39 <val_def> -> val IDENTIFIER <data_type_opt> = <expr_or_call>
+    // val was parsed, replace with next token
+    cur_token = get_next_token();
+
+    if (cur_token->type != IDENTIFIER)
+      RETURN_ON_ERROR(ERR_SYNTAX, "inside val def, expected identifier");
+    // Make identifier node
+    ASTNode idtf;
+    err = make_child_node(val_def, &idtf, NODE_IDENTIFIER, DT_UNDEF,
+                          cur_token->value);
+    RETURN_ON_ERROR(err, "inside val def");
+
+    // IDENTIFIER was parsed
+    cur_token = NULL;
+
+    // <data_type_opt>
+    err = parse_data_type_opt(idtf, NULL);
+    RETURN_ON_ERROR(err, "inside val def, data type opt");
+    // Function might have "consumed" token, renew it
+    UPDATE_CUR_TOKEN();
+
+    // =
+    if (cur_token->type != ASSIGNMENT)
+      RETURN_ON_ERROR(ERR_SYNTAX, "inside val def, expected \"=\"");
+    // = was parsed
+    cur_token = NULL;
+
+    // <expr_or_call>
+    err = parse_expr_or_call(val_def);
+    RETURN_ON_ERROR(err, "inside val def, expr or call");
+
+    return SUCCESS;
+  }
+  default:
+    break;
+  }
+
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing val definition");
+}
+
+static ErrCode parse_var_def(ASTNode block) {
+
+  ErrCode err = SUCCESS;
+  UPDATE_CUR_TOKEN();
+
+   // Prepare unfinished node for var definition
+  ASTNode var_def;
+  err = make_child_node(block, &var_def, NODE_VAR_DEF, DT_UNIT, NULL);
+  RETURN_ON_ERROR(err, "inside var definition");
+
+  // 40 <var_def> -> var IDENTIFIER <data_type_opt> = <expr_or_call>
+  //  Match rule
+  switch (cur_token->type) {
+  case KW_VAR: {
+
+    // 40 <var_def> -> var IDENTIFIER <data_type_opt> = <expr_or_call>
+    // var was parsed, replace with next token
+    cur_token = get_next_token();
+
+    if (cur_token->type != IDENTIFIER)
+      RETURN_ON_ERROR(ERR_SYNTAX, "inside var def, expected identifier");
+    // Make identifier node
+    ASTNode idtf;
+    err = make_child_node(var_def, &idtf, NODE_IDENTIFIER, DT_UNDEF,
+                          cur_token->value);
+    RETURN_ON_ERROR(err, "inside var def");
+
+    // IDENTIFIER was parsed
+    cur_token = NULL;
+
+    // <data_type_opt>
+    err = parse_data_type_opt(idtf, NULL);
+    RETURN_ON_ERROR(err, "inside var def, data type opt");
+    // Function might have "consumed" token, renew it
+    UPDATE_CUR_TOKEN();
+
+    // =
+    if (cur_token->type != ASSIGNMENT)
+      RETURN_ON_ERROR(ERR_SYNTAX, "inside var def, expected \"=\"");
+    // = was parsed
+    cur_token = NULL;
+
+    // <expr_or_call>
+    err = parse_expr_or_call(var_def);
+    RETURN_ON_ERROR(err, "inside var def, expr or call");
+
+    return SUCCESS;
+  }
+  default:
+    break;
+  }
+
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing var definition");
+}
+
 static ErrCode parse_template(ASTNode template_node) {
 
   ErrCode err = SUCCESS;
