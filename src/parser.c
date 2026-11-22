@@ -316,7 +316,7 @@ static ErrCode parse_fun_def(ASTNode func_def) {
 
     // <data_type_opt>
     err = parse_data_type_opt(idtf, func_def);
-    RETURN_ON_ERROR(err, "inside fun def data type");
+    RETURN_ON_ERROR(err, "inside fun def data type opt");
 
     // Parsing function might have "consumed" token
     UPDATE_CUR_TOKEN();
@@ -460,8 +460,40 @@ static ErrCode parse_data_type_opt(ASTNode idtf, ASTNode extra_node) {
   // Identifier is required, opt is not
   assert(idtf != NULL);
 
-  // TODO
-  // cur_token = NULL;
+  // 13 <data_type_opt> -> epsilon
+  // 14 <data_type_opt> -> : <data_type>
+  //  Match rule
+  switch (cur_token->type) {
+  case ASSIGNMENT: {
+
+    // 13 <data_type_opt> -> epsilon
+    return SUCCESS;
+  }
+  case COLON: {
+
+    // 14 <data_type_opt> -> : <data_type>
+    // : was parsed
+    cur_token = NULL;
+
+    // <data_type>
+    err = parse_data_type(idtf);
+    RETURN_ON_ERROR(err, "inside data type opt");
+
+    // AST expects explicitly defined type of FUNCTIONS only to also be in the
+    // func_def node!
+    if (extra_node != NULL) {
+      if (extra_node->node_type == NODE_FUNC_DEF ||
+          extra_node->node_type == NODE_MAIN_FUNC_DEF) {
+        // Set explicit data type
+        extra_node->data_type = idtf->data_type;
+      }
+    }
+
+    return SUCCESS;
+  }
+  default:
+    break;
+  }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing data type opt");
 }
@@ -518,7 +550,7 @@ static ErrCode parse_data_type(ASTNode idtf) {
     break;
   }
 
-  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing param");
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing data type");
 }
 
 static ErrCode parse_fun_body(ASTNode func_def) {
