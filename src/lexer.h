@@ -54,11 +54,11 @@ typedef enum token_type_enum {
   OP_LESS_EQ,
   OP_GREATER,
   OP_GREATER_EQ,
-  OP_EQ,
+  OP_EQ, // ==
   OP_NOT_EQ,
 
   // Separators
-  ASSIGNMENT,
+  ASSIGNMENT, // =
   COMMA,
   SEMICOLON,
   AT_MAIN,
