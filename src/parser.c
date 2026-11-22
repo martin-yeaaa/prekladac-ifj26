@@ -874,7 +874,7 @@ static ErrCode parse_stmt_sep(ASTNode block) {
     return SUCCESS;
   }
   case NEW_LINE: {
-    
+
     // 24 <stmt_sep> -> \NL <stmt_next>
     // \NL was parsed
     cur_token = NULL;
@@ -938,13 +938,13 @@ static ErrCode parse_val_def(ASTNode block) {
   ErrCode err = SUCCESS;
   UPDATE_CUR_TOKEN();
 
-   // Prepare unfinished node for val definition
+  // Prepare unfinished node for val definition
   ASTNode val_def;
   err = make_child_node(block, &val_def, NODE_VAL_DEF, DT_UNIT, NULL);
   RETURN_ON_ERROR(err, "inside val definition");
 
   // 39 <val_def> -> val IDENTIFIER <data_type_opt> = <expr_or_call>
-  //  Match rule
+  // Match rule
   switch (cur_token->type) {
   case KW_VAL: {
 
@@ -993,13 +993,13 @@ static ErrCode parse_var_def(ASTNode block) {
   ErrCode err = SUCCESS;
   UPDATE_CUR_TOKEN();
 
-   // Prepare unfinished node for var definition
+  // Prepare unfinished node for var definition
   ASTNode var_def;
   err = make_child_node(block, &var_def, NODE_VAR_DEF, DT_UNIT, NULL);
   RETURN_ON_ERROR(err, "inside var definition");
 
   // 40 <var_def> -> var IDENTIFIER <data_type_opt> = <expr_or_call>
-  //  Match rule
+  // Match rule
   switch (cur_token->type) {
   case KW_VAR: {
 
@@ -1043,10 +1043,74 @@ static ErrCode parse_var_def(ASTNode block) {
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing var definition");
 }
 
+static ErrCode parse_return_stmt(ASTNode block) {
+
+  ErrCode err = SUCCESS;
+  UPDATE_CUR_TOKEN();
+
+  ASTNode ret_node;
+  err = make_child_node(block, &ret_node, NODE_RETURN, DT_UNDEF, NULL);
+  RETURN_ON_ERROR(err, "inside return");
+
+  // 37 <return_stmt> -> epsilon
+  // 38 <return_stmt> -> <expr_or_call>
+  // Match rule
+  switch (cur_token->type) {
+  case NEW_LINE: {
+
+    // 37 <return_stmt> -> epsilon
+    // Standalone return is equivalent to: return ()
+    // We will simulate this
+
+    // AST node chain: return - expression - Unit literal
+    ASTNode expr_node;
+    err = make_child_node(ret_node, &expr_node, NODE_EXPR, DT_UNIT, NULL);
+    RETURN_ON_ERROR(err, "inside standalone return");
+
+    ASTNode unit_lit;
+    err = make_child_node(expr_node, &unit_lit, NODE_LITERAL, DT_UNIT, NULL);
+    RETURN_ON_ERROR(err, "inside standalone return");
+
+    // Also set type of return stmt
+    // TODO DELETE IF IT WORKS WITHOUT ret_node->data_type = DT_UNIT;
+
+    return SUCCESS;
+  }
+  case IDENTIFIER:
+  case OPEN_BRACKET:
+  case OP_MINUS:
+  case OP_PLUS:
+  case VAL_INT:
+  case VAL_DOUBLE:
+  case VAL_STRING: {
+
+    // 38 <return_stmt> -> <expr_or_call>
+
+    err = parse_expr_or_call(ret_node);
+    RETURN_ON_ERROR(err, "inside return, expr or call");
+
+    return SUCCESS;
+  }
+  default:
+    break;
+  }
+
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing return statement");
+}
+
 static ErrCode parse_template(ASTNode template_node) {
 
   ErrCode err = SUCCESS;
   UPDATE_CUR_TOKEN();
 
-  RETURN_ON_ERROR(ERR_SYNTAX, "replace template message!");
+  // ruleeeeees
+  //  Match rule
+  switch (cur_token->type) {
+  case 67: {
+  }
+  default:
+    break;
+  }
+
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing REPLACETEMPLATE");
 }

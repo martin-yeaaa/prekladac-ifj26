@@ -60,13 +60,13 @@ static ErrCode parse_stmt(ASTNode block);
 static ErrCode parse_stmt_next(ASTNode block);
 static ErrCode parse_decision(ASTNode block);
 
-//static ErrCode parse_stmt_ident_rest(void);
+// static ErrCode parse_stmt_ident_rest(void);
 
 static ErrCode parse_val_def(ASTNode block);
 static ErrCode parse_var_def(ASTNode block);
 static ErrCode parse_assignment(ASTNode block);
 
-//static ErrCode parse_expr_or_call_rest(void);
+// static ErrCode parse_expr_or_call_rest(void);
 
 static ErrCode parse_if_stmt(ASTNode block);
 static ErrCode parse_while_loop(ASTNode block);
