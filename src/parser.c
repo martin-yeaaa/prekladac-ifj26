@@ -242,6 +242,16 @@ static ErrCode parse_fun_def_any(ASTNode ast_root) {
     // Token was parsed
     cur_token = NULL;
     func_def->node_type = NODE_MAIN_FUNC_DEF; // It is @main!
+
+    // Lexer gives new line here, even though it's not required!
+    // Now I need to fix this :(
+    cur_token = get_next_token();
+    if (cur_token->type == NEW_LINE) {
+      // Simply skip to next token
+      cur_token = get_next_token();
+    }
+
+    // <fun_def>
     err = parse_fun_def(func_def);
     RETURN_ON_ERROR(err, "inside @main func def");
 
@@ -267,6 +277,7 @@ static ErrCode parse_fun_def(ASTNode func_def) {
   ErrCode err = SUCCESS;
   UPDATE_CUR_TOKEN();
 
+  // 7 <fun_def> -> def IDENTIFIER (<param_list>) <data_type_opt> = <fun_body>
   //  Match rule
   switch (cur_token->type) {
   case KW_DEF: {
@@ -284,8 +295,8 @@ static ErrCode parse_fun_def(ASTNode func_def) {
     RETURN_ON_ERROR(err, "inside fun def");
 
     // IDENTIFIER was parsed, replace with next
-    // (
     cur_token = get_next_token();
+    // (
     if (cur_token->type != OPEN_BRACKET)
       RETURN_ON_ERROR(ERR_SYNTAX, "inside fun def, expected \"(\"");
     // ( was parsed
@@ -350,9 +361,11 @@ static ErrCode parse_param_list(ASTNode func_def) {
   case IDENTIFIER: {
 
     // <param_list> -> <param> <param_sep>
+    // <param>
     err = parse_param(param_list);
     RETURN_ON_ERROR(err, "inside param list, param");
 
+    // <param_sep>
     err = parse_param_sep(param_list);
     RETURN_ON_ERROR(err, "inside param list, param separator");
 
@@ -370,6 +383,34 @@ static ErrCode parse_param(ASTNode param_list) {
   ErrCode err = SUCCESS;
   UPDATE_CUR_TOKEN();
 
+  // 12 <param> -> IDENTIFIER : <data_type>
+  //  Match rule
+  switch (cur_token->type) {
+  case IDENTIFIER: {
+
+    // Make parameter
+    ASTNode param;
+    err = make_child_node(param_list, &param, NODE_IDENTIFIER, DT_UNDEF,
+                          cur_token->value);
+    RETURN_ON_ERROR(err, "inside param");
+
+    // IDENTIFIER was parsed, replace with next
+    cur_token = get_next_token();
+    // :
+    if (cur_token->type != COLON)
+      RETURN_ON_ERROR(ERR_SYNTAX, "inside param, expected \":\"");
+    // : was parsed
+    cur_token = NULL;
+
+    err = parse_data_type(param);
+    RETURN_ON_ERROR(err, "inside param, data type");
+
+    return SUCCESS;
+  }
+  default:
+    break;
+  }
+
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing param");
 }
 
@@ -381,7 +422,7 @@ static ErrCode parse_param_sep(ASTNode param_list) {
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing param separator");
 }
 
-static ErrCode parse_data_type_opt(ASTNode idtf, ASTNode opt) {
+static ErrCode parse_data_type_opt(ASTNode idtf, ASTNode extra_node) {
 
   ErrCode err = SUCCESS;
   UPDATE_CUR_TOKEN();
@@ -393,6 +434,61 @@ static ErrCode parse_data_type_opt(ASTNode idtf, ASTNode opt) {
   // cur_token = NULL;
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing data type opt");
+}
+
+static ErrCode parse_data_type(ASTNode idtf) {
+
+  ErrCode err = SUCCESS;
+  UPDATE_CUR_TOKEN();
+  assert(idtf != NULL);
+
+  // 15 <data_type> -> Int
+  // 16 <data_type> -> Double
+  // 17 <data_type> -> String
+  // 18 <data_type> -> Unit
+  //  Match rule
+  switch (cur_token->type) {
+  case KW_INT: {
+    // 15 <data_type> -> Int
+    // Update identifier data type
+    idtf->data_type = DT_INTEGER;
+    // Int was parsed
+    cur_token = NULL;
+
+    return SUCCESS;
+  }
+  case KW_DOUBLE: {
+    // 16 <data_type> -> Double
+    // Update identifier data type
+    idtf->data_type = DT_DOUBLE;
+    // Double was parsed
+    cur_token = NULL;
+
+    return SUCCESS;
+  }
+  case KW_STRING: {
+    // 17 <data_type> -> String
+    // Update identifier data type
+    idtf->data_type = DT_STRING;
+    // String was parsed
+    cur_token = NULL;
+
+    return SUCCESS;
+  }
+  case KW_UNIT: {
+    // 18 <data_type> -> Unit
+    // Update identifier data type
+    idtf->data_type = DT_UNIT;
+    // Unit was parsed
+    cur_token = NULL;
+
+    return SUCCESS;
+  }
+  default:
+    break;
+  }
+
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing param");
 }
 
 static ErrCode parse_fun_body(ASTNode func_def) {
