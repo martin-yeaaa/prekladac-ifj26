@@ -19,6 +19,14 @@
 // a pointer to pointer to token in every parsing function.
 static Token *cur_token;
 
+// This macro will update global cur_token as needed
+#define UPDATE_CUR_TOKEN()                                                     \
+  do {                                                                         \
+    if (cur_token == NULL) {                                                   \
+      cur_token = get_next_token();                                            \
+    }                                                                          \
+  } while (0)
+
 ErrCode compile(void) {
 
   ErrCode err = SUCCESS;
@@ -136,12 +144,13 @@ static ErrCode parse_program(ASTNode ast_root) {
 static ErrCode parse_prolog(void) {
 
   ErrCode err = SUCCESS;
-  if (cur_token == NULL)
-    cur_token = get_next_token();
+  UPDATE_CUR_TOKEN();
 
   // Match rule
   switch (cur_token->type) {
   case KW_IMPORT: {
+    // Token was parsed
+    cur_token = NULL;
 
     // <prolog> -> import ifj26.*
     // expected ifj26.* in tokens is identifier, dot, op_mult
@@ -175,8 +184,7 @@ static ErrCode parse_prolog(void) {
 static ErrCode parse_fun_def_list(ASTNode ast_root) {
 
   ErrCode err = SUCCESS;
-  if (cur_token == NULL)
-    cur_token = get_next_token();
+  UPDATE_CUR_TOKEN();
 
   // Match rule
   switch (cur_token->type) {
@@ -191,9 +199,10 @@ static ErrCode parse_fun_def_list(ASTNode ast_root) {
         return SUCCESS;
       }
     }
-    cur_token = NULL; // Token was parsed
 
     // <fun_def_list> -> \NL <fun_def_any> <fun_def_list>
+    // Token was parsed
+    cur_token = NULL;
     err = parse_fun_def_any(ast_root);
     RETURN_ON_ERROR(err, "inside fun def list ");
     err = parse_fun_def_list(ast_root);
@@ -204,7 +213,6 @@ static ErrCode parse_fun_def_list(ASTNode ast_root) {
   case END_OF_FILE: {
 
     //<fun_def_list> -> epsilon
-    // No need to cur_token = NULL; here
     return SUCCESS;
   }
   default:
@@ -217,8 +225,7 @@ static ErrCode parse_fun_def_list(ASTNode ast_root) {
 static ErrCode parse_fun_def_any(ASTNode ast_root) {
 
   ErrCode err = SUCCESS;
-  if (cur_token == NULL)
-    cur_token = get_next_token();
+  UPDATE_CUR_TOKEN();
 
   // Prepare unfinished node for function definition
   ASTNode func_def;
@@ -232,7 +239,8 @@ static ErrCode parse_fun_def_any(ASTNode ast_root) {
   case AT_MAIN: {
 
     // <fun_def_any> -> @main <fun_def>
-    cur_token = NULL;                         // Token was parsed
+    // Token was parsed
+    cur_token = NULL;
     func_def->node_type = NODE_MAIN_FUNC_DEF; // It is @main!
     err = parse_fun_def(func_def);
     RETURN_ON_ERROR(err, "inside @main func def");
@@ -257,14 +265,14 @@ static ErrCode parse_fun_def_any(ASTNode ast_root) {
 static ErrCode parse_fun_def(ASTNode func_def) {
 
   ErrCode err = SUCCESS;
-  if (cur_token == NULL)
-    cur_token = get_next_token();
+  UPDATE_CUR_TOKEN();
 
   //  Match rule
   switch (cur_token->type) {
   case KW_DEF: {
 
     // <fun_def> -> def IDENTIFIER (<param_list>) <data_type_opt> = <fun_body>
+    // def was parsed, replace with next
     cur_token = get_next_token();
     if (cur_token->type != IDENTIFIER)
       RETURN_ON_ERROR(ERR_SYNTAX, "inside fun def, expected identifier");
@@ -275,38 +283,37 @@ static ErrCode parse_fun_def(ASTNode func_def) {
                           cur_token->value);
     RETURN_ON_ERROR(err, "inside fun def");
 
-    // Continue parsing
+    // IDENTIFIER was parsed, replace with next
     // (
     cur_token = get_next_token();
     if (cur_token->type != OPEN_BRACKET)
       RETURN_ON_ERROR(ERR_SYNTAX, "inside fun def, expected \"(\"");
-    cur_token = NULL; // Token was parsed, "consume" it
+    // ( was parsed
+    cur_token = NULL;
 
     // <param_list>
+    // AST node for param list is made inside parse_param_list
     err = parse_param_list(func_def);
     RETURN_ON_ERROR(err, "inside fun def params");
-    // Parsing function might have "consumed" token
-    if (cur_token == NULL) {
-      cur_token = get_next_token();
-    }
 
-    // )
+    // Parsing function might have "consumed" token
+    UPDATE_CUR_TOKEN();
     if (cur_token->type != CLOSE_BRACKET)
       RETURN_ON_ERROR(ERR_SYNTAX, "inside fun def, expected \")\"");
-    cur_token = NULL; // Token was parsed, "consume" it
+    // ) was parsed
+    cur_token = NULL;
 
     // <data_type_opt>
     err = parse_data_type_opt(idtf, func_def);
     RETURN_ON_ERROR(err, "inside fun def data type");
-    // Parsing function might have "consumed" token
-    if (cur_token == NULL) {
-      cur_token = get_next_token();
-    }
 
+    // Parsing function might have "consumed" token
+    UPDATE_CUR_TOKEN();
     // =
     if (cur_token->type != ASSIGNMENT)
       RETURN_ON_ERROR(ERR_SYNTAX, "inside fun def, expected \"=\"");
-    cur_token = NULL; // Token was parsed, "consume" it
+    // = was parsed
+    cur_token = NULL;
 
     // <fun_body>
     err = parse_fun_body(func_def);
@@ -324,33 +331,76 @@ static ErrCode parse_fun_def(ASTNode func_def) {
 static ErrCode parse_param_list(ASTNode func_def) {
 
   ErrCode err = SUCCESS;
-  // TODO
+  UPDATE_CUR_TOKEN();
 
-  //cur_token = NULL;
-  return SUCCESS;
+  // parse_param_list should be called only once per func def
+  ASTNode param_list;
+  err = make_child_node(func_def, &param_list, NODE_PARAM_LIST, DT_UNDEF, NULL);
+  RETURN_ON_ERROR(err, "inside param list");
+
+  // 8 <param_list> -> epsilon
+  // 9 <param_list> -> <param> <param_sep>
+  //  Match rule
+  switch (cur_token->type) {
+  case CLOSE_BRACKET: {
+
+    // <param_list> -> epsilon
+    return SUCCESS;
+  }
+  case IDENTIFIER: {
+
+    // <param_list> -> <param> <param_sep>
+    err = parse_param(param_list);
+    RETURN_ON_ERROR(err, "inside param list, param");
+
+    err = parse_param_sep(param_list);
+    RETURN_ON_ERROR(err, "inside param list, param separator");
+
+    return SUCCESS;
+  }
+  default:
+    break;
+  }
+
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing param list");
+}
+
+static ErrCode parse_param(ASTNode param_list) {
+
+  ErrCode err = SUCCESS;
+  UPDATE_CUR_TOKEN();
+
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing param");
+}
+
+static ErrCode parse_param_sep(ASTNode param_list) {
+
+  ErrCode err = SUCCESS;
+  UPDATE_CUR_TOKEN();
+
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing param separator");
 }
 
 static ErrCode parse_data_type_opt(ASTNode idtf, ASTNode opt) {
 
   ErrCode err = SUCCESS;
-
-  // if (cur_token == NULL)
-  //   cur_token = get_next_token();
+  UPDATE_CUR_TOKEN();
 
   // Identifier is required, opt is not
   assert(idtf != NULL);
 
   // TODO
-  //cur_token = NULL;
+  // cur_token = NULL;
 
-  return SUCCESS;
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing data type opt");
 }
 
 static ErrCode parse_fun_body(ASTNode func_def) {
 
   ErrCode err = SUCCESS;
+  UPDATE_CUR_TOKEN();
 
   // TODO
-  //cur_token = NULL;
-  return SUCCESS;
+  // cur_token = NULL;
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing fun body");
 }
