@@ -402,6 +402,7 @@ static ErrCode parse_param(ASTNode param_list) {
     // : was parsed
     cur_token = NULL;
 
+    // <data_type>
     err = parse_data_type(param);
     RETURN_ON_ERROR(err, "inside param, data type");
 
@@ -418,6 +419,35 @@ static ErrCode parse_param_sep(ASTNode param_list) {
 
   ErrCode err = SUCCESS;
   UPDATE_CUR_TOKEN();
+
+  // 10 <param_sep> -> epsilon
+  // 11 <param_sep> -> , <param> <param_sep>
+  //  Match rule
+  switch (cur_token->type) {
+  case CLOSE_BRACKET: {
+
+    // 10 <param_sep> -> epsilon
+    return SUCCESS;
+  }
+  case COMMA: {
+
+    // 11 <param_sep> -> , <param> <param_sep>
+    // , was parsed
+    cur_token = NULL;
+
+    // <param>
+    err = parse_param(param_list);
+    RETURN_ON_ERROR(err, "inside param list, param");
+
+    // <param_sep>
+    err = parse_param_sep(param_list);
+    RETURN_ON_ERROR(err, "inside param list, param separator");
+
+    return SUCCESS;
+  }
+  default:
+    break;
+  }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing param separator");
 }
