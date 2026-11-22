@@ -1043,6 +1043,49 @@ static ErrCode parse_var_def(ASTNode block) {
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing var definition");
 }
 
+static ErrCode parse_assignment(ASTNode block) {
+
+  ErrCode err = SUCCESS;
+  UPDATE_CUR_TOKEN();
+
+  // Prepare unfinished node for assignment
+  ASTNode assign;
+  err = make_child_node(block, &assign, NODE_ASSIGNMENT, DT_UNIT, NULL);
+  RETURN_ON_ERROR(err, "inside assignment");
+
+  // 140 <assignment> -> IDENTIFIER = <expr_or_call>
+  // Match rule
+  switch (cur_token->type) {
+  case IDENTIFIER: {
+
+    // 140 <assignment> -> IDENTIFIER = <expr_or_call>
+    // Make identifier node
+    ASTNode idtf;
+    err = make_child_node(assign, &idtf, NODE_IDENTIFIER, DT_UNDEF,
+                          cur_token->value);
+    RETURN_ON_ERROR(err, "inside assignment, identifier");
+
+    // IDENTIFIER was parsed, replace with next
+    cur_token = get_next_token();
+
+    // =
+    if (cur_token->type != ASSIGNMENT)
+      RETURN_ON_ERROR(ERR_SYNTAX, "inside assignment, expected \"=\"");
+    // = was parsed
+    cur_token = NULL;
+
+    err = parse_expr_or_call(assign);
+    RETURN_ON_ERROR(err, "inside assignment, expr or call");
+    
+    return SUCCESS;
+  }
+  default:
+    break;
+  }
+
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing REPLACETEMPLATE");
+}
+
 static ErrCode parse_return_stmt(ASTNode block) {
 
   ErrCode err = SUCCESS;
@@ -1104,7 +1147,7 @@ static ErrCode parse_template(ASTNode template_node) {
   UPDATE_CUR_TOKEN();
 
   // ruleeeeees
-  //  Match rule
+  // Match rule
   switch (cur_token->type) {
   case 67: {
   }
