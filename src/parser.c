@@ -558,7 +558,95 @@ static ErrCode parse_fun_body(ASTNode func_def) {
   ErrCode err = SUCCESS;
   UPDATE_CUR_TOKEN();
 
-  // TODO
-  // cur_token = NULL;
+  // 19 <fun_body> -> <expr_or_call>
+  // 20 <fun_body> -> <block>
+  //  Match rule
+  switch (cur_token->type) {
+  case IDENTIFIER:
+  case OPEN_BRACKET:
+  case OP_MINUS:
+  case OP_PLUS:
+  case VAL_INT:
+  case VAL_DOUBLE:
+  case VAL_STRING: {
+
+    // 19 <fun_body> -> <expr_or_call>
+    err = parse_expr_or_call(func_def);
+    RETURN_ON_ERROR(err, "inside fun body");
+
+    return SUCCESS;
+  }
+  case NEW_LINE: {
+
+    // 20 <fun_body> -> <block>
+    err = parse_block(func_def);
+    RETURN_ON_ERROR(err, "inside fun body block");
+
+    return SUCCESS;
+  }
+  default:
+    break;
+  }
+
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing fun body");
+}
+
+static ErrCode parse_block(ASTNode parent) {
+
+  ErrCode err = SUCCESS;
+  UPDATE_CUR_TOKEN();
+
+  // Make block AST node
+  ASTNode block;
+  err = make_child_node(parent, &block, NODE_BLOCK, DT_UNDEF, NULL);
+  RETURN_ON_ERROR(err, "inside block");
+
+  // 21 <block> -> \NL INDENT <stmts> DEDENT
+  //  Match rule
+  switch (cur_token->type) {
+  case NEW_LINE: {
+
+    // 21 <block> -> \NL INDENT <stmts> DEDENT
+    // \NL was parsed, replace with next
+    cur_token = get_next_token();
+    if (cur_token->type != INDENT)
+      RETURN_ON_ERROR(ERR_SYNTAX, "inside block, expected indent");
+
+    // INDENT was parsed
+    cur_token = NULL;
+
+    // <stmts>
+    err = parse_stmts(block);
+    RETURN_ON_ERROR(err, "inside block");
+    // Parsing function might have "consumed" token
+    UPDATE_CUR_TOKEN();
+    
+    if (cur_token->type != DEDENT)
+      RETURN_ON_ERROR(ERR_SYNTAX, "inside block, expected dedent");
+    // DEDENT was parsed
+    cur_token = NULL;
+
+    return SUCCESS;
+  }
+  default:
+    break;
+  }
+
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing block");
+}
+
+static ErrCode parse_expr_or_call(ASTNode parent) {
+
+  ErrCode err = SUCCESS;
+  UPDATE_CUR_TOKEN();
+
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing expr or call message");
+}
+
+static ErrCode parse_template(ASTNode template_node) {
+
+  ErrCode err = SUCCESS;
+  UPDATE_CUR_TOKEN();
+
+  RETURN_ON_ERROR(ERR_SYNTAX, "replace template message!");
 }
