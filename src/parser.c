@@ -620,7 +620,7 @@ static ErrCode parse_block(ASTNode parent) {
     RETURN_ON_ERROR(err, "inside block");
     // Parsing function might have "consumed" token
     UPDATE_CUR_TOKEN();
-    
+
     if (cur_token->type != DEDENT)
       RETURN_ON_ERROR(ERR_SYNTAX, "inside block, expected dedent");
     // DEDENT was parsed
@@ -635,12 +635,22 @@ static ErrCode parse_block(ASTNode parent) {
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing block");
 }
 
-static ErrCode parse_expr_or_call(ASTNode parent) {
+static ErrCode parse_stmts(ASTNode block) {
 
   ErrCode err = SUCCESS;
   UPDATE_CUR_TOKEN();
 
-  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing expr or call message");
+  return SUCCESS;
+
+  RETURN_ON_ERROR(ERR_SYNTAX, "replace template message!");
+}
+
+static ErrCode parse_expr_or_call(ASTNode parent) {
+
+  ErrCode err = SUCCESS;
+  UPDATE_CUR_TOKEN();
+  return SUCCESS;
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing expr or call");
 }
 
 static ErrCode parse_template(ASTNode template_node) {
