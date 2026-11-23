@@ -79,16 +79,18 @@ static ErrCode parse_arg_list(ASTNode func_call);
 static ErrCode parse_arg_sep(ASTNode arg_list);
 static ErrCode parse_arg(ASTNode arg_list);
 
+static ErrCode parse_unary_op(ASTNode *ptr_to_node);
+static ErrCode parse_literal(ASTNode parent);
+
 static ErrCode parse_expr_un(void);
 static ErrCode parse_expr_un_opt(void);
 static ErrCode parse_expr(ASTNode parent);
 static ErrCode parse_simple_literal(void);
 static ErrCode parse_paren_tail(void);
 static ErrCode parse_expr_rest(void);
-static ErrCode parse_unary_op(void);
+
 static ErrCode parse_binary_op(void);
 
 static ErrCode parse_rel_op(void);
-static ErrCode parse_literal(void);
 
 #endif
