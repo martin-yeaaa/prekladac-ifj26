@@ -641,6 +641,9 @@ static ErrCode parse_stmts(ASTNode block) {
   UPDATE_CUR_TOKEN();
 
   // 22 <stmts> -> <stmt> <stmt_sep>
+  // if and while contain blocks with their own stmt_sep
+  // 300 <stmts> -> <if_stmt> <stmt_next>
+  // 301 <stmts> -> <while_loop> <stmt_next>
   //  Match rule
   switch (cur_token->type) {
   case IDENTIFIER:
@@ -650,8 +653,6 @@ static ErrCode parse_stmts(ASTNode block) {
   case KW_VAR:
   case OP_MINUS:
   case OP_PLUS:
-  case KW_IF:
-  case KW_WHILE:
   case VAL_INT:
   case VAL_DOUBLE:
   case VAL_STRING: {
@@ -664,6 +665,32 @@ static ErrCode parse_stmts(ASTNode block) {
     // <stmt_sep>
     err = parse_stmt_sep(block);
     RETURN_ON_ERROR(err, "inside statements separator");
+
+    return SUCCESS;
+  }
+  case KW_IF: {
+
+    // 300 <stmts> -> <if_stmt> <stmt_next>
+    // <if_stmt>
+    err = parse_if_stmt(block);
+    RETURN_ON_ERROR(err, "inside stmts, if");
+
+    // <stmt_next>
+    err = parse_stmt_next(block);
+    RETURN_ON_ERROR(err, "inside stmts, next");
+
+    return SUCCESS;
+  }
+  case KW_WHILE: {
+
+    // 301 <stmts> -> <while_loop> <stmt_next>
+    // <while_loop>
+    err = parse_while_loop(block);
+    RETURN_ON_ERROR(err, "inside stmts, while");
+
+    // <stmt_next>
+    err = parse_stmt_next(block);
+    RETURN_ON_ERROR(err, "inside stmts, next");
 
     return SUCCESS;
   }
@@ -682,8 +709,6 @@ static ErrCode parse_stmt(ASTNode block) {
   // 27 <stmt> -> <val_def>
   // 28 <stmt> -> <var_def>
   // 29 <stmt> -> return <return_stmt>
-  // 30 <stmt> -> <if_stmt>
-  // 31 <stmt> -> <while_loop>
   // 100 <stmt> -> <decision>
   //  Match rule
   switch (cur_token->type) {
@@ -725,23 +750,6 @@ static ErrCode parse_stmt(ASTNode block) {
     // 28 <stmt> -> <var_def>
     err = parse_var_def(block);
     RETURN_ON_ERROR(err, "inside stmt, var definition");
-
-    return SUCCESS;
-  }
-
-  case KW_IF: {
-
-    // 30 <stmt> -> <if_stmt>
-    err = parse_if_stmt(block);
-    RETURN_ON_ERROR(err, "inside stmt, if");
-
-    return SUCCESS;
-  }
-  case KW_WHILE: {
-
-    // 31 <stmt> -> <while_loop>
-    err = parse_while_loop(block);
-    RETURN_ON_ERROR(err, "inside stmt, while");
 
     return SUCCESS;
   }
@@ -855,8 +863,6 @@ static ErrCode parse_stmt_sep(ASTNode block) {
 
   // 23 <stmt_sep> -> ; <stmt_next> <stmt_sep>
   // 24 <stmt_sep> -> \NL <stmt_next>
-  // TODO DOCUMENT
-  // 300 <stmt_sep> -> epsilon
   //  Match rule
   switch (cur_token->type) {
   case SEMICOLON: {
@@ -885,12 +891,6 @@ static ErrCode parse_stmt_sep(ASTNode block) {
     err = parse_stmt_next(block);
     RETURN_ON_ERROR(err, "inside next statement");
 
-    return SUCCESS;
-  }
-  case DEDENT: {
-
-    // TODO VERIFY THIS AND ADD IT TO GRAMMAR/TABLE
-    // 300 <stmt_sep> -> epsilon
     return SUCCESS;
   }
   default:
@@ -1149,7 +1149,6 @@ static ErrCode parse_return_stmt(ASTNode block) {
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing return statement");
 }
 
-
 static ErrCode parse_if_stmt(ASTNode block) {
 
   ErrCode err = SUCCESS;
@@ -1203,6 +1202,49 @@ static ErrCode parse_if_stmt(ASTNode block) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing if statement");
+}
+
+static ErrCode parse_while_loop(ASTNode block) {
+
+  ErrCode err = SUCCESS;
+  UPDATE_CUR_TOKEN();
+
+  ASTNode while_loop;
+  err = make_child_node(block, &while_loop, NODE_WHILE, DT_UNIT, NULL);
+  RETURN_ON_ERROR(err, "inside while loop");
+
+  // 73 <while_loop> -> while <cond> do <block>
+  // Match rule
+  switch (cur_token->type) {
+  case KW_WHILE: {
+
+    // 73 <while_loop> -> while <cond> do <block>
+    // while was parsed
+    cur_token = NULL;
+
+    err = parse_cond(while_loop);
+    RETURN_ON_ERROR(err, "inside while, condition");
+    // Function might have "consumed" token, renew it
+    UPDATE_CUR_TOKEN();
+
+    // do
+    if (cur_token->type != KW_DO)
+      RETURN_ON_ERROR(ERR_SYNTAX, "inside while, expected \"do\"");
+    // do was parsed
+    cur_token = NULL;
+
+    // <block> - creates new block node
+    err = parse_block(while_loop);
+    RETURN_ON_ERROR(err, "inside while block");
+
+    return SUCCESS;
+  }
+
+  default:
+    break;
+  }
+
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing while loop");
 }
 
 static ErrCode parse_template(ASTNode template_node) {
