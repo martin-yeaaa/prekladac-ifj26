@@ -1289,6 +1289,8 @@ static ErrCode parse_fun_call(ASTNode parent) {
       RETURN_ON_ERROR(ERR_SYNTAX, "inside func call, expected \")\"");
     // ) was parsed
     cur_token = NULL;
+
+    return SUCCESS;
   }
   default:
     break;
@@ -1297,7 +1299,90 @@ static ErrCode parse_fun_call(ASTNode parent) {
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing function call");
 }
 
-static ErrCode parse_template(ASTNode template_node) {
+static ErrCode parse_arg_list(ASTNode func_call) {
+
+  ErrCode err = SUCCESS;
+  UPDATE_CUR_TOKEN();
+
+  // parse_arg_list should be called only once per func call
+  ASTNode arg_list;
+  err = make_child_node(func_call, &arg_list, NODE_ARG_LIST, DT_UNDEF, NULL);
+  RETURN_ON_ERROR(err, "inside arg list");
+
+  // 46 <arg_list> -> epsilon
+  // 47 <arg_list> -> <arg> <arg_sep>
+  // Match rule
+  switch (cur_token->type) {
+  case CLOSE_BRACKET: {
+
+    // 46 <arg_list> -> epsilon
+    return SUCCESS;
+  }
+  case IDENTIFIER:
+  case OPEN_BRACKET:
+  case VAL_INT:
+  case VAL_DOUBLE:
+  case VAL_STRING:
+  case OP_PLUS:
+  case OP_MINUS: {
+
+    // 47 <arg_list> -> <arg> <arg_sep>
+    // <arg>
+    err = parse_arg(arg_list);
+    RETURN_ON_ERROR(err, "inside arg list, arg");
+
+    // <arg_sep>
+    err = parse_arg_sep(arg_list);
+    RETURN_ON_ERROR(err, "inside arg list, arg separator");
+
+    return SUCCESS;
+  }
+  default:
+    break;
+  }
+
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing argument list");
+}
+
+static ErrCode parse_arg(ASTNode arg_list) {
+
+  return SUCCESS;
+  ErrCode err = SUCCESS;
+  UPDATE_CUR_TOKEN();
+
+  // ruleeeeees
+  // Match rule
+  switch (cur_token->type) {
+  case 67: {
+  }
+  default:
+    break;
+  }
+
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing REPLACETEMPLATE");
+}
+
+static ErrCode parse_arg_sep(ASTNode arg_list) {
+
+  return SUCCESS;
+  ErrCode err = SUCCESS;
+  UPDATE_CUR_TOKEN();
+
+  // ruleeeeees
+  // Match rule
+  switch (cur_token->type) {
+  case 67: {
+  }
+  default:
+    break;
+  }
+
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing REPLACETEMPLATE");
+}
+
+static ErrCode parse_cond(ASTNode parent) {
+
+  return SUCCESS;
 
   ErrCode err = SUCCESS;
   UPDATE_CUR_TOKEN();
@@ -1314,7 +1399,9 @@ static ErrCode parse_template(ASTNode template_node) {
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing REPLACETEMPLATE");
 }
 
-static ErrCode parse_template(ASTNode template_node) {
+static ErrCode parse_expr(ASTNode parent) {
+
+  return SUCCESS;
 
   ErrCode err = SUCCESS;
   UPDATE_CUR_TOKEN();
