@@ -1361,7 +1361,7 @@ static ErrCode parse_arg(ASTNode arg_list) {
     ASTNode idtf;
     err = make_child_node(arg_list, &idtf, NODE_IDENTIFIER, DT_UNDEF,
                           cur_token->value);
-    RETURN_ON_ERROR(err, "inside arg list, identifier");
+    RETURN_ON_ERROR(err, "inside arg, identifier");
 
     // IDENTIFIER was parsed
     cur_token = NULL;
@@ -1375,7 +1375,7 @@ static ErrCode parse_arg(ASTNode arg_list) {
 
     // 51 <arg> -> <literal>
     err = parse_literal(arg_list);
-    RETURN_ON_ERROR(err, "inside arg list, literal");
+    RETURN_ON_ERROR(err, "inside arg, literal");
 
     return SUCCESS;
   }
@@ -1389,11 +1389,11 @@ static ErrCode parse_arg(ASTNode arg_list) {
     // to have a child literal
     // <unary_op>
     err = parse_unary_op(&un_op);
-    RETURN_ON_ERROR(err, "inside arg list, unary op");
+    RETURN_ON_ERROR(err, "inside arg, unary op");
 
     // <literal>
     err = parse_literal(un_op);
-    RETURN_ON_ERROR(err, "inside arg list, literal");
+    RETURN_ON_ERROR(err, "inside arg, literal");
 
     return SUCCESS;
   }
@@ -1401,10 +1401,126 @@ static ErrCode parse_arg(ASTNode arg_list) {
     break;
   }
 
-  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing argument list");
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing argument");
 }
 
 static ErrCode parse_arg_sep(ASTNode arg_list) {
+
+  ErrCode err = SUCCESS;
+  UPDATE_CUR_TOKEN();
+
+  // 48 <arg_sep> -> epsilon
+  // 49 <arg_sep> -> , <arg> <arg_sep>
+  // Match rule
+  switch (cur_token->type) {
+  case CLOSE_BRACKET: {
+
+    // 48 <arg_sep> -> epsilon
+
+    return SUCCESS;
+  }
+  case COMMA: {
+
+    // 49 <arg_sep> -> , <arg> <arg_sep>
+    // , was parsed
+    cur_token = NULL;
+
+    // <arg>
+    err = parse_arg(arg_list);
+    RETURN_ON_ERROR(err, "inside arg sep, arg");
+
+    // <arg_sep>
+    err = parse_arg_sep(arg_list);
+    RETURN_ON_ERROR(err, "inside arg sep, arg separator");
+
+    return SUCCESS;
+  }
+  default:
+    break;
+  }
+
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing argument separator");
+}
+
+static ErrCode parse_literal(ASTNode parent) {
+
+  ErrCode err = SUCCESS;
+  UPDATE_CUR_TOKEN();
+
+  // Declare literal node
+  ASTNode lit;
+
+  // 81 <literal> -> VAL_INT
+  // 82 <literal> -> VAL_DOUBLE
+  // 83 <literal> -> VAL_STRING
+  // 84 <literal> -> ()
+  // Match rule
+  switch (cur_token->type) {
+  case VAL_INT: {
+
+    // 81 <literal> -> VAL_INT
+    // Token was parsed
+    cur_token = NULL;
+
+    // Make integer
+    err = make_child_node(parent, &lit, NODE_LITERAL, DT_INTEGER,
+                          cur_token->value);
+    RETURN_ON_ERROR(err, "inside literal, int");
+
+    return SUCCESS;
+  }
+  case VAL_DOUBLE: {
+
+    // 82 <literal> -> VAL_DOUBLE
+    // Token was parsed
+    cur_token = NULL;
+
+    // Make double
+    err = make_child_node(parent, &lit, NODE_LITERAL, DT_DOUBLE,
+                          cur_token->value);
+    RETURN_ON_ERROR(err, "inside literal, double");
+
+    return SUCCESS;
+  }
+  case VAL_STRING: {
+
+    // 83 <literal> -> VAL_STRING
+    // Token was parsed
+    cur_token = NULL;
+    
+    // Make string
+    err = make_child_node(parent, &lit, NODE_LITERAL, DT_STRING,
+                          cur_token->value);
+    RETURN_ON_ERROR(err, "inside literal, string");
+
+    return SUCCESS;
+  }
+  case OPEN_BRACKET: {
+
+    // 84 <literal> -> ()
+    // ( was parsed, next token
+    cur_token = get_next_token();
+
+    // )
+    if (cur_token->type != CLOSE_BRACKET)
+      RETURN_ON_ERROR(ERR_SYNTAX, "inside literal, expected \")\"");
+    // ) was parsed
+    cur_token = NULL;
+
+    // Make Unit
+    err = make_child_node(parent, &lit, NODE_IDENTIFIER, DT_UNIT, NULL);
+    RETURN_ON_ERROR(err, "inside literal, unit");
+
+    return SUCCESS;
+  }
+  default:
+    break;
+  }
+
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing literal");
+}
+
+static ErrCode parse_unary_op(ASTNode *ptr_to_node) {
 
   return SUCCESS;
   ErrCode err = SUCCESS;
@@ -1421,7 +1537,7 @@ static ErrCode parse_arg_sep(ASTNode arg_list) {
     break;
   }
 
-  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing REPLACETEMPLATE");
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing unary operator");
 }
 
 static ErrCode parse_cond(ASTNode parent) {
@@ -1449,46 +1565,6 @@ static ErrCode parse_expr(ASTNode parent) {
 
   return SUCCESS;
 
-  ErrCode err = SUCCESS;
-  UPDATE_CUR_TOKEN();
-
-  // ruleeeeees
-  // Match rule
-  switch (cur_token->type) {
-  case 67: {
-
-    return SUCCESS;
-  }
-  default:
-    break;
-  }
-
-  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing REPLACETEMPLATE");
-}
-
-static ErrCode parse_literal(ASTNode parent) {
-
-  return SUCCESS;
-  ErrCode err = SUCCESS;
-  UPDATE_CUR_TOKEN();
-
-  // ruleeeeees
-  // Match rule
-  switch (cur_token->type) {
-  case 67: {
-
-    return SUCCESS;
-  }
-  default:
-    break;
-  }
-
-  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing REPLACETEMPLATE");
-}
-
-static ErrCode parse_unary_op(ASTNode *ptr_to_node) {
-
-  return SUCCESS;
   ErrCode err = SUCCESS;
   UPDATE_CUR_TOKEN();
 
