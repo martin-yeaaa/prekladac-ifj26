@@ -139,11 +139,11 @@ static ErrCode parse_program(ASTNode ast_root) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "expected \"import\"");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_prolog(void) {
 
-  ErrCode err = SUCCESS;
   UPDATE_CUR_TOKEN();
 
   // Match rule
@@ -179,6 +179,7 @@ static ErrCode parse_prolog(void) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing prolog");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_fun_def_list(ASTNode ast_root) {
@@ -186,6 +187,8 @@ static ErrCode parse_fun_def_list(ASTNode ast_root) {
   ErrCode err = SUCCESS;
   UPDATE_CUR_TOKEN();
 
+  // 3 <fun_def_list> -> epsilon
+  // 4 <fun_def_list> -> \NL <fun_def_any> <fun_def_list>
   // Match rule
   switch (cur_token->type) {
   case NEW_LINE: {
@@ -220,6 +223,7 @@ static ErrCode parse_fun_def_list(ASTNode ast_root) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing fun def list");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_fun_def_any(ASTNode ast_root) {
@@ -270,6 +274,7 @@ static ErrCode parse_fun_def_any(ASTNode ast_root) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing fun def any");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_fun_def(ASTNode func_def) {
@@ -337,6 +342,7 @@ static ErrCode parse_fun_def(ASTNode func_def) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing fun def");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_param_list(ASTNode func_def) {
@@ -376,6 +382,7 @@ static ErrCode parse_param_list(ASTNode func_def) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing param list");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_param(ASTNode param_list) {
@@ -413,6 +420,7 @@ static ErrCode parse_param(ASTNode param_list) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing param");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_param_sep(ASTNode param_list) {
@@ -450,6 +458,7 @@ static ErrCode parse_param_sep(ASTNode param_list) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing param separator");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_data_type_opt(ASTNode idtf, ASTNode extra_node) {
@@ -496,6 +505,7 @@ static ErrCode parse_data_type_opt(ASTNode idtf, ASTNode extra_node) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing data type opt");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_data_type(ASTNode idtf) {
@@ -551,6 +561,7 @@ static ErrCode parse_data_type(ASTNode idtf) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing data type");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_fun_body(ASTNode func_def) {
@@ -589,6 +600,7 @@ static ErrCode parse_fun_body(ASTNode func_def) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing fun body");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_block(ASTNode parent) {
@@ -623,8 +635,12 @@ static ErrCode parse_block(ASTNode parent) {
 
     if (cur_token->type != DEDENT)
       RETURN_ON_ERROR(ERR_SYNTAX, "inside block, expected dedent");
+
     // DEDENT was parsed
-    cur_token = NULL;
+    // All syntax rules expect newline as a separator, however that is parsed
+    // inside the block We make an artificial token so everything works
+    // TODO DOCUMENT
+    cur_token->type = NEW_LINE;
 
     return SUCCESS;
   }
@@ -633,6 +649,7 @@ static ErrCode parse_block(ASTNode parent) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing block");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_stmts(ASTNode block) {
@@ -641,9 +658,6 @@ static ErrCode parse_stmts(ASTNode block) {
   UPDATE_CUR_TOKEN();
 
   // 22 <stmts> -> <stmt> <stmt_sep>
-  // if and while contain blocks with their own stmt_sep
-  // 300 <stmts> -> <if_stmt> <stmt_next>
-  // 301 <stmts> -> <while_loop> <stmt_next>
   //  Match rule
   switch (cur_token->type) {
   case IDENTIFIER:
@@ -655,7 +669,9 @@ static ErrCode parse_stmts(ASTNode block) {
   case OP_PLUS:
   case VAL_INT:
   case VAL_DOUBLE:
-  case VAL_STRING: {
+  case VAL_STRING:
+  case KW_IF:
+  case KW_WHILE: {
 
     // 22 <stmts> -> <stmt> <stmt_sep>
     // <stmt>
@@ -668,37 +684,12 @@ static ErrCode parse_stmts(ASTNode block) {
 
     return SUCCESS;
   }
-  case KW_IF: {
-
-    // 300 <stmts> -> <if_stmt> <stmt_next>
-    // <if_stmt>
-    err = parse_if_stmt(block);
-    RETURN_ON_ERROR(err, "inside stmts, if");
-
-    // <stmt_next>
-    err = parse_stmt_next(block);
-    RETURN_ON_ERROR(err, "inside stmts, next");
-
-    return SUCCESS;
-  }
-  case KW_WHILE: {
-
-    // 301 <stmts> -> <while_loop> <stmt_next>
-    // <while_loop>
-    err = parse_while_loop(block);
-    RETURN_ON_ERROR(err, "inside stmts, while");
-
-    // <stmt_next>
-    err = parse_stmt_next(block);
-    RETURN_ON_ERROR(err, "inside stmts, next");
-
-    return SUCCESS;
-  }
   default:
     break;
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing statement");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_stmt(ASTNode block) {
@@ -709,6 +700,8 @@ static ErrCode parse_stmt(ASTNode block) {
   // 27 <stmt> -> <val_def>
   // 28 <stmt> -> <var_def>
   // 29 <stmt> -> return <return_stmt>
+  // 30 <stmt> -> <if_stmt>
+  // 31 <stmt> -> <while_loop>
   // 100 <stmt> -> <decision>
   //  Match rule
   switch (cur_token->type) {
@@ -753,11 +746,30 @@ static ErrCode parse_stmt(ASTNode block) {
 
     return SUCCESS;
   }
+  case KW_IF: {
+
+    // 30 <stmt> -> <if_stmt>
+    // <if_stmt>
+    err = parse_if_stmt(block);
+    RETURN_ON_ERROR(err, "inside stmt, if");
+
+    return SUCCESS;
+  }
+  case KW_WHILE: {
+
+    // 31 <stmt> -> <while_loop>
+    // <while_loop>
+    err = parse_while_loop(block);
+    RETURN_ON_ERROR(err, "inside stmt, while");
+
+    return SUCCESS;
+  }
   default:
     break;
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing statement");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_decision(ASTNode block) {
@@ -803,9 +815,12 @@ static ErrCode parse_decision(ASTNode block) {
 
     return SUCCESS;
   }
+  default:
+    break;
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing decision");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_expr_or_call(ASTNode parent) {
@@ -851,9 +866,12 @@ static ErrCode parse_expr_or_call(ASTNode parent) {
 
     return SUCCESS;
   }
+  default:
+    break;
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing expr or call");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_stmt_sep(ASTNode block) {
@@ -898,6 +916,7 @@ static ErrCode parse_stmt_sep(ASTNode block) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing statement separator");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_stmt_next(ASTNode block) {
@@ -939,6 +958,7 @@ static ErrCode parse_stmt_next(ASTNode block) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing statement next");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_val_def(ASTNode block) {
@@ -994,6 +1014,7 @@ static ErrCode parse_val_def(ASTNode block) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing val definition");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_var_def(ASTNode block) {
@@ -1049,6 +1070,7 @@ static ErrCode parse_var_def(ASTNode block) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing var definition");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_assignment(ASTNode block) {
@@ -1092,6 +1114,7 @@ static ErrCode parse_assignment(ASTNode block) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing assignment");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_return_stmt(ASTNode block) {
@@ -1147,6 +1170,7 @@ static ErrCode parse_return_stmt(ASTNode block) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing return statement");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_if_stmt(ASTNode block) {
@@ -1202,6 +1226,7 @@ static ErrCode parse_if_stmt(ASTNode block) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing if statement");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_while_loop(ASTNode block) {
@@ -1245,6 +1270,7 @@ static ErrCode parse_while_loop(ASTNode block) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing while loop");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_fun_call(ASTNode parent) {
@@ -1297,6 +1323,7 @@ static ErrCode parse_fun_call(ASTNode parent) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing function call");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_arg_list(ASTNode func_call) {
@@ -1342,6 +1369,7 @@ static ErrCode parse_arg_list(ASTNode func_call) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing argument list");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_arg(ASTNode arg_list) {
@@ -1388,7 +1416,7 @@ static ErrCode parse_arg(ASTNode arg_list) {
     // Unary operator is needed outside, semantics module expects unary_op node
     // to have a child literal
     // <unary_op>
-    err = parse_unary_op(&un_op);
+    err = parse_unary_op(arg_list, &un_op);
     RETURN_ON_ERROR(err, "inside arg, unary op");
 
     // <literal>
@@ -1402,6 +1430,7 @@ static ErrCode parse_arg(ASTNode arg_list) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing argument");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_arg_sep(ASTNode arg_list) {
@@ -1440,6 +1469,7 @@ static ErrCode parse_arg_sep(ASTNode arg_list) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing argument separator");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_literal(ASTNode parent) {
@@ -1459,39 +1489,36 @@ static ErrCode parse_literal(ASTNode parent) {
   case VAL_INT: {
 
     // 81 <literal> -> VAL_INT
-    // Token was parsed
-    cur_token = NULL;
-
     // Make integer
     err = make_child_node(parent, &lit, NODE_LITERAL, DT_INTEGER,
                           cur_token->value);
     RETURN_ON_ERROR(err, "inside literal, int");
+    // Token was parsed
+    cur_token = NULL;
 
     return SUCCESS;
   }
   case VAL_DOUBLE: {
 
     // 82 <literal> -> VAL_DOUBLE
-    // Token was parsed
-    cur_token = NULL;
-
     // Make double
     err = make_child_node(parent, &lit, NODE_LITERAL, DT_DOUBLE,
                           cur_token->value);
     RETURN_ON_ERROR(err, "inside literal, double");
+    // Token was parsed
+    cur_token = NULL;
 
     return SUCCESS;
   }
   case VAL_STRING: {
 
     // 83 <literal> -> VAL_STRING
-    // Token was parsed
-    cur_token = NULL;
-    
     // Make string
     err = make_child_node(parent, &lit, NODE_LITERAL, DT_STRING,
                           cur_token->value);
     RETURN_ON_ERROR(err, "inside literal, string");
+    // Token was parsed
+    cur_token = NULL;
 
     return SUCCESS;
   }
@@ -1504,12 +1531,13 @@ static ErrCode parse_literal(ASTNode parent) {
     // )
     if (cur_token->type != CLOSE_BRACKET)
       RETURN_ON_ERROR(ERR_SYNTAX, "inside literal, expected \")\"");
-    // ) was parsed
-    cur_token = NULL;
 
     // Make Unit
-    err = make_child_node(parent, &lit, NODE_IDENTIFIER, DT_UNIT, NULL);
+    err = make_child_node(parent, &lit, NODE_LITERAL, DT_UNIT, NULL);
     RETURN_ON_ERROR(err, "inside literal, unit");
+
+    // ) was parsed
+    cur_token = NULL;
 
     return SUCCESS;
   }
@@ -1518,18 +1546,37 @@ static ErrCode parse_literal(ASTNode parent) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing literal");
+  return ERR_SYNTAX;
 }
 
-static ErrCode parse_unary_op(ASTNode *ptr_to_node) {
+static ErrCode parse_unary_op(ASTNode parent, ASTNode *ptr_to_node) {
 
-  return SUCCESS;
   ErrCode err = SUCCESS;
   UPDATE_CUR_TOKEN();
 
-  // ruleeeeees
+  // 66 <unary_op> -> -
+  // 67 <unary_op> -> +
   // Match rule
   switch (cur_token->type) {
-  case 67: {
+  case OP_MINUS: {
+
+    // 66 <unary_op> -> -
+    // - was parsed
+    cur_token = NULL;
+
+    err = make_child_node(parent, ptr_to_node, NODE_UN_MINUS, DT_UNDEF, NULL);
+    RETURN_ON_ERROR(err, "inside unary op, minus");
+
+    return SUCCESS;
+  }
+  case OP_PLUS: {
+
+    // 67 <unary_op> -> +
+    // + was parsed
+    cur_token = NULL;
+
+    err = make_child_node(parent, ptr_to_node, NODE_UN_PLUS, DT_UNDEF, NULL);
+    RETURN_ON_ERROR(err, "inside unary op, plus");
 
     return SUCCESS;
   }
@@ -1538,6 +1585,7 @@ static ErrCode parse_unary_op(ASTNode *ptr_to_node) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing unary operator");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_cond(ASTNode parent) {
@@ -1559,6 +1607,7 @@ static ErrCode parse_cond(ASTNode parent) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing REPLACETEMPLATE");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_expr(ASTNode parent) {
@@ -1580,6 +1629,7 @@ static ErrCode parse_expr(ASTNode parent) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing REPLACETEMPLATE");
+  return ERR_SYNTAX;
 }
 
 static ErrCode parse_template(ASTNode template_node) {
@@ -1599,4 +1649,5 @@ static ErrCode parse_template(ASTNode template_node) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing REPLACETEMPLATE");
+  return ERR_SYNTAX;
 }
