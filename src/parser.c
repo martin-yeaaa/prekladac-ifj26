@@ -1247,6 +1247,90 @@ static ErrCode parse_while_loop(ASTNode block) {
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing while loop");
 }
 
+static ErrCode parse_fun_call(ASTNode parent) {
+
+  ErrCode err = SUCCESS;
+  UPDATE_CUR_TOKEN();
+
+  // Make ast node
+  ASTNode func_call;
+  err = make_child_node(parent, &func_call, NODE_FUNC_CALL, DT_UNDEF, NULL);
+  RETURN_ON_ERROR(err, "inside function call");
+
+  // 120 <fun_call> -> IDENTIFIER(<arg_list>)
+  // Match rule
+  switch (cur_token->type) {
+  case IDENTIFIER: {
+
+    // Make identifier node
+    ASTNode idtf;
+    err = make_child_node(func_call, &idtf, NODE_IDENTIFIER, DT_UNDEF,
+                          cur_token->value);
+    RETURN_ON_ERROR(err, "inside function call");
+
+    // IDENTIFIER was parsed, replace with next
+    cur_token = get_next_token();
+
+    // (
+    if (cur_token->type != OPEN_BRACKET)
+      RETURN_ON_ERROR(ERR_SYNTAX, "inside func call, expected \"(\"");
+    // ( was parsed
+    cur_token = NULL;
+
+    // <arg_list>
+    // AST node for arg list is made inside parse_arg_list
+    err = parse_arg_list(func_call);
+    RETURN_ON_ERROR(err, "inside function call, arg list");
+    // cur_token might have been parsed
+    UPDATE_CUR_TOKEN();
+
+    // )
+    if (cur_token->type != CLOSE_BRACKET)
+      RETURN_ON_ERROR(ERR_SYNTAX, "inside func call, expected \")\"");
+    // ) was parsed
+    cur_token = NULL;
+  }
+  default:
+    break;
+  }
+
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing function call");
+}
+
+static ErrCode parse_template(ASTNode template_node) {
+
+  ErrCode err = SUCCESS;
+  UPDATE_CUR_TOKEN();
+
+  // ruleeeeees
+  // Match rule
+  switch (cur_token->type) {
+  case 67: {
+  }
+  default:
+    break;
+  }
+
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing REPLACETEMPLATE");
+}
+
+static ErrCode parse_template(ASTNode template_node) {
+
+  ErrCode err = SUCCESS;
+  UPDATE_CUR_TOKEN();
+
+  // ruleeeeees
+  // Match rule
+  switch (cur_token->type) {
+  case 67: {
+  }
+  default:
+    break;
+  }
+
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing REPLACETEMPLATE");
+}
+
 static ErrCode parse_template(ASTNode template_node) {
 
   ErrCode err = SUCCESS;
