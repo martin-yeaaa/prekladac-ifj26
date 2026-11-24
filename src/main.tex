@@ -232,14 +232,18 @@ DOPLŇTE VLASTNÍ TEXT, PŘÍPADNĚ ODSTRAŇTE TUTO PODSEKCI, POKUD NENÍ RELEVA
 % Pro kazdou dvojici .c/.h uvedte kratky, vecny popis.
 % Radky podle potreby pridejte nebo odeberte.
 
-\begin{longtable}{p{0.25\textwidth}p{0.68\textwidth}}
+\begin{longtable}{p{0.30\textwidth}p{0.68\textwidth}}
     \toprule
     \textbf{Modul} & \textbf{Stručný popis odpovědnosti modulu} \\
     \midrule
-    lexer.c / lexer.h & DOPLŇTE \\
-    parser.c / parser.h & DOPLŇTE \\
-    symtable.c / symtable.h & DOPLŇTE \\
-    DOPLŇTE & DOPLŇTE \\
+     \texttt{lexer.c / lexer.h} & Ze zdrojového kódu v jazyce \texttt{IFJ26}, který si celý zanalyzuje, umožnuje postupně vrátit všechny vytvořené tokeny z programu.  \\
+     \texttt{parser.c / parser.h} & Nad tokeny, které si vezme od lexeru, provede syntaktickou analýzu a vytvoří odpovídající abstraktní syntaktický strom. \\
+     \texttt{semantics.c / semantics.h} & Z BST kontroluje, zda je program sémanticky správně a vrací abstraktní sémantický strom.\\
+     \texttt{symtable.c / symtable.h} & DOPLŇTE \\
+     \texttt{codegen.c / codegen.h} & DOPLŇTE \\
+     \texttt{bst.c / bst.h / bst\_priv.h} & Umožnuje ukládat data do výškově vyváženého binárního stromu a poté k nim efektivně přistupovat. \\
+    \texttt{error\_codes.h} & Obsahuje seznam chybových návratových kódů. \\
+     
     \bottomrule
 \end{longtable}
 
@@ -262,7 +266,7 @@ DOPLŇTE VLASTNÍ TEXT, PŘÍPADNĚ ODSTRAŇTE TUTO PODSEKCI, POKUD NENÍ RELEVA
 % Tuto cast vyplnte vlastnimi skutecnymi zkusenostmi.
 
 \subsection{Použité nástroje a modely}
-DOPLŇTE VLASTNÍ TEXT.
+ChatGPT byl použit k dovysvětlení zadání a funkci dílčích částí překladače, k vyplnění jednoduchých polí podle předlohy a ke konzultaci našeho řešení. 
 
 \subsection{Pracovní postup}
 DOPLŇTE VLASTNÍ TEXT.
