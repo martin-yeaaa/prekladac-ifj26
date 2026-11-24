@@ -6,6 +6,7 @@
 // precedence syntax analysis = PSA (using precedence table)
 
 #include "expr_parser.h"
+#include "expr_parser_priv.h"
 
 #include "ast_module.h"
 #include "error_codes.h"
@@ -25,53 +26,6 @@ static Token *cur_token;
       cur_token = get_next_token();                                            \
     }                                                                          \
   } while (0)
-
-// Possible values of PSA nodes
-// Most of them represent an equivalent TokenType, but not all
-typedef enum psa_values {
-
-  PS_BEGIN,      // In table: $, but on stack
-  PS_END,        // In table: $, but in input
-  PS_RULE_START, // In table: <
-  PS_EXPR,       // In grammar: E
-  // Symbols from table > and = don't need to be saved
-
-  PS_IDENTIFIER,
-  PS_INT,
-  PS_DOUBLE,
-  PS_STRING,
-  PS_UNIT, // () will be converted into Unit
-
-  PS_MULT,
-  PS_DIV,
-  PS_PLUS,
-  PS_MINUS,
-
-  PS_LESS,
-  PS_LESS_EQ,
-  PS_GREATER,
-  PS_GREATER_EQ,
-  PS_EQ, // ==
-  PS_NOT_EQ,
-
-  PS_OPEN_BRACKET,
-  PS_CLOSE_BRACKET,
-
-  // Used only when TokenType cannot be converted to equivalent PSAVal
-  PS_UNKNOWN,
-
-} PSAVal;
-
-// Stack made from linked nodes
-typedef struct psa_stack_st {
-
-  // Node no stack below this one
-  struct psa_stack_st *previous;
-  // Saved AST node, so we can create a tree when reducing
-  ASTNode node;
-  PSAVal val;
-
-} *PSAStack;
 
 // Enum for deciding which function to use
 // Actions represent the < > = symbols inside PSA table
@@ -100,7 +54,7 @@ static ErrCode PSA_stack_init(PSAStack *stack) {
   return SUCCESS;
 }
 
-static ErrCode PSA_stack_destroy(PSAStack stack);
+static void PSA_stack_destroy(PSAStack stack);
 
 static PSAVal tokentype_to_psaval(TokenType token_type) {
 
@@ -260,14 +214,17 @@ static PSAAction PSA_lookup_table(PSAStack stack, PSAVal input) {
   int term_idx = get_PSA_table_idx(term);
   // Column index
   int input_idx = get_PSA_table_idx(input);
+
   // Sanity check
   assert(term_idx != -1 && input_idx != -1);
 
+  // Get action from table
   return psa_table[term_idx][input_idx];
 }
 
-static ErrCode PSA_shift(PSAStack stack);
+static ErrCode PSA_shift(PSAStack stack, PSAVal input);
 static ErrCode PSA_reduce(PSAStack stack);
+static ErrCode PSA_push(PSAStack stack, PSAVal input);
 
 static bool PSA_finished(PSAStack stack) {
 
@@ -290,6 +247,78 @@ static bool PSA_finished(PSAStack stack) {
   return false;
 }
 
+ErrCode parse_expr(ASTNode parent, Token **cur_token_ptr) {
+
+  // Copy current token into local static variable
+  cur_token = *cur_token_ptr;
+  ErrCode err = SUCCESS;
+
+  // Prepare PSA stack
+  PSAStack stack;
+  err = PSA_stack_init(&stack);
+  RETURN_ON_ERROR(err, "inside expression");
+
+  while (PSA_finished(stack) == false) {
+
+    // Get next token if cur_token is NULL
+    UPDATE_CUR_TOKEN();
+
+    // Turn token into PSAVal
+    PSAVal input = tokentype_to_psaval(cur_token->type);
+    if (input == PS_UNKNOWN) {
+      PSA_stack_destroy(stack);
+      fprintf(stderr, "failed parsing expression, wrong token in expression\n");
+      return ERR_SYNTAX;
+    }
+
+    // Figure out what to do
+    PSAAction act = PSA_lookup_table(stack, input);
+    // Sanity check
+    assert(act != ACT_WRONG);
+
+    // Match action
+    switch (act) {
+    case S: {
+
+      PSA_shift(stack, input);
+      break;
+    }
+
+    case R: {
+
+      PSA_reduce(stack);
+      break;
+    }
+
+    case P: {
+
+      PSA_push(stack, input);
+      break;
+    }
+    case I: {
+
+      PSA_stack_destroy(stack);
+      fprintf(stderr, "failed parsing expression, malformed expression\n");
+      return ERR_SYNTAX;
+    }
+    default: {
+
+      PSA_stack_destroy(stack);
+      fprintf(stderr, "Bad parse_expr!!!\n");
+      return ERR_INTERNAL;
+    }
+    }
+  } // while parsing not done
+
+  // Cleanup
+  PSA_stack_destroy(stack);
+
+  // Update foreign cur_token before returning
+  *cur_token_ptr = cur_token;
+
+  return SUCCESS;
+}
+
 ErrCode parse_cond(ASTNode parent, Token **cur_token_ptr) {
 
   return SUCCESS;
@@ -310,74 +339,4 @@ ErrCode parse_cond(ASTNode parent, Token **cur_token_ptr) {
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing condition");
   return ERR_SYNTAX;
-}
-
-ErrCode parse_expr(ASTNode parent, Token **cur_token_ptr) {
-
-  // Copy current token into local static variable
-  cur_token = *cur_token_ptr;
-  ErrCode err = SUCCESS;
-
-  // Prepare PSA stack
-  PSAStack stack;
-  err = PSA_stack_init(&stack);
-  RETURN_ON_ERROR(err, "inside expression");
-
-  while (PSA_finished(stack) == false) {
-
-    // Get next token if cur_token is NULL
-    UPDATE_CUR_TOKEN();
-    PSAVal input = tokentype_to_psaval(cur_token->type);
-    if (input == PS_UNKNOWN) {
-      PSA_stack_destroy(stack);
-      fprintf(stderr, "failed parsing expression (1)\n");
-      return ERR_SYNTAX;
-    }
-
-    // Figure out what to do
-    PSAAction act = PSA_lookup_table(stack, input);
-    // Sanity check
-    assert(act != ACT_WRONG);
-
-    switch (act) {
-    case S: {
-
-      //
-      PSA_shift(stack);
-      break;
-    }
-
-    case R: {
-
-      PSA_reduce(stack);
-      break;
-    }
-
-    case P: {
-
-      PSA_push();
-      break;
-    }
-    case I: {
-
-      PSA_stack_destroy(stack);
-      fprintf(stderr, "failed parsing expression (2)\n");
-      return ERR_SYNTAX;
-    }
-    default: {
-
-      PSA_stack_destroy(stack);
-      fprintf(stderr, "Bad PSA_lookup_table!!!\n");
-      return ERR_INTERNAL;
-    }
-    }
-  } // while parsing not done
-
-  // Cleanup
-  PSA_stack_destroy(stack);
-
-  // Update foreign cur_token before returning
-  *cur_token_ptr = cur_token;
-
-  return SUCCESS;
 }
