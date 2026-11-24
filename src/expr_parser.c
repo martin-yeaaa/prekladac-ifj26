@@ -11,6 +11,7 @@
 #include "error_codes.h"
 #include "lexer.h"
 
+#include <assert.h>
 #include <stdlib.h>
 
 // cur_token and UPDATE_CUR_TOKEN() were copied from parser.c, for info check
@@ -25,19 +26,12 @@ static Token *cur_token;
     }                                                                          \
   } while (0)
 
-// Enum for deciding which function to use
-typedef enum psa_actions {
-  ACT_SHIFT,
-  ACT_REDUCE,
-  ACT_PUSH_ONLY,
-  ACT_INVALID,
-} PSAAction;
-
 // Possible values of PSA nodes
 // Most of them represent an equivalent TokenType, but not all
 typedef enum psa_values {
 
-  PS_BEGIN,      // In table: $
+  PS_BEGIN,      // In table: $, but on stack
+  PS_END,        // In table: $, but in input
   PS_RULE_START, // In table: <
   PS_EXPR,       // In grammar: E
   // Symbols from table > and = don't need to be saved
@@ -79,6 +73,15 @@ typedef struct psa_stack_st {
 
 } *PSAStack;
 
+// Enum for deciding which function to use
+// Actions represent the < > = symbols inside PSA table
+typedef enum psa_actions {
+  S,         // ACT_SHIFT, <
+  R,         // ACT_REDUCE, >
+  P,         // ACT_PUSH_ONLY, =
+  I,         // ACT_INVALID, empty slot
+  ACT_WRONG, // For detecting my programming errors
+} PSAAction;
 
 static ErrCode PSA_stack_init(PSAStack *stack) {
 
@@ -98,7 +101,6 @@ static ErrCode PSA_stack_init(PSAStack *stack) {
 }
 
 static ErrCode PSA_stack_destroy(PSAStack stack);
-
 
 static PSAVal tokentype_to_psaval(TokenType token_type) {
 
@@ -129,7 +131,7 @@ static PSAVal tokentype_to_psaval(TokenType token_type) {
   case OP_MINUS: {
     return PS_MINUS;
   }
-  
+
   case OP_LESS: {
     return PS_LESS;
   }
@@ -155,9 +157,88 @@ static PSAVal tokentype_to_psaval(TokenType token_type) {
     return PS_CLOSE_BRACKET;
   }
 
+  // Valid expressions end only with semicolon or new line
+  case SEMICOLON:
+  case NEW_LINE: {
+    return PS_END;
+  }
+
   // Other token type
   default: {
     return PS_UNKNOWN;
+  }
+  }
+}
+
+// PSA Table equivalent to the one in documentation
+// The only difference is that $ on stack and $ on input shouldn't be checked,
+// so there is not OK, but ACT_WRONG
+// clang-format off
+static const PSAAction psa_table[7][7] = {
+    {R, R, R, S, R, S, R},
+    {S, R, R, S, R, S, R},
+    {S, S, I, S, R, S, R},
+    {S, S, S, S, P, S, I},
+    {R, R, R, I, R, I, R}, 
+    {R, R, R, I, R, I, R},
+    {S, S, S, S, I, S, ACT_WRONG},
+};
+// clang-format on
+
+static int get_PSA_table_idx(PSAVal val) {
+
+  // Match grouped values from table
+  switch (val) {
+  case PS_MULT:
+  case PS_DIV: {
+
+    // * has the same index as *, /
+    return 0;
+  }
+  case PS_PLUS:
+  case PS_MINUS: {
+
+    // + has the same index as +, -
+    return 1;
+  }
+  case PS_LESS:
+  case PS_LESS_EQ:
+  case PS_GREATER:
+  case PS_GREATER_EQ:
+  case PS_EQ:
+  case PS_NOT_EQ: {
+
+    // < has the same index as <, >, <=, >=, ==, !=
+    return 2;
+  }
+  case PS_OPEN_BRACKET: {
+
+    // ( has unique index
+    return 3;
+  }
+  case PS_CLOSE_BRACKET: {
+
+    // ) has unique index
+    return 4;
+  }
+  case PS_IDENTIFIER:
+  case PS_INT:
+  case PS_DOUBLE:
+  case PS_STRING:
+  case PS_UNIT: {
+
+    // i (= IDENTIFIER) has the same index as i and all literals
+    return 5;
+  }
+  case PS_BEGIN:
+  case PS_END: {
+    // Both $ have the same index
+    return 6;
+  }
+
+  default: {
+    fprintf(stderr, "Bad get_PSA_table_idx argument!!!\n");
+    return -1;
   }
   }
 }
@@ -175,69 +256,18 @@ static PSAAction PSA_lookup_table(PSAStack stack, PSAVal input) {
   }
 
   term = search->val;
-  PSAVal term_group = get_PSA_table_group(term);
-  PSAVal input_group = get_PSA_table_group(input);
+  // Row index
+  int term_idx = get_PSA_table_idx(term);
+  // Column index
+  int input_idx = get_PSA_table_idx(input);
+  // Sanity check
+  assert(term_idx != -1 && input_idx != -1);
 
-  // Match rule from table
-  switch (term_group) {
-  case PS_MULT:
-  case PS_DIV: {
-
-    // On stack: *, /
-    break;
-  }
-  case PS_PLUS:
-  case PS_MINUS: {
-
-    // On stack: +, -
-
-    break;
-  }
-  case PS_LESS:
-  case PS_LESS_EQ:
-  case PS_GREATER:
-  case PS_GREATER_EQ:
-  case PS_EQ:
-  case PS_NOT_EQ: {
-
-    // On stack:  <, >, <=, >=, ==, !=
-    break;
-  }
-  case PS_OPEN_BRACKET: {
-
-    // On stack: (
-    break;
-  }
-  case PS_CLOSE_BRACKET: {
-
-    // On stack: )
-    break;
-  }
-  case PS_IDENTIFIER:
-  case PS_INT:
-  case PS_DOUBLE:
-  case PS_STRING:
-  case PS_UNIT: {
-
-    // On stack: i
-    break;
-  }
-  case PS_BEGIN: {
-
-    // On stack: $
-    break;
-  }
-  default: {
-    fprintf(stderr, "Bad stack!!!\n");
-    return ACT_INVALID;
-  }
-  }
+  return psa_table[term_idx][input_idx];
 }
 
 static ErrCode PSA_shift(PSAStack stack);
 static ErrCode PSA_reduce(PSAStack stack);
-
-
 
 static bool PSA_finished(PSAStack stack) {
 
@@ -306,27 +336,29 @@ ErrCode parse_expr(ASTNode parent, Token **cur_token_ptr) {
 
     // Figure out what to do
     PSAAction act = PSA_lookup_table(stack, input);
+    // Sanity check
+    assert(act != ACT_WRONG);
 
     switch (act) {
-    case ACT_SHIFT: {
+    case S: {
 
       //
       PSA_shift(stack);
       break;
     }
 
-    case ACT_REDUCE: {
+    case R: {
 
       PSA_reduce(stack);
       break;
     }
 
-    case ACT_PUSH_ONLY: {
+    case P: {
 
       PSA_push();
       break;
     }
-    case ACT_INVALID: {
+    case I: {
 
       PSA_stack_destroy(stack);
       fprintf(stderr, "failed parsing expression (2)\n");
@@ -334,6 +366,7 @@ ErrCode parse_expr(ASTNode parent, Token **cur_token_ptr) {
     }
     default: {
 
+      PSA_stack_destroy(stack);
       fprintf(stderr, "Bad PSA_lookup_table!!!\n");
       return ERR_INTERNAL;
     }

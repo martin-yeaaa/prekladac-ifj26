@@ -1,7 +1,5 @@
 
 
-
-
 // TODO MAYBE USE IF LONG ENOUGH
 
 #ifndef EXPR_PARSER_PRIV_H
@@ -72,7 +70,6 @@ typedef struct psa_stack_st {
  */
 static ErrCode PSA_stack_init(PSAStack *stack);
 
-
 /**
  * @brief Tries to convert value of type `TokenType` to `PSAVal`.
  * @param token_type Value of type `TokenType`.
@@ -80,6 +77,12 @@ static ErrCode PSA_stack_init(PSAStack *stack);
  */
 static PSAVal tokentype_to_psaval(TokenType token_type);
 
+/**
+ * @brief Gets the number of row/column of PSA table based on `PSAVal`.
+ * @param val Value whose index we are looking for.
+ * @return Index `0` to `6` if found, `-1` otherwise.
+ */
+static int get_PSA_table_idx(PSAVal val);
 
 /**
  * @brief Checks if syntactic analysis is finished.
@@ -87,6 +90,5 @@ static PSAVal tokentype_to_psaval(TokenType token_type);
  * @return `true` if SA is finished, otherwise `false`.
  */
 static bool PSA_finished(PSAStack stack);
-
 
 #endif
