@@ -2,12 +2,13 @@
 // File: parser_priv.h
 // Author: Martin Vaško (vaskom00)
 
+// Header file for declarations of internal functions only visible to parser.c
+
 #ifndef PARSER_PRIV_H
 #define PARSER_PRIV_H
 
+#include "ast_module.h"
 #include "error_codes.h"
-#include "lexer.h"
-#include "semantics.h"
 
 /**
  * @brief Creates a new AST node and assigns it to parent. It only serves as a

@@ -2,10 +2,16 @@
 // File: parser.c
 // Author: Martin Vaško (vaskom00)
 
+// Implementation of parser functions, which do syntax analysis based on
+// an LL grammar using the recursive descent method.
+// This excludes parsing of expressions and conditions.
+
 #include "parser.h"
+#include "parser_priv.h"
+
+#include "ast_module.h"
 #include "error_codes.h"
 #include "lexer.h"
-#include "parser_priv.h"
 #include "semantics.h"
 #include "symtable.h"
 // #include "codegen.h" TODO add this when its made

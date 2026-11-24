@@ -1,162 +1,15 @@
 // Project: prekladac-ifj26
 // File: semantics.h
-// Authors:
-// - Martin Vaško (vaskom00) - everything except initial file structure
-// - Lukáš Dvořák (xdvoral00) - initial file structure
+// Author: Martin Vaško (vaskom00)
 
-// Header file for abstract syntax tree = AST and semantic analysis
+// Header file for semantic analysis
 
 #ifndef SEMANTICS_H
 #define SEMANTICS_H
 
+#include "ast_module.h"
 #include "error_codes.h"
 #include "symtable.h"
-#include <stdbool.h>
-#include <stdint.h>
-
-// Node types for AST nodes
-typedef enum {
-
-  // Root node of the AST
-  NODE_PROGRAM,
-
-  // Node types for literals
-  NODE_LITERAL,
-
-  NODE_IDENTIFIER,
-  NODE_ASSIGNMENT,
-
-  // Operators
-  // Unary operators
-  NODE_UN_PLUS,
-  NODE_UN_MINUS,
-
-  // Binary operators
-  NODE_ADD,
-  NODE_SUB,
-  NODE_MUL,
-  NODE_DIV,
-  // Binary relation operators
-  NODE_EQ,     // equals (==)
-  NODE_NOT_EQ, // not equal (!=)
-  NODE_LT,     // less than (<)
-  NODE_LT_EQ,  // less or equal (<=)
-  NODE_GT,     // greater than (>)
-  NODE_GT_EQ,  // greater or equal (<=)
-
-  // Different kinds of definitions
-  NODE_VAR_DEF,
-  NODE_VAL_DEF,
-  NODE_FUNC_DEF,
-  NODE_MAIN_FUNC_DEF,
-  NODE_PARAM_LIST,
-
-  NODE_EXPR,
-
-  NODE_FUNC_CALL,
-  NODE_ARG_LIST,
-  NODE_RETURN, // return from function
-
-  // Indented block
-  NODE_BLOCK,
-
-  NODE_IF,
-  NODE_WHILE,
-  NODE_COND, // Condition
-
-  // Conversion node
-  NODE_INT_TO_DBL,
-
-} NodeType;
-
-// Constant index values of nodes in AST
-#define I_FBODY 2  // Func def body
-#define I_FD_ID 0  // Func def identifier
-#define I_FD_PAR 1 // Func param list
-
-#define I_FC_ID 0  // Func call identifier
-#define I_FC_ARG 1 // Func call arg list
-
-#define I_COND 0 // Conditions in if and while
-#define I_WB 1   // While block
-#define I_IB1 1  // If - then block
-#define I_IB2 2  // If - else block
-
-// Assignment or variable definitions
-#define I_RHS 1 // expr or funcall
-#define I_LHS 0 // identifier
-
-// Operations
-#define I_OP 0  // Child in expr and cond
-#define I_R_O 1 // Left operand
-#define I_L_O 0 // Right operand
-#define I_UN 0  // Child of unary operator
-
-#define I_RET 0 // Return stmt
-
-// Union for AST node data
-typedef union node_data_union {
-  int32_t int_val;
-  double double_val;
-  char *string_val;
-  // Bool must exist internally even without BOOLTHEN
-  bool bool_val;
-} NodeData;
-
-// Structure for one AST node
-typedef struct ast_node_struct {
-
-  // Type of node representing an action or structure
-  NodeType node_type;
-
-  // If node contains:
-  // - a literal, it will have data type of literal
-  // - a symbol, it will have data type that will be inserted into symbol table
-  // Other: depending on node type, it might have data type
-  // of result of its body
-  DataType data_type;
-
-  // If node contains:
-  // - a literal, it will hold value of literal
-  // - a symbol, it will hold identifier of the symbol
-  NodeData data;
-
-  // If node type is a , this points to matching symbol in symtable
-  Symbol *symbol_ptr;
-
-  // Only used in function definition nodes, tells us if we resolved its
-  // children nodes or not
-  bool was_resolved;
-
-  // Children nodes, there can be many
-  int child_count;
-  int child_limit; // Info for realloc
-  struct ast_node_struct **child_arr;
-
-} *ASTNode;
-
-/**
- * @brief Creates a new node for AST.
- * @param node Pointer to declared uninitialized node.
- * @param node_type What this node represents.
- * @param data_type Type of data this node holds.
- * @param node_data Value of literal, or identifier string.
- * This is ignored when it's not needed.
- * @return `SUCCESS` on success,
- * `ERR_INTERNAL` on memory allocation failure,
- * `ERR_INCOMPATIBLE_TYPE` if conversion fails while assigning data.
- */
-ErrCode AST_init_node(ASTNode *node, NodeType node_type, DataType data_type,
-                      char *node_data);
-
-/**
- * @brief Creates a tree from a parent node and children nodes.
- * @param parent AST node that will be the parent, not `NULL`.
- * @param child AST node that will be the child, not `NULL`.
- * @return `SUCCESS` on success,
- * `ERR_INTERNAL` on memory allocation failure.
- */
-ErrCode AST_node_add_child(ASTNode parent, ASTNode child);
 
 /**
  * @brief Fills the symbol table, does all semantic checks.
@@ -168,11 +21,5 @@ ErrCode AST_node_add_child(ASTNode parent, ASTNode child);
  * `ERR_INTERNAL`
  */
 ErrCode semantic_analysis(ASTNode root, SymbTables *st);
-
-/**
- * @brief Frees AST from memory.
- * @param root Root of tree to be destroyed. `root` will become unusable.
- */
-void AST_destroy_tree(ASTNode root);
 
 #endif

@@ -2,6 +2,8 @@
 // File: parser.h
 // Author: Martin Vaško (vaskom00)
 
+// Header for file parser function
+
 #ifndef PARSER_H
 #define PARSER_H
 
