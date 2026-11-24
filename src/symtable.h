@@ -1,6 +1,6 @@
 // Project: prekladac-ifj26
 // File: symtable.h
-// Author: Martin Vaško (vaskom00)
+// Author: Martin Vaško (xvaskom00)
 
 // Symbol table interface
 

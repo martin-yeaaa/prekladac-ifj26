@@ -1,6 +1,6 @@
 // Project: prekladac-ifj26
 // File: semantics.h
-// Author: Martin Vaško (vaskom00)
+// Author: Martin Vaško (xvaskom00)
 
 // Header file for semantic analysis
 

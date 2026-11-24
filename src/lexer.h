@@ -3,7 +3,7 @@
 // Authors:
 // - Jiří Švec (xsvecji00)
 // - Michal Bína (xbinami00)
-// - Martin Vaško (vaskom00) - only final touches
+// - Martin Vaško (xvaskom00) - only final touches
 
 // Header for lexer
 

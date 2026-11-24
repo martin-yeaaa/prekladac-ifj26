@@ -1,6 +1,6 @@
 // Project: prekladac-ifj26
 // File: ast_module.c
-// Author: Martin Vaško (vaskom00)
+// Author: Martin Vaško (xvaskom00)
 
 // Implementation of abstract syntax tree = AST functions
 

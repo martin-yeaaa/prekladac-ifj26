@@ -1,6 +1,6 @@
 // Project: prekladac-ifj26
 // File: parser.c
-// Author: Martin Vaško (vaskom00)
+// Author: Martin Vaško (xvaskom00)
 
 // Implementation of parser functions, which do syntax analysis based on
 // an LL grammar using the recursive descent method.
@@ -1612,7 +1612,7 @@ static ErrCode parse_cond(ASTNode parent) {
     break;
   }
 
-  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing REPLACETEMPLATE");
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing condition");
   return ERR_SYNTAX;
 }
 
@@ -1634,7 +1634,7 @@ static ErrCode parse_expr(ASTNode parent) {
     break;
   }
 
-  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing REPLACETEMPLATE");
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing expression");
   return ERR_SYNTAX;
 }
 

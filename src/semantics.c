@@ -1,6 +1,6 @@
 // Project: prekladac-ifj26
 // File: semantics.c
-// Author: Martin Vaško (vaskom00)
+// Author: Martin Vaško (xvaskom00)
 
 // Implementation of semantic analysis functions
 

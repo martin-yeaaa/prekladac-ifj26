@@ -1,6 +1,6 @@
 // Project: prekladac-ifj26
 // File: parser_priv.h
-// Author: Martin Vaško (vaskom00)
+// Author: Martin Vaško (xvaskom00)
 
 // Header file for declarations of internal functions only visible to parser.c
 

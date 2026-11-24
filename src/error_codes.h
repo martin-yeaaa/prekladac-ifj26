@@ -1,6 +1,6 @@
 // Project: prekladac-ifj26
 // File: error_codes.h
-// Author: Martin Vaško (vaskom00)
+// Author: Martin Vaško (xvaskom00)
 
 // File containing macros for all possible errors.
 

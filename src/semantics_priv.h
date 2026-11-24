@@ -1,6 +1,6 @@
 // Project: prekladac-ifj26
 // File: semantics_priv.h
-// Author: Martin Vaško (vaskom00)
+// Author: Martin Vaško (xvaskom00)
 
 // Declarations of internal functions
 

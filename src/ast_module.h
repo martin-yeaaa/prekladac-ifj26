@@ -1,7 +1,7 @@
 // Project: prekladac-ifj26
 // File: ast_module.h
 // Authors:
-// - Martin Vaško (vaskom00) - everything except initial file structure
+// - Martin Vaško (xvaskom00) - everything except initial file structure
 // - Lukáš Dvořák (xdvoral00) - initial file structure
 
 // Header file for abstract syntax tree = AST
