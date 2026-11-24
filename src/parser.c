@@ -9,6 +9,8 @@
 #include "parser.h"
 #include "parser_priv.h"
 
+#include "expr_parser.h" // Parsing expressions using different method
+
 #include "ast_module.h"
 #include "error_codes.h"
 #include "lexer.h"
@@ -853,7 +855,7 @@ static ErrCode parse_expr_or_call(ASTNode parent) {
 
     } else {
       // 102 <expr_or_call> -> <expr>
-      err = parse_expr(parent);
+      err = parse_expr(parent, &cur_token);
       RETURN_ON_ERROR(err, "inside expr or call, expression");
 
       return SUCCESS;
@@ -867,7 +869,7 @@ static ErrCode parse_expr_or_call(ASTNode parent) {
   case VAL_STRING: {
 
     // 102 <expr_or_call> -> <expr>
-    err = parse_expr(parent);
+    err = parse_expr(parent, &cur_token);
     RETURN_ON_ERROR(err, "inside expr or call, expression");
 
     return SUCCESS;
@@ -1197,7 +1199,7 @@ static ErrCode parse_if_stmt(ASTNode block) {
     // if was parsed
     cur_token = NULL;
 
-    err = parse_cond(if_stmt);
+    err = parse_cond(if_stmt, &cur_token);
     RETURN_ON_ERROR(err, "inside if, condition");
     // Function might have "consumed" token, renew it
     UPDATE_CUR_TOKEN();
@@ -1253,7 +1255,7 @@ static ErrCode parse_while_loop(ASTNode block) {
     // while was parsed
     cur_token = NULL;
 
-    err = parse_cond(while_loop);
+    err = parse_cond(while_loop, &cur_token);
     RETURN_ON_ERROR(err, "inside while, condition");
     // Function might have "consumed" token, renew it
     UPDATE_CUR_TOKEN();
@@ -1591,50 +1593,6 @@ static ErrCode parse_unary_op(ASTNode parent, ASTNode *ptr_to_node) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing unary operator");
-  return ERR_SYNTAX;
-}
-
-static ErrCode parse_cond(ASTNode parent) {
-
-  return SUCCESS;
-
-  ErrCode err = SUCCESS;
-  UPDATE_CUR_TOKEN();
-
-  // ruleeeeees
-  // Match rule
-  switch (cur_token->type) {
-  case 67: {
-
-    return SUCCESS;
-  }
-  default:
-    break;
-  }
-
-  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing condition");
-  return ERR_SYNTAX;
-}
-
-static ErrCode parse_expr(ASTNode parent) {
-
-  return SUCCESS;
-
-  ErrCode err = SUCCESS;
-  UPDATE_CUR_TOKEN();
-
-  // ruleeeeees
-  // Match rule
-  switch (cur_token->type) {
-  case 67: {
-
-    return SUCCESS;
-  }
-  default:
-    break;
-  }
-
-  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing expression");
   return ERR_SYNTAX;
 }
 

@@ -2,7 +2,7 @@
 // File: parser.h
 // Author: Martin Vaško (xvaskom00)
 
-// Header for file parser function
+// Header file for parser function
 
 #ifndef PARSER_H
 #define PARSER_H

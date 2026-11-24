@@ -71,7 +71,6 @@ static ErrCode parse_assignment(ASTNode block);
 
 static ErrCode parse_if_stmt(ASTNode block);
 static ErrCode parse_while_loop(ASTNode block);
-static ErrCode parse_cond(ASTNode parent);
 
 static ErrCode parse_return_stmt(ASTNode block);
 static ErrCode parse_fun_call(ASTNode parent);
@@ -85,7 +84,7 @@ static ErrCode parse_literal(ASTNode parent);
 
 static ErrCode parse_expr_un(void);
 static ErrCode parse_expr_un_opt(void);
-static ErrCode parse_expr(ASTNode parent);
+
 static ErrCode parse_simple_literal(void);
 static ErrCode parse_paren_tail(void);
 static ErrCode parse_expr_rest(void);
