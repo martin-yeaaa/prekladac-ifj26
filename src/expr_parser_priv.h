@@ -16,8 +16,10 @@
 // Most of them represent an equivalent TokenType, but not all
 typedef enum psa_values {
 
-  PS_BEGIN,      // In table: $ (on stack)
-  PS_END,        // In table: $ (in input)
+  PS_BEGIN, // In table: $ (on stack)
+  PS_END,   // In table: $ (in input)
+
+  // The only non-terminals
   PS_RULE_START, // In table: <
   PS_EXPR,       // In grammar: E
   // Symbols from table > and = don't need to be saved
@@ -54,18 +56,7 @@ typedef struct psa_stack_st {
   // Node no stack below this one
   struct psa_stack_st *previous;
   // Saved AST node, so we can create a tree when reducing
-  ASTNode node;
-  PSAVal val;
-
-} *PSAStack;
-
-// Stack made from linked nodes
-typedef struct psa_stack_st {
-
-  // Node no stack below this one
-  struct psa_stack_st *previous;
-  // Saved AST node, so we can create a tree when reducing
-  ASTNode node;
+  ASTNode ast_node;
   PSAVal val;
 
 } *PSAStack;
@@ -92,6 +83,12 @@ static void PSA_stack_destroy(PSAStack stack);
 static PSAVal tokentype_to_psaval(TokenType token_type);
 
 /**
+ * @param value Value to check.
+ * @return `true` if it is terminal, otherwise `false`.
+ */
+static bool is_terminal(PSAVal value);
+
+/**
  * @brief Gets the number of row/column of PSA table based on `PSAVal`.
  * @param val Value whose index we are looking for.
  * @return Index `0` to `6` if found, `-1` otherwise.
@@ -106,9 +103,29 @@ static int get_PSA_table_idx(PSAVal val);
  */
 static PSAAction PSA_lookup_table(PSAStack stack, PSAVal input);
 
-static ErrCode PSA_shift(PSAStack stack, PSAVal input);
-static ErrCode PSA_reduce(PSAStack stack);
-static ErrCode PSA_push(PSAStack stack, PSAVal input);
+/**
+ * @brief Does the standard PSA push "=" action.
+ * @param stack Stack currently used in PSA.
+ * @param input `PSAVal` of current input.
+ * @param ast_node Initialized AST node, or NULL.
+ * @return `SUCCESS` on success, otherwise `ERR_INTERNAL`
+ */
+static ErrCode PSA_push(PSAStack *stack, PSAVal input, ASTNode ast_node);
+
+/**
+ * @brief Does the standard PSA shift "<" action.
+ * @param stack Stack currently used in PSA.
+ * @param input `PSAVal` of current input.
+ * @param ast_node Initialized AST node, or NULL.
+ * @return `SUCCESS` on success, otherwise `ERR_INTERNAL`
+ */
+static ErrCode PSA_shift(PSAStack *stack, PSAVal input, ASTNode ast_node);
+/**
+ * @brief Does the standard PSA reduce ">" action.
+ * @param stack Stack currently used in PSA.
+ * @return `SUCCESS` on success, otherwise `ERR_SYNTAX` or `ERR_INTERNAL`
+ */
+static ErrCode PSA_reduce(PSAStack *stack);
 
 /**
  * @brief Checks if syntactic analysis is finished.
@@ -116,5 +133,7 @@ static ErrCode PSA_push(PSAStack stack, PSAVal input);
  * @return `true` if SA is finished, otherwise `false`.
  */
 static bool PSA_finished(PSAStack stack);
+
+static ErrCode init_respective_AST_node(ASTNode *ast_node, Token *token);
 
 #endif

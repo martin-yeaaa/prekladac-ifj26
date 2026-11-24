@@ -48,6 +48,7 @@ static ErrCode PSA_stack_init(PSAStack *stack) {
   // Initialization
   new_stack->previous = NULL;
   new_stack->val = PS_BEGIN;
+  new_stack->ast_node = NULL;
 
   // Pass pointer to variable outside
   *stack = new_stack;
@@ -197,12 +198,17 @@ static int get_PSA_table_idx(PSAVal val) {
   }
 }
 
+static bool is_terminal(PSAVal value) {
+  // Check if value is not one of the only non-terminals
+  return (value != PS_EXPR && value != PS_RULE_START);
+}
+
 static PSAAction PSA_lookup_table(PSAStack stack, PSAVal input) {
 
   // We need to compare first terminal from top of stack
   PSAVal term;
   PSAStack search = stack;
-  while (search->val == PS_EXPR) {
+  while (is_terminal(search->val) == false) {
     search = search->previous;
 
     // We should find at least PS_BEGIN, if we don't, the stack is invalid
@@ -222,9 +228,173 @@ static PSAAction PSA_lookup_table(PSAStack stack, PSAVal input) {
   return psa_table[term_idx][input_idx];
 }
 
-static ErrCode PSA_shift(PSAStack stack, PSAVal input);
-static ErrCode PSA_reduce(PSAStack stack);
-static ErrCode PSA_push(PSAStack stack, PSAVal input);
+static ErrCode PSA_push(PSAStack *stack, PSAVal input, ASTNode ast_node) {
+
+  // Very similar to PSA_stack_init hmmmmm
+  // Allocate memory for stack node
+  PSAStack new_node = malloc(sizeof(struct psa_stack_st));
+  if (new_node == NULL) {
+    RETURN_ON_ERROR(ERR_INTERNAL, "memory allocation for PSA stack failed");
+  }
+
+  // Initialization
+  new_node->previous = stack;
+  new_node->val = input;
+  new_node->ast_node = ast_node;
+
+  // Pass pointer to variable outside
+  *stack = new_node;
+  return SUCCESS;
+}
+
+static ErrCode PSA_shift(PSAStack *stack, PSAVal input, ASTNode ast_node) {
+
+  // Replace top terminal "a" with "a<", and push terminal from input
+  // < in my code is PS_RULE_START
+  // We need to compare first terminal from top of stack
+
+  PSAStack search = (*stack);
+  ErrCode err;
+
+  if (is_terminal(search->val)) {
+
+    // Terminal on top of stack
+    PSA_push(stack, PS_RULE_START, NULL); // "<"
+    RETURN_ON_ERROR(err, "out of memory");
+
+  } else {
+    // Stack has at least 2 nodes in it
+    assert(search->previous != NULL);
+
+    // Replace top terminal "a" with "a<"
+    // Find top terminal
+    while (is_terminal(search->previous->val) == false) {
+
+      search = search->previous;
+
+      // We should find at least PS_BEGIN, if we don't, the stack is invalid
+      assert(search->previous != NULL);
+    }
+
+    // Create new node for "<"
+    PSAStack rule_start_node;
+    err = PSA_stack_init(&rule_start_node);
+    RETURN_ON_ERROR(err, "out of memory");
+    // Change PSA value manually
+    rule_start_node->val = PS_RULE_START;
+
+    // Insert it between search and search->previous
+    rule_start_node->previous = search->previous;
+    search->previous = rule_start_node;
+  }
+  // Push terminal from input
+  err = PSA_push(stack, input, ast_node);
+  RETURN_ON_ERROR(err, "out of memory");
+
+  return SUCCESS;
+}
+
+static ErrCode PSA_reduce(PSAStack *stack);
+
+static ErrCode init_respective_AST_node(ASTNode *ast_node, Token *token) {
+
+  NodeType node_type;
+  DataType data_type;
+
+  switch (token->type) {
+  case IDENTIFIER: {
+    node_type = NODE_IDENTIFIER;
+    data_type = DT_UNDEF;
+    break;
+  }
+  case VAL_INT: {
+    node_type = NODE_LITERAL;
+    data_type = DT_INTEGER;
+    break;
+  }
+  case VAL_DOUBLE: {
+    node_type = NODE_LITERAL;
+    data_type = DT_DOUBLE;
+    break;
+  }
+  case VAL_STRING: {
+    node_type = NODE_LITERAL;
+    data_type = DT_STRING;
+    break;
+  }
+  // No Unit token
+  case OP_MULT: {
+    node_type = NODE_MUL;
+    data_type = DT_UNDEF;
+    break;
+  }
+  case OP_DIV: {
+    node_type = NODE_DIV;
+    data_type = DT_UNDEF;
+    break;
+  }
+  case OP_PLUS: {
+    node_type = NODE_ADD;
+    data_type = DT_UNDEF;
+    break;
+  }
+  case OP_MINUS: {
+    node_type = NODE_SUB;
+    data_type = DT_UNDEF;
+    break;
+  }
+
+  case OP_LESS: {
+    node_type = NODE_LT;
+    data_type = DT_BOOL;
+    break;
+  }
+  case OP_LESS_EQ: {
+    node_type = NODE_LT_EQ;
+    data_type = DT_BOOL;
+    break;
+  }
+  case OP_GREATER: {
+    node_type = NODE_GT;
+    data_type = DT_BOOL;
+    break;
+  }
+  case OP_GREATER_EQ: {
+    node_type = NODE_GT_EQ;
+    data_type = DT_BOOL;
+    break;
+  }
+  case OP_EQ: {
+    node_type = NODE_EQ;
+    data_type = DT_BOOL;
+    break;
+  }
+  case OP_NOT_EQ: {
+    node_type = NODE_NOT_EQ;
+    data_type = DT_BOOL;
+    break;
+  }
+  case OPEN_BRACKET:
+  case CLOSE_BRACKET:
+  case SEMICOLON:
+  case NEW_LINE: {
+    // No node for these types
+    // Just don't forget to make Unit node later!
+    *ast_node = NULL;
+    return SUCCESS;
+  }
+  default: {
+    fprintf(stderr,
+            "Impossible! I made a mistake! (init_respective_AST_node)\n");
+    return ERR_INTERNAL;
+  }
+  }
+
+  ErrCode err = AST_init_node(ast_node, node_type, data_type, token->value);
+  RETURN_ON_ERROR(err, "failed initializing AST node");
+
+  return SUCCESS;
+}
 
 static bool PSA_finished(PSAStack stack) {
 
@@ -271,6 +441,14 @@ ErrCode parse_expr(ASTNode parent, Token **cur_token_ptr) {
       return ERR_SYNTAX;
     }
 
+    // Token is valid for expression, make AST node
+    ASTNode ast_node;
+    err = init_respective_AST_node(&ast_node, cur_token);
+    if (err != SUCCESS) {
+      PSA_stack_destroy(stack);
+      RETURN_ON_ERROR(err, "inside expression");
+    }
+
     // Figure out what to do
     PSAAction act = PSA_lookup_table(stack, input);
     // Sanity check
@@ -280,19 +458,19 @@ ErrCode parse_expr(ASTNode parent, Token **cur_token_ptr) {
     switch (act) {
     case S: {
 
-      PSA_shift(stack, input);
+      err = PSA_shift(&stack, input, ast_node);
       break;
     }
 
     case R: {
 
-      PSA_reduce(stack);
+      PSA_reduce(&stack);
       break;
     }
 
     case P: {
 
-      PSA_push(stack, input);
+      PSA_push(&stack, input, ast_node);
       break;
     }
     case I: {
@@ -307,6 +485,11 @@ ErrCode parse_expr(ASTNode parent, Token **cur_token_ptr) {
       fprintf(stderr, "Bad parse_expr!!!\n");
       return ERR_INTERNAL;
     }
+    }
+
+    if (err != SUCCESS) {
+      PSA_stack_destroy(stack);
+      RETURN_ON_ERROR(err, "failed parsing expression");
     }
   } // while parsing not done
 
