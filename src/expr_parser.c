@@ -756,6 +756,46 @@ ErrCode parse_expr(ASTNode parent, Token **cur_token_ptr, bool is_cond) {
     }
   } // while parsing not done
 
+  // Exited the loop, which means there is $E on the stack!
+  // We will wrap the E expression in NODE_EXPR or NODE_COND,
+  // because semantics module requires it
+
+  NodeType w_node_type;
+  DataType w_data_type;
+
+  if (is_cond == true) {
+    w_node_type = NODE_COND;
+    w_data_type = DT_BOOL;
+  } else {
+    w_node_type = NODE_EXPR;
+    w_data_type = DT_UNDEF;
+  }
+
+  // Make wrap node
+  ASTNode wrap_node;
+  err = AST_init_node(&wrap_node, w_node_type, w_data_type, NULL);
+  if (err != SUCCESS) {
+    PSA_stack_destroy(stack);
+    RETURN_ON_ERROR(err, "out of memory, so close :(");
+  }
+
+  // Add E as child of wrap node
+  err = AST_node_add_child(wrap_node, stack->ast_node);
+  if (err != SUCCESS) {
+    PSA_stack_destroy(stack);
+    AST_destroy_tree(wrap_node);
+    RETURN_ON_ERROR(err, "out of memory, so close :((");
+  }
+  stack->ast_node = NULL; // Remove pointer
+
+  // Add wrap node as child of arg "parent"!
+  err = AST_node_add_child(parent, wrap_node);
+  if (err != SUCCESS) {
+    PSA_stack_destroy(stack);
+    AST_destroy_tree(wrap_node);
+    RETURN_ON_ERROR(err, "out of memory, so close :(((");
+  }
+
   // Cleanup
   PSA_stack_destroy(stack);
 
@@ -763,26 +803,4 @@ ErrCode parse_expr(ASTNode parent, Token **cur_token_ptr, bool is_cond) {
   *cur_token_ptr = cur_token;
 
   return SUCCESS;
-}
-
-ErrCode parse_cond(ASTNode parent, Token **cur_token_ptr) {
-
-  return SUCCESS;
-
-  ErrCode err = SUCCESS;
-  // UPDATE_CUR_TOKEN();
-
-  // ruleeeeees
-  // Match rule
-  switch ((*cur_token_ptr)->type) {
-  case 67: {
-
-    return SUCCESS;
-  }
-  default:
-    break;
-  }
-
-  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing condition");
-  return ERR_SYNTAX;
 }

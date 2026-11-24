@@ -11,7 +11,11 @@
 #include "error_codes.h"
 #include "lexer.h"
 
-ErrCode parse_expr(ASTNode parent, Token **cur_token_ptr);
-ErrCode parse_cond(ASTNode parent, Token **cur_token_ptr);
+#include <stdbool.h>
+
+/**
+ * @brief TODO
+ */
+ErrCode parse_expr(ASTNode parent, Token **cur_token_ptr, bool is_cond);
 
 #endif
