@@ -13,6 +13,8 @@
 #include "lexer.h"
 
 #include <assert.h>
+#include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 // cur_token and UPDATE_CUR_TOKEN() were copied from parser.c, for info check
@@ -26,16 +28,6 @@ static Token *cur_token;
       cur_token = get_next_token();                                            \
     }                                                                          \
   } while (0)
-
-// Enum for deciding which function to use
-// Actions represent the < > = symbols inside PSA table
-typedef enum psa_actions {
-  S,         // ACT_SHIFT, <
-  R,         // ACT_REDUCE, >
-  P,         // ACT_PUSH_ONLY, =
-  I,         // ACT_INVALID, empty slot
-  ACT_WRONG, // For detecting my programming errors
-} PSAAction;
 
 static ErrCode PSA_stack_init(PSAStack *stack) {
 
@@ -145,6 +137,16 @@ static PSAVal tokentype_to_psaval(TokenType token_type) {
   }
   }
 }
+
+// Enum for deciding which function to use
+// Actions represent the < > = symbols inside PSA table
+typedef enum psa_actions {
+  S,         // ACT_SHIFT, <
+  R,         // ACT_REDUCE, >
+  P,         // ACT_PUSH_ONLY, =
+  I,         // ACT_INVALID, empty slot
+  ACT_WRONG, // For detecting my programming errors
+} PSAAction;
 
 // PSA Table equivalent to the one in documentation
 // The only difference is that $ on stack and $ on input shouldn't be checked,
@@ -360,9 +362,10 @@ static ErrCode PSA_reduce(PSAStack *stack) {
 
       return SUCCESS;
     }
-    default:
+    default: {
       // No matching rule found
       return ERR_SYNTAX;
+    }
     }
   }
 
@@ -413,12 +416,141 @@ static ErrCode PSA_reduce(PSAStack *stack) {
 
     second_node->previous = NULL;
     second_node->ast_node = NULL;
-    PSA_stack_destroy(third_node);
+    PSA_stack_destroy(second_node);
 
     return SUCCESS;
   }
 
-  return SUCCESS;
+  // Fill part of rule
+  first_node = start_finder;
+
+  // Move helper again
+  start_finder = start_finder->previous;
+
+  if (start_finder->val == PS_RULE_START) {
+    // We found "<", match rule
+    // This time the rule has 3 "values on the right"
+
+    // E -> E+E
+    // E -> E-E
+    // E -> E*E
+    // E -> E/E
+    // E -> (E)
+
+    // E -> E > E
+    // E -> E >= E
+    // E -> E < E
+    // E -> E <= E
+    // E -> E == E
+    // E -> E != E
+
+    if (first_node->val == PS_OPEN_BRACKET && second_node->val == PS_EXPR &&
+        third_node->val == PS_CLOSE_BRACKET) {
+      // E -> (E)
+      // Do nothing, just pass
+    }
+
+    else if (first_node->val == PS_EXPR && third_node->val == PS_EXPR) {
+      // E -> E ? E
+      switch (second_node->val) {
+
+      case PS_PLUS:
+      case PS_MINUS:
+      case PS_MULT:
+      case PS_DIV: {
+
+        // First add value on left side to keep correct order
+        err = AST_node_add_child(second_node->ast_node, first_node->ast_node);
+        RETURN_ON_ERROR(err, "out of memory");
+        first_node->ast_node = NULL; // Remove useless pointer
+
+        // Then right side
+        err = AST_node_add_child(second_node->ast_node, third_node->ast_node);
+        RETURN_ON_ERROR(err, "out of memory");
+        third_node->ast_node = NULL; // Remove useless pointer
+      }
+
+      case PS_LESS:
+      case PS_LESS_EQ:
+      case PS_GREATER:
+      case PS_GREATER_EQ:
+      case PS_EQ:
+      case PS_NOT_EQ: {
+
+        // AST specification expects expressions with relation operator to be
+        // created a little bit weirdly
+
+        // Both children of relation operator must be wrapped in expression node
+
+        // Left side
+        ASTNode expr_left;
+        err = AST_init_node(&expr_left, NODE_EXPR, DT_UNDEF, NULL);
+        RETURN_ON_ERROR(err, "out of memory");
+        err = AST_node_add_child(expr_left, first_node->ast_node);
+        if (err != SUCCESS) {
+          AST_destroy_tree(expr_left);
+          RETURN_ON_ERROR(err, "out of memory");
+        }
+        // Reassign
+        first_node->ast_node = expr_left;
+
+        // Right side
+        ASTNode expr_right;
+        err = AST_init_node(&expr_right, NODE_EXPR, DT_UNDEF, NULL);
+        RETURN_ON_ERROR(err, "out of memory");
+        err = AST_node_add_child(expr_right, third_node->ast_node);
+        if (err != SUCCESS) {
+          AST_destroy_tree(expr_right);
+          RETURN_ON_ERROR(err, "out of memory");
+        }
+        // Reassign
+        third_node->ast_node = expr_right;
+
+        // Then we can add them as children to relation operator
+
+        // First add value on left side to keep correct order
+        err = AST_node_add_child(second_node->ast_node, first_node->ast_node);
+        RETURN_ON_ERROR(err, "out of memory");
+        first_node->ast_node = NULL; // Remove useless pointer
+
+        // Then right side
+        err = AST_node_add_child(second_node->ast_node, third_node->ast_node);
+        RETURN_ON_ERROR(err, "out of memory");
+        third_node->ast_node = NULL; // Remove useless pointer
+      }
+      default: {
+        // No matching rule found
+        return ERR_SYNTAX;
+      }
+      }
+
+    } else {
+      // No matching rule found
+      return ERR_SYNTAX;
+    }
+
+    // Get rid of "<" by replacing it with the reduced E
+    start_finder->ast_node = second_node->ast_node;
+    start_finder->val = PS_EXPR;
+
+    // Destroy the rest
+    third_node->previous = NULL;
+    third_node->ast_node = NULL;
+    PSA_stack_destroy(third_node);
+
+    second_node->previous = NULL;
+    second_node->ast_node = NULL;
+    PSA_stack_destroy(second_node);
+
+    first_node->previous = NULL;
+    first_node->ast_node = NULL;
+    PSA_stack_destroy(first_node);
+
+    return SUCCESS;
+  } else {
+    // There is no longer rule
+    return ERR_SYNTAX;
+  }
 }
 
 static ErrCode init_respective_AST_node(ASTNode *ast_node, Token *token) {
@@ -544,7 +676,7 @@ static bool PSA_finished(PSAStack stack) {
   return false;
 }
 
-ErrCode parse_expr(ASTNode parent, Token **cur_token_ptr) {
+ErrCode parse_expr(ASTNode parent, Token **cur_token_ptr, bool is_cond) {
 
   // Copy current token into local static variable
   cur_token = *cur_token_ptr;
