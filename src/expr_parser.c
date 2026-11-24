@@ -301,6 +301,7 @@ static ErrCode init_respective_AST_node(ASTNode *ast_node, Token *token) {
   NodeType node_type;
   DataType data_type;
 
+  // Initialize node_type and data_type based on token type
   switch (token->type) {
   case IDENTIFIER: {
     node_type = NODE_IDENTIFIER;
@@ -390,6 +391,7 @@ static ErrCode init_respective_AST_node(ASTNode *ast_node, Token *token) {
   }
   }
 
+  // Initialize the node
   ErrCode err = AST_init_node(ast_node, node_type, data_type, token->value);
   RETURN_ON_ERROR(err, "failed initializing AST node");
 
@@ -459,18 +461,22 @@ ErrCode parse_expr(ASTNode parent, Token **cur_token_ptr) {
     case S: {
 
       err = PSA_shift(&stack, input, ast_node);
+      // Token parsed, get next
+      cur_token = get_next_token();
       break;
     }
 
     case R: {
 
-      PSA_reduce(&stack);
+      err = PSA_reduce(&stack);
       break;
     }
 
     case P: {
 
-      PSA_push(&stack, input, ast_node);
+      err = PSA_push(&stack, input, ast_node);
+      // Token parsed, get next
+      cur_token = get_next_token();
       break;
     }
     case I: {

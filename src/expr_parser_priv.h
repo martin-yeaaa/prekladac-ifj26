@@ -134,6 +134,12 @@ static ErrCode PSA_reduce(PSAStack *stack);
  */
 static bool PSA_finished(PSAStack stack);
 
+/**
+ * @brief Initialized AST node based on token type.
+ * @param ast_node Pointer to declared uninitialized node.
+ * @param token Pointer to token.
+ * @return `SUCCESS` if initializing succeeds, or `ERR_INTERNAL`.
+ */
 static ErrCode init_respective_AST_node(ASTNode *ast_node, Token *token);
 
 #endif
