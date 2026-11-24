@@ -55,7 +55,28 @@ static ErrCode PSA_stack_init(PSAStack *stack) {
   return SUCCESS;
 }
 
-static void PSA_stack_destroy(PSAStack stack);
+static void PSA_stack_destroy(PSAStack stack) {
+
+  // Cycle through nodes
+  while (stack->previous != NULL) {
+
+    PSAStack to_delete = stack;
+    // Move stack further
+    stack = stack->previous;
+
+    // Delete AST if available
+    if (to_delete->ast_node != NULL)
+      AST_destroy_tree(to_delete->ast_node);
+
+    free(to_delete);
+  }
+
+  // Last node
+  if (stack->ast_node != NULL)
+    AST_destroy_tree(stack->ast_node);
+
+  free(stack);
+}
 
 static PSAVal tokentype_to_psaval(TokenType token_type) {
 
