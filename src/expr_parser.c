@@ -315,7 +315,111 @@ static ErrCode PSA_shift(PSAStack *stack, PSAVal input, ASTNode ast_node) {
   return SUCCESS;
 }
 
-static ErrCode PSA_reduce(PSAStack *stack);
+static ErrCode PSA_reduce(PSAStack *stack) {
+
+  // PSA reduction rules have at most 3 "values" on the right
+  // For example E -> E+E
+  PSAStack first_node = NULL;
+  PSAStack second_node = NULL;
+  PSAStack third_node = NULL;
+  ErrCode err = SUCCESS;
+
+  // Helper to go through stack
+  PSAStack start_finder = (*stack);
+
+  // "<" cannot be on the top
+  if (start_finder->val == PS_RULE_START)
+    return ERR_SYNTAX;
+
+  // Fill part of rule
+  third_node = start_finder;
+
+  // Move helper
+  start_finder = start_finder->previous;
+
+  if (start_finder->val == PS_RULE_START) {
+    // We found "<", match rule
+    switch (third_node->val) {
+    case PS_IDENTIFIER:
+    case PS_INT:
+    case PS_DOUBLE:
+    case PS_STRING: {
+      // E -> i
+      // E -> VAL_STRING
+      // E -> VAL_INT
+      // E -> VAL_DOUBLE
+
+      // Get rid of "<" by replacing it with the reduced E
+      start_finder->ast_node = third_node->ast_node;
+      start_finder->val = PS_EXPR;
+
+      // Destroy the rest
+      third_node->previous = NULL;
+      third_node->ast_node = NULL;
+      PSA_stack_destroy(third_node);
+
+      return SUCCESS;
+    }
+    default:
+      // No matching rule found
+      return ERR_SYNTAX;
+    }
+  }
+
+  // Fill part of rule
+  second_node = start_finder;
+
+  // Move helper again
+  start_finder = start_finder->previous;
+
+  if (start_finder->val == PS_RULE_START) {
+    // We found "<", match rule
+    // This time the rule has 2 "values on the right"
+
+    // E -> +E or E -> -E
+    if ((second_node->val == PS_PLUS && third_node->val == PS_EXPR) ||
+        (second_node->val == PS_MINUS && third_node->val == PS_EXPR)) {
+
+      // Make tree
+      err = AST_node_add_child(second_node->ast_node, third_node->ast_node);
+      RETURN_ON_ERROR(err, "out of memory");
+    }
+
+    // E -> ()  Unit !!!
+    else if (second_node->val == OPEN_BRACKET &&
+             third_node->val == CLOSE_BRACKET) {
+
+      // Make Unit literal node!
+      ASTNode unit_lit;
+      err = AST_init_node(&unit_lit, NODE_LITERAL, DT_UNIT, NULL);
+      RETURN_ON_ERROR(err, "failed initializing AST node");
+
+      // Assign to second node
+      second_node->ast_node = unit_lit;
+
+    } else {
+      // No matching rule found
+      return ERR_SYNTAX;
+    }
+
+    // Get rid of "<" by replacing it with the reduced E
+    start_finder->ast_node = second_node->ast_node;
+    start_finder->val = PS_EXPR;
+
+    // Destroy the rest
+    third_node->previous = NULL;
+    third_node->ast_node = NULL;
+    PSA_stack_destroy(third_node);
+
+    second_node->previous = NULL;
+    second_node->ast_node = NULL;
+    PSA_stack_destroy(third_node);
+
+    return SUCCESS;
+  }
+
+  return SUCCESS;
+}
 
 static ErrCode init_respective_AST_node(ASTNode *ast_node, Token *token) {
 
@@ -507,7 +611,7 @@ ErrCode parse_expr(ASTNode parent, Token **cur_token_ptr) {
       return ERR_SYNTAX;
     }
     default: {
-
+      // This shouldn't happen
       PSA_stack_destroy(stack);
       fprintf(stderr, "Bad parse_expr!!!\n");
       return ERR_INTERNAL;
