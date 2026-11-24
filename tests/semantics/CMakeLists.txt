@@ -34,6 +34,12 @@ add_library(
   ../../src/symtable.c
 )
 target_include_directories(symtable PUBLIC ../../src/)
+# library for ast module
+add_library(
+  ast_module
+  ../../src/ast_module.c
+)
+target_include_directories(ast_module PUBLIC ../../src/)
 # library for semantics module
 add_library(
   semantics
@@ -50,6 +56,7 @@ target_link_libraries(
   semantics_test
   GTest::gtest_main
   semantics # KEEP ORDER HERE
+  ast_module
   symtable
   bst
 )
