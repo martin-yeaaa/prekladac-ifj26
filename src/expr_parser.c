@@ -25,6 +25,14 @@ static Token *cur_token;
     }                                                                          \
   } while (0)
 
+// Enum for deciding which function to use
+typedef enum psa_actions {
+  ACT_SHIFT,
+  ACT_REDUCE,
+  ACT_PUSH_ONLY,
+  ACT_INVALID,
+} PSAAction;
+
 // Possible values of PSA nodes
 // Most of them represent an equivalent TokenType, but not all
 typedef enum psa_values {
@@ -92,9 +100,14 @@ static ErrCode PSA_stack_init(PSAStack *stack) {
 
 static ErrCode PSA_stack_destroy(PSAStack stack);
 
-static ErrCode PSA_shift(PSAStack stack, Token *cur_token);
+static ErrCode PSA_shift(PSAStack stack);
 static ErrCode PSA_reduce(PSAStack stack);
 
+/**
+ * @brief Checks if syntactic analysis is finished.
+ * @param stack Initialized `PSAStack` variable.
+ * @return `true` if SA is finished, otherwise `false`.
+ */
 static bool PSA_finished(PSAStack stack) {
 
   assert(stack != NULL);
@@ -142,8 +155,6 @@ ErrCode parse_expr(ASTNode parent, Token **cur_token_ptr) {
 
   // Copy current token into local static variable
   cur_token = *cur_token_ptr;
-  UPDATE_CUR_TOKEN();
-
   ErrCode err = SUCCESS;
 
   // Prepare PSA stack
@@ -153,8 +164,46 @@ ErrCode parse_expr(ASTNode parent, Token **cur_token_ptr) {
 
   while (PSA_finished(stack) == false) {
 
-    // TODO
-  }
+    UPDATE_CUR_TOKEN();
+
+    PSAAction act = PSA_lookup_table(stack, cur_token->type);
+
+    switch (act) {
+    case ACT_SHIFT: {
+    
+      // 
+      PSA_shift(stack);
+      break;
+    }
+
+    case ACT_REDUCE: {
+
+      PSA_reduce();
+      break;
+    }
+
+    case ACT_PUSH_ONLY: {
+
+      PSA_push();
+      break;
+    }
+    case ACT_INVALID: {
+
+        PSA_stack_destroy(stack);
+        fprintf(stderr, "failed parsing expression\n");
+      return ERR_SYNTAX;
+    }
+
+    default: {
+
+      fprintf(stderr, "This case shouldn't be possible to reach!\n");
+      return ERR_INTERNAL;
+    }
+    }
+  } // while parsing not done
+
+  // Cleanup
+  PSA_stack_destroy(stack);
 
   // Update foreign cur_token before returning
   *cur_token_ptr = cur_token;
