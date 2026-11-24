@@ -138,15 +138,6 @@ static PSAVal tokentype_to_psaval(TokenType token_type) {
   }
 }
 
-// Enum for deciding which function to use
-// Actions represent the < > = symbols inside PSA table
-typedef enum psa_actions {
-  S,         // ACT_SHIFT, <
-  R,         // ACT_REDUCE, >
-  P,         // ACT_PUSH_ONLY, =
-  I,         // ACT_INVALID, empty slot
-  ACT_WRONG, // For detecting my programming errors
-} PSAAction;
 
 // PSA Table equivalent to the one in documentation
 // The only difference is that $ on stack and $ on input shouldn't be checked,
@@ -261,7 +252,7 @@ static ErrCode PSA_push(PSAStack *stack, PSAVal input, ASTNode ast_node) {
   }
 
   // Initialization
-  new_node->previous = stack;
+  new_node->previous = (*stack);
   new_node->val = input;
   new_node->ast_node = ast_node;
 
@@ -277,7 +268,7 @@ static ErrCode PSA_shift(PSAStack *stack, PSAVal input, ASTNode ast_node) {
   // We need to compare first terminal from top of stack
 
   PSAStack search = (*stack);
-  ErrCode err;
+  ErrCode err = SUCCESS;
 
   if (is_terminal(search->val)) {
 
@@ -389,8 +380,8 @@ static ErrCode PSA_reduce(PSAStack *stack) {
     }
 
     // E -> ()  Unit !!!
-    else if (second_node->val == OPEN_BRACKET &&
-             third_node->val == CLOSE_BRACKET) {
+    else if (second_node->val == PS_OPEN_BRACKET &&
+             third_node->val == PS_CLOSE_BRACKET) {
 
       // Make Unit literal node!
       ASTNode unit_lit;
@@ -468,6 +459,8 @@ static ErrCode PSA_reduce(PSAStack *stack) {
         err = AST_node_add_child(second_node->ast_node, third_node->ast_node);
         RETURN_ON_ERROR(err, "out of memory");
         third_node->ast_node = NULL; // Remove useless pointer
+
+        break;
       }
 
       case PS_LESS:
@@ -517,6 +510,8 @@ static ErrCode PSA_reduce(PSAStack *stack) {
         err = AST_node_add_child(second_node->ast_node, third_node->ast_node);
         RETURN_ON_ERROR(err, "out of memory");
         third_node->ast_node = NULL; // Remove useless pointer
+
+        break;
       }
       default: {
         // No matching rule found

@@ -518,7 +518,7 @@ static ErrCode parse_data_type_opt(ASTNode idtf, ASTNode extra_node) {
 
 static ErrCode parse_data_type(ASTNode idtf) {
 
-  ErrCode err = SUCCESS;
+  // ErrCode err = SUCCESS; not needed here
   UPDATE_CUR_TOKEN();
   assert(idtf != NULL);
 
@@ -855,7 +855,7 @@ static ErrCode parse_expr_or_call(ASTNode parent) {
 
     } else {
       // 102 <expr_or_call> -> <expr>
-      err = parse_expr(parent, &cur_token);
+      err = parse_expr(parent, &cur_token, false);
       RETURN_ON_ERROR(err, "inside expr or call, expression");
 
       return SUCCESS;
@@ -869,7 +869,7 @@ static ErrCode parse_expr_or_call(ASTNode parent) {
   case VAL_STRING: {
 
     // 102 <expr_or_call> -> <expr>
-    err = parse_expr(parent, &cur_token);
+    err = parse_expr(parent, &cur_token, false);
     RETURN_ON_ERROR(err, "inside expr or call, expression");
 
     return SUCCESS;
@@ -1199,7 +1199,7 @@ static ErrCode parse_if_stmt(ASTNode block) {
     // if was parsed
     cur_token = NULL;
 
-    err = parse_cond(if_stmt, &cur_token);
+    err = parse_expr(if_stmt, &cur_token, true);
     RETURN_ON_ERROR(err, "inside if, condition");
     // Function might have "consumed" token, renew it
     UPDATE_CUR_TOKEN();
@@ -1255,7 +1255,7 @@ static ErrCode parse_while_loop(ASTNode block) {
     // while was parsed
     cur_token = NULL;
 
-    err = parse_cond(while_loop, &cur_token);
+    err = parse_expr(while_loop, &cur_token, true);
     RETURN_ON_ERROR(err, "inside while, condition");
     // Function might have "consumed" token, renew it
     UPDATE_CUR_TOKEN();
@@ -1596,6 +1596,7 @@ static ErrCode parse_unary_op(ASTNode parent, ASTNode *ptr_to_node) {
   return ERR_SYNTAX;
 }
 
+/* TODO delete
 static ErrCode parse_template(ASTNode template_node) {
 
   ErrCode err = SUCCESS;
@@ -1615,3 +1616,4 @@ static ErrCode parse_template(ASTNode template_node) {
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing REPLACETEMPLATE");
   return ERR_SYNTAX;
 }
+*/ 

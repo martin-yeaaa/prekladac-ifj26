@@ -82,15 +82,14 @@ static ErrCode parse_arg(ASTNode arg_list);
 static ErrCode parse_unary_op(ASTNode parent, ASTNode *ptr_to_node);
 static ErrCode parse_literal(ASTNode parent);
 
+/* TODO delete probably
 static ErrCode parse_expr_un(void);
 static ErrCode parse_expr_un_opt(void);
-
 static ErrCode parse_simple_literal(void);
 static ErrCode parse_paren_tail(void);
 static ErrCode parse_expr_rest(void);
-
 static ErrCode parse_binary_op(void);
-
 static ErrCode parse_rel_op(void);
+*/
 
 #endif

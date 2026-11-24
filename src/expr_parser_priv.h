@@ -61,6 +61,16 @@ typedef struct psa_stack_st {
 
 } *PSAStack;
 
+// Enum for deciding which function to use
+// Actions represent the < > = symbols inside PSA table
+typedef enum psa_actions {
+  S,         // ACT_SHIFT, <
+  R,         // ACT_REDUCE, >
+  P,         // ACT_PUSH_ONLY, =
+  I,         // ACT_INVALID, empty slot
+  ACT_WRONG, // For detecting my programming errors
+} PSAAction;
+
 /**
  * @brief Initializes stack for precedence syntax analysis,
  * and inserts value `PS_BEGIN`.
