@@ -131,8 +131,8 @@ static ErrCode parse_program(ASTNode ast_root) {
   switch (cur_token->type) {
   case KW_IMPORT: {
 
-    // <program> -> <prolog> <fun_def_list>
-    // <prolog> -> import ifj26.*
+    // 1 <program> -> <prolog> <fun_def_list>
+    // <prolog>
     err = parse_prolog();
     RETURN_ON_ERROR(err, "inside program");
 
@@ -169,15 +169,17 @@ static ErrCode parse_prolog(void) {
     if (success == false)
       RETURN_ON_ERROR(ERR_SYNTAX, "inside prolog, expected \"ifj26\"");
 
+    // ifj26 parsed, replace with next token
     cur_token = get_next_token();
     if (cur_token->type != DOT)
       RETURN_ON_ERROR(ERR_SYNTAX, "inside prolog, expected \".\"");
 
+    // "." parsed, replace with next token
     cur_token = get_next_token();
     if (cur_token->type != OP_MULT)
       RETURN_ON_ERROR(ERR_SYNTAX, "inside prolog, expected \"*\"");
 
-    // Token was parsed
+    // "*" was parsed
     cur_token = NULL;
 
     return SUCCESS;
@@ -195,35 +197,30 @@ static ErrCode parse_fun_def_list(ASTNode ast_root) {
   ErrCode err = SUCCESS;
   UPDATE_CUR_TOKEN();
 
-  // 3 <fun_def_list> -> epsilon
+  // 3 <fun_def_list> -> \NL EOF
   // 4 <fun_def_list> -> \NL <fun_def_any> <fun_def_list>
   // Match rule
   switch (cur_token->type) {
   case NEW_LINE: {
 
     // TODO ADD TO DOCUMENTATION I GUESS
-    // There always seems to be a new line character before end of file
+    // Lexer always adds a new line character before end of file
     // So we look ahead!
     if (cur_token->next != NULL) {
-      //<fun_def_list> -> epsilon
+      // 3 <fun_def_list> -> \NL EOF
       if (cur_token->next->type == END_OF_FILE) {
         return SUCCESS;
       }
     }
 
-    // <fun_def_list> -> \NL <fun_def_any> <fun_def_list>
-    // Token was parsed
+    // 4 <fun_def_list> -> \NL <fun_def_any> <fun_def_list>
+    // Token \NL was parsed
     cur_token = NULL;
     err = parse_fun_def_any(ast_root);
     RETURN_ON_ERROR(err, "inside fun def list ");
     err = parse_fun_def_list(ast_root);
     RETURN_ON_ERROR(err, "further inside fun def list");
 
-    return SUCCESS;
-  }
-  case END_OF_FILE: {
-
-    //<fun_def_list> -> epsilon
     return SUCCESS;
   }
   default:
