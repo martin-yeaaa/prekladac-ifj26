@@ -5,7 +5,7 @@
 #ifndef CODEGEN_H
 #define CODEGEN_H
 
-#include "semantics.h"
+#include "ast_module.h"
 
 // Main function to generate IFJcode26 from AST
 // No '*' here because ASTNode is already a pointer in semantics.h

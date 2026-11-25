@@ -22,6 +22,8 @@
 6. helper functions - print_escaped_string() and declare_local_vars() */
 
 #include "codegen.h"
+#include "ast_module.h"
+#include "symtable.h"
 #include <stdio.h>
 #include <string.h> // needed for strcmp when checking builtin function names
 
