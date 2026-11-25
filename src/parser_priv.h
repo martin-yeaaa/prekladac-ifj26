@@ -56,6 +56,7 @@ static ErrCode parse_block(ASTNode parent);
 
 static ErrCode parse_stmts(ASTNode block);
 static ErrCode parse_stmt_sep(ASTNode block);
+static ErrCode parse_after_semicolon(ASTNode block);
 
 static ErrCode parse_stmt(ASTNode block);
 static ErrCode parse_stmt_next(ASTNode block);

@@ -160,7 +160,7 @@ static ErrCode parse_prolog(void) {
     // Token was parsed
     cur_token = NULL;
 
-    // <prolog> -> import ifj26.*
+    // 2 <prolog> -> import ifj26.*
     // expected ifj26.* in tokens is identifier, dot, op_mult
     // we do a little bit of workaround here
     cur_token = get_next_token();
@@ -884,33 +884,19 @@ static ErrCode parse_stmt_sep(ASTNode block) {
   ErrCode err = SUCCESS;
   UPDATE_CUR_TOKEN();
 
-  // TODO
-  // 23 <stmt_sep> -> ; <stmts>
+  // 23 <stmt_sep> -> ; <after_semicolon>
   // 24 <stmt_sep> -> \NL <stmt_next>
   //  Match rule
   switch (cur_token->type) {
   case SEMICOLON: {
 
-    // 23 <stmt_sep> -> ; <stmts>
+    // 23 <stmt_sep> -> ; <after_semicolon>
     // ; was parsed
     cur_token = NULL;
 
-    // hotfix <stmt_sep> -> ; <stmts>
-    // Doesn't allow ; at end of line
-    err = parse_stmts(block);
-    RETURN_ON_ERROR(err, "special");
-
-    // <stmt_next>
-    /* LOOKAHEAD WEIRD FIX
-    cur_token = get_next_token();
-    if (cur_token->type == DEDENT || cur_token->type == NEW_LINE) {
-      err = parse_stmt_next(block);
-      RETURN_ON_ERROR(err, "inside next statement");
-      cur_token->type = NEW_LINE;
-    } else {
-      err = parse_stmt_next(block);
-      RETURN_ON_ERROR(err, "inside next statement");
-    }*/
+    // <after_semicolon>
+    err = parse_after_semicolon(block);
+    RETURN_ON_ERROR(err, "inside statement separator, semicolon");
 
     return SUCCESS;
   }
@@ -922,7 +908,7 @@ static ErrCode parse_stmt_sep(ASTNode block) {
 
     // <stmt_next>
     err = parse_stmt_next(block);
-    RETURN_ON_ERROR(err, "inside next statement");
+    RETURN_ON_ERROR(err, "inside statement separator, next");
 
     return SUCCESS;
   }
@@ -931,6 +917,55 @@ static ErrCode parse_stmt_sep(ASTNode block) {
   }
 
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing statement separator");
+  return ERR_SYNTAX;
+}
+
+static ErrCode parse_after_semicolon(ASTNode block) {
+
+  ErrCode err = SUCCESS;
+  UPDATE_CUR_TOKEN();
+
+  // 200 <after_semicolon> -> <stmts>
+  // 201 <after_semicolon> -> \NL <stmt_next>
+  //  Match rule
+  switch (cur_token->type) {
+  case IDENTIFIER:
+  case OPEN_BRACKET:
+  case KW_RETURN:
+  case KW_VAL:
+  case KW_VAR:
+  case OP_MINUS:
+  case OP_PLUS:
+  case KW_IF:
+  case KW_WHILE:
+  case VAL_INT:
+  case VAL_DOUBLE:
+  case VAL_STRING: {
+
+    // 200 <after_semicolon> -> <stmts>
+    // <stmts>
+    err = parse_stmts(block);
+    RETURN_ON_ERROR(err, "inside after semicolon, stmts");
+
+    return SUCCESS;
+  }
+  case NEW_LINE: {
+
+    // 201 <after_semicolon> -> \NL <stmt_next>
+    // \NL was parser
+    cur_token = NULL;
+
+    // <stmt_next>
+    err = parse_stmt_next(block);
+    RETURN_ON_ERROR(err, "inside after semicolon, new line and stmt");
+
+    return SUCCESS;
+  }
+  default:
+    break;
+  }
+
+  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing after semicolon");
   return ERR_SYNTAX;
 }
 
@@ -963,8 +998,7 @@ static ErrCode parse_stmt_next(ASTNode block) {
 
     return SUCCESS;
   }
-  case DEDENT:
-  case NEW_LINE: { // TODO ADD TO LL TABLE
+  case DEDENT: {
 
     // 25 <stmt_next> -> epsilon
     return SUCCESS;
@@ -1161,8 +1195,8 @@ static ErrCode parse_return_stmt(ASTNode block) {
     err = make_child_node(expr_node, &unit_lit, NODE_LITERAL, DT_UNIT, NULL);
     RETURN_ON_ERROR(err, "inside standalone return");
 
-    // Also set type of return stmt
-    // TODO DELETE IF IT WORKS WITHOUT ret_node->data_type = DT_UNIT;
+    // Also we can set type of return stmt immediately
+    // TODO UNCOMMENT NEXT COMMIT ret_node->data_type = DT_UNIT;
 
     return SUCCESS;
   }
