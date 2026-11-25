@@ -175,16 +175,20 @@ DOPLŇTE VLASTNÍ TEXT.
 
 \begin{figure}[H]
     \centering
-    \fbox{\parbox[c][5cm][c]{0.9\textwidth}{
-        \centering
-        ZDE VLOŽTE DIAGRAM KONEČNÉHO AUTOMATU
-    }}
+    \includegraphics[
+        width=\textwidth,
+        height=0.75\textheight,
+        keepaspectratio
+    ]{FSM_ver5.jpg}
     \caption{Konečný automat lexikálního analyzátoru}
     \label{fig:automat}
 \end{figure}
 
 \subsection{Odchylky od standardního modelu}
-DOPLŇTE VLASTNÍ TEXT, PŘÍPADNĚ ODSTRAŇTE TUTO PODSEKCI, POKUD NENÍ RELEVANTNÍ.
+1. Token pro \texttt{@} byl nakonec řešen jinak (jako celek \texttt{@main)}. \\
+2. Mezery, \texttt{LF} a \texttt{EOF} mají vlastní pravidla. \\
+3. Diagram dovoluje pouze jedno podtržítko mezi číslicemi, ale implementace dovoluje více. \\
+4. Vnořené komentáře jsou řešeny složitěji a v diagramu by šly těžko zapsat.
 
 % =================================================
 \section{Syntaktická analýza}
@@ -266,7 +270,8 @@ DOPLŇTE VLASTNÍ TEXT, PŘÍPADNĚ ODSTRAŇTE TUTO PODSEKCI, POKUD NENÍ RELEVA
 % Tuto cast vyplnte vlastnimi skutecnymi zkusenostmi.
 
 \subsection{Použité nástroje a modely}
-ChatGPT byl použit k dovysvětlení zadání a funkci dílčích částí překladače, k vyplnění jednoduchých polí podle předlohy a ke konzultaci našeho řešení. 
+ChatGPT byl použit k dovysvětlení zadání a funkci dílčích částí překladače, k vyplnění jednoduchých polí podle předlohy a ke konzultaci našeho řešení. \\
+Dále byl využit k tvorbě šablony pro tuto dokumentaci.
 
 \subsection{Pracovní postup}
 DOPLŇTE VLASTNÍ TEXT.
