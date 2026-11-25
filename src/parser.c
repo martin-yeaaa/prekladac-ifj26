@@ -642,9 +642,9 @@ static ErrCode parse_block(ASTNode parent) {
       RETURN_ON_ERROR(ERR_SYNTAX, "inside block, expected dedent");
 
     // DEDENT was parsed
-    // All syntax rules expect newline as a separator, however that is parsed
-    // inside the block We make an artificial token so everything works
-    // TODO DOCUMENT
+    // <stmt_sep> expects a newline as a separator after statement, however that
+    // is parsed inside the block. Lexer doesn't generate another fake newline
+    // token after DEDENT, so we "generate" it here. Works really well :)
     cur_token->type = NEW_LINE;
 
     return SUCCESS;
@@ -782,8 +782,7 @@ static ErrCode parse_decision(ASTNode block) {
   ErrCode err = SUCCESS;
   UPDATE_CUR_TOKEN();
 
-  // DECIDE IF THIS IS A FUNCTION CALL OR EXPRESSION
-  // TODO DOCUMENT!!!
+  // Decide if we are reading expression or function call or assignment
   // 103 <decision> -> <expr_or_call>
   // 104 <decision> -> <assignment>
   //  Match rule
@@ -833,8 +832,7 @@ static ErrCode parse_expr_or_call(ASTNode parent) {
   ErrCode err = SUCCESS;
   UPDATE_CUR_TOKEN();
 
-  // DECIDE IF THIS IS A FUNCTION CALL OR EXPRESSION
-  // TODO DOCUMENT!!!
+  // Decide if we are reading expression or function call
   // 101 <expr_or_call> -> <fun_call>
   // 102 <expr_or_call> -> <expr>
   //  Match rule
@@ -1196,7 +1194,7 @@ static ErrCode parse_return_stmt(ASTNode block) {
     RETURN_ON_ERROR(err, "inside standalone return");
 
     // Also we can set type of return stmt immediately
-    // TODO UNCOMMENT NEXT COMMIT ret_node->data_type = DT_UNIT;
+    ret_node->data_type = DT_UNIT;
 
     return SUCCESS;
   }
@@ -1232,12 +1230,12 @@ static ErrCode parse_if_stmt(ASTNode block) {
   err = make_child_node(block, &if_stmt, NODE_IF, DT_UNIT, NULL);
   RETURN_ON_ERROR(err, "inside if statement");
 
-  // 72 <if_stmt> -> if <cond> then <block> else <block>
+  // 72 <if_stmt> -> if <cond> then <block> \NL else <block>
   // Match rule
   switch (cur_token->type) {
   case KW_IF: {
 
-    // 72 <if_stmt> -> if <cond> then <block> else <block>
+    // 72 <if_stmt> -> if <cond> then <block> \NL else <block>
     // if was parsed
     cur_token = NULL;
 
@@ -1258,10 +1256,11 @@ static ErrCode parse_if_stmt(ASTNode block) {
     // Function might have "consumed" token, renew it
     UPDATE_CUR_TOKEN();
 
-    // TODO DOCUMENT
-    // <block> creates artificial \NL for convenience
+    // <block> creates artificial \NL for convenience in <stmt_sep> but that
+    // means we need to take care of it here
     if (cur_token->type != NEW_LINE)
       RETURN_ON_ERROR(ERR_SYNTAX, "inside if, expected fake new line");
+    // \NL was parsed, replace with next
     cur_token = get_next_token();
 
     // else
@@ -1643,25 +1642,3 @@ static ErrCode parse_unary_op(ASTNode parent, ASTNode *ptr_to_node) {
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing unary operator");
   return ERR_SYNTAX;
 }
-
-/* TODO delete
-static ErrCode parse_template(ASTNode template_node) {
-
-  ErrCode err = SUCCESS;
-  UPDATE_CUR_TOKEN();
-
-  // ruleeeeees
-  // Match rule
-  switch (cur_token->type) {
-  case 67: {
-
-    return SUCCESS;
-  }
-  default:
-    break;
-  }
-
-  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing REPLACETEMPLATE");
-  return ERR_SYNTAX;
-}
-*/
