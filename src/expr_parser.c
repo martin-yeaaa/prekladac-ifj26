@@ -275,7 +275,7 @@ static ErrCode PSA_shift(PSAStack *stack, PSAVal input, ASTNode ast_node) {
   if (is_terminal(search->val)) {
 
     // Terminal on top of stack
-    PSA_push(stack, PS_RULE_START, NULL); // "<"
+    err = PSA_push(stack, PS_RULE_START, NULL); // "<"
     RETURN_ON_ERROR(err, "out of memory");
 
   } else {
@@ -379,9 +379,22 @@ static ErrCode PSA_reduce(PSAStack *stack) {
     if ((second_node->val == PS_PLUS && third_node->val == PS_EXPR) ||
         (second_node->val == PS_MINUS && third_node->val == PS_EXPR)) {
 
-      // Make tree
-      err = AST_node_add_child(second_node->ast_node, third_node->ast_node);
-      RETURN_ON_ERROR(err, "out of memory");
+      // Edit AST node to proper unary node type
+      if (second_node->val == PS_MINUS) {
+        second_node->ast_node->node_type = NODE_UN_MINUS;
+        // Make tree
+        err = AST_node_add_child(second_node->ast_node, third_node->ast_node);
+        RETURN_ON_ERROR(err, "out of memory");
+        third_node->ast_node = NULL;
+      }
+      // else second node it PS_PLUS, in which case we can simply remove it!
+      else {
+
+        AST_destroy_tree(second_node->ast_node);
+        // Replace it with node from third node as it is expected later
+        second_node->ast_node = third_node->ast_node;
+        third_node->ast_node = NULL;
+      }
     }
 
     // E -> ()  Unit !!!
@@ -598,12 +611,12 @@ static ErrCode init_respective_AST_node(ASTNode *ast_node, Token *token) {
     break;
   }
   case OP_PLUS: {
-    node_type = NODE_ADD;
+    node_type = NODE_ADD; // Might be unary, will edit node in PSA_reduce
     data_type = DT_UNDEF;
     break;
   }
   case OP_MINUS: {
-    node_type = NODE_SUB;
+    node_type = NODE_SUB; // Might be unary, will edit node in PSA_reduce
     data_type = DT_UNDEF;
     break;
   }
