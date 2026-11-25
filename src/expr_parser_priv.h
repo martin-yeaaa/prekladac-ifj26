@@ -64,10 +64,10 @@ typedef struct psa_stack_st {
 // Enum for deciding which function to use
 // Actions represent the < > = symbols inside PSA table
 typedef enum psa_actions {
-  S,         // ACT_SHIFT, <
-  R,         // ACT_REDUCE, >
-  P,         // ACT_PUSH_ONLY, =
-  I,         // ACT_INVALID, empty slot
+  S, // ACT_SHIFT, <
+  R, // ACT_REDUCE, >
+  P, // ACT_PUSH_ONLY, =
+  I, // ACT_INVALID, empty slot
 } PSAAction;
 
 /**

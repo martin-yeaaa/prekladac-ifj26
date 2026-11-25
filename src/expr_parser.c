@@ -17,17 +17,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// cur_token and UPDATE_CUR_TOKEN() were copied from parser.c, for info check
-// comments there. I copied it here so I can work with current token in the same
-// way as in parser.c.
+// cur_token was copied from parser.c, for info check comments there. I copied
+// it here so I can work with current token in the same way as in parser.c.
 static Token *cur_token;
-
-#define UPDATE_CUR_TOKEN()                                                     \
-  do {                                                                         \
-    if (cur_token == NULL) {                                                   \
-      cur_token = get_next_token();                                            \
-    }                                                                          \
-  } while (0)
 
 static ErrCode PSA_stack_init(PSAStack *stack) {
 
@@ -715,7 +707,9 @@ ErrCode parse_expr(ASTNode parent, Token **cur_token_ptr, bool is_cond) {
   while (PSA_finished(stack) == false) {
 
     // Get next token if cur_token is NULL
-    UPDATE_CUR_TOKEN();
+    if (cur_token == NULL) {
+      cur_token = get_next_token();
+    }
 
     // Turn token into PSAVal
     PSAVal input = tokentype_to_psaval(cur_token->type);
@@ -732,6 +726,7 @@ ErrCode parse_expr(ASTNode parent, Token **cur_token_ptr, bool is_cond) {
     // Match action
     switch (act) {
     case S: {
+      // SHIFT action "<"
 
       // Make AST node
       ASTNode ast_node;
@@ -751,6 +746,7 @@ ErrCode parse_expr(ASTNode parent, Token **cur_token_ptr, bool is_cond) {
     }
 
     case R: {
+      // REDUCE action ">"
 
       // No new AST node here, possibly inside reduce(), but not here
       err = PSA_reduce(&stack);
@@ -758,6 +754,7 @@ ErrCode parse_expr(ASTNode parent, Token **cur_token_ptr, bool is_cond) {
     }
 
     case P: {
+      // PUSH action "="
 
       // Make AST node
       ASTNode ast_node;
@@ -777,6 +774,7 @@ ErrCode parse_expr(ASTNode parent, Token **cur_token_ptr, bool is_cond) {
       break;
     }
     case I: {
+      // Invalid action, empty space in table
 
       PSA_stack_destroy(stack);
       fprintf(stderr, "failed parsing expression, malformed expression\n");
@@ -803,6 +801,7 @@ ErrCode parse_expr(ASTNode parent, Token **cur_token_ptr, bool is_cond) {
   NodeType w_node_type;
   DataType w_data_type;
 
+  // Different nodes for conditions and expressions
   if (is_cond == true) {
     w_node_type = NODE_COND;
     w_data_type = DT_BOOL;
