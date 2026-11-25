@@ -13,9 +13,9 @@ SEMANTICS = src/semantics.c src/semantics.h src/semantics_priv.h
 SYMTABLE = src/symtable.c src/symtable.h
 BST = src/bst.c src/bst.h src/bst_priv.h
 AST_MODULE = src/ast_module.c src/ast_module.h
-#CODEGEN = TODO
+CODEGEN = src/codegen.h src/codegen.c
 
-SOURCES = $(MAIN) $(LEXER) $(PARSER) $(EXPR_PARSER) $(SEMANTICS) $(SYMTABLE) $(BST) $(AST_MODULE)
+SOURCES = $(MAIN) $(LEXER) $(PARSER) $(EXPR_PARSER) $(SEMANTICS) $(SYMTABLE) $(BST) $(AST_MODULE) $(CODEGEN)
 
 all: release
 
@@ -32,5 +32,4 @@ permissive: $(SOURCES)
 
 
 format:
-	clang-format -i src/*
-
+	clang-format --style=llvm -i src/*
