@@ -21,6 +21,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 
 // Global variable that holds current token.
 // It's easier to keep track of it this way, otherwise we would need to pass
@@ -282,8 +283,8 @@ static ErrCode parse_fun_def_any(ASTNode ast_root) {
   switch (cur_token->type) {
   case AT_MAIN: {
 
-    // <fun_def_any> -> @main <fun_def>
-    // Token was parsed
+    // 5 <fun_def_any> -> @main <fun_def>
+    // Token @main was parsed
     cur_token = NULL;
     func_def->node_type = NODE_MAIN_FUNC_DEF; // It is @main!
 
@@ -303,7 +304,8 @@ static ErrCode parse_fun_def_any(ASTNode ast_root) {
   }
   case KW_DEF: {
 
-    // <fun_def_any> -> <fun_def>
+    // 6 <fun_def_any> -> <fun_def>
+    // <fun_def>
     err = parse_fun_def(func_def);
     RETURN_ON_ERROR(err, "inside func def");
 
@@ -328,7 +330,7 @@ static ErrCode parse_fun_def(ASTNode func_def) {
   switch (cur_token->type) {
   case KW_DEF: {
 
-    // <fun_def> -> def IDENTIFIER (<param_list>) <data_type_opt> = <fun_body>
+    // 7 <fun_def> -> def IDENTIFIER (<param_list>) <data_type_opt> = <fun_body>
     // def was parsed, replace with next
     cur_token = get_next_token();
     if (cur_token->type != IDENTIFIER)
@@ -402,12 +404,12 @@ static ErrCode parse_param_list(ASTNode func_def) {
   switch (cur_token->type) {
   case CLOSE_BRACKET: {
 
-    // <param_list> -> epsilon
+    // 8 <param_list> -> epsilon
     return SUCCESS;
   }
   case IDENTIFIER: {
 
-    // <param_list> -> <param> <param_sep>
+    // 9 <param_list> -> <param> <param_sep>
     // <param>
     err = parse_param(param_list);
     RETURN_ON_ERROR(err, "inside param list, param");
@@ -436,6 +438,7 @@ static ErrCode parse_param(ASTNode param_list) {
   switch (cur_token->type) {
   case IDENTIFIER: {
 
+    // 12 <param> -> IDENTIFIER : <data_type>
     // Make parameter
     ASTNode param;
     err = make_child_node(param_list, &param, NODE_IDENTIFIER, DT_UNDEF,

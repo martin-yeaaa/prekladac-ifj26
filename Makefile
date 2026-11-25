@@ -17,7 +17,12 @@ AST_MODULE = src/ast_module.c src/ast_module.h
 
 SOURCES = $(MAIN) $(LEXER) $(PARSER) $(EXPR_PARSER) $(SEMANTICS) $(SYMTABLE) $(BST) $(AST_MODULE)
 
-all: debug_build
+all: release
+
+# -DNDEBUG removes asserts!
+release: $(SOURCES)
+	$(CC) $(CFLAGS) -DNDEBUG $^ -o prekladac-ifj26
+
 
 debug_build: $(SOURCES)
 	$(CC) $(CFLAGS) $^ -o prekladac-ifj26
