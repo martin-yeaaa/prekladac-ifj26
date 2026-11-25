@@ -39,6 +39,7 @@ static ErrCode parse_program(ASTNode ast_root);
  * @param cur_token Currently processed token
  */
 static ErrCode parse_prolog(void);
+static ErrCode parse_fun_def_list_nl(ASTNode ast_root);
 static ErrCode parse_fun_def_list(ASTNode ast_root);
 static ErrCode parse_fun_def_any(ASTNode ast_root);
 static ErrCode parse_fun_def(ASTNode func_def);

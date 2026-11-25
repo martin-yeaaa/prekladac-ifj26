@@ -131,13 +131,13 @@ static ErrCode parse_program(ASTNode ast_root) {
   switch (cur_token->type) {
   case KW_IMPORT: {
 
-    // 1 <program> -> <prolog> <fun_def_list>
+    // 1 <program> -> <prolog> <fun_def_list_nl>
     // <prolog>
     err = parse_prolog();
     RETURN_ON_ERROR(err, "inside program");
 
-    // <fun_def_list>
-    err = parse_fun_def_list(ast_root);
+    // <fun_def_list_nl>
+    err = parse_fun_def_list_nl(ast_root);
     RETURN_ON_ERROR(err, "inside program");
 
     return SUCCESS;
@@ -192,34 +192,30 @@ static ErrCode parse_prolog(void) {
   return ERR_SYNTAX;
 }
 
-static ErrCode parse_fun_def_list(ASTNode ast_root) {
+static ErrCode parse_fun_def_list_nl(ASTNode ast_root) {
 
   ErrCode err = SUCCESS;
   UPDATE_CUR_TOKEN();
 
-  // 3 <fun_def_list> -> \NL EOF
-  // 4 <fun_def_list> -> \NL <fun_def_any> <fun_def_list>
+  // 300 <fun_def_list_nl> -> \NL <fun_def_list> EOF
   // Match rule
   switch (cur_token->type) {
   case NEW_LINE: {
 
-    // TODO ADD TO DOCUMENTATION I GUESS
-    // Lexer always adds a new line character before end of file
-    // So we look ahead!
-    if (cur_token->next != NULL) {
-      // 3 <fun_def_list> -> \NL EOF
-      if (cur_token->next->type == END_OF_FILE) {
-        return SUCCESS;
-      }
-    }
-
-    // 4 <fun_def_list> -> \NL <fun_def_any> <fun_def_list>
-    // Token \NL was parsed
+    // \NL was parsed
     cur_token = NULL;
-    err = parse_fun_def_any(ast_root);
-    RETURN_ON_ERROR(err, "inside fun def list ");
+
+    // <fun_def_list>
     err = parse_fun_def_list(ast_root);
-    RETURN_ON_ERROR(err, "further inside fun def list");
+    if (err != SUCCESS)
+      return err; // No error message clutter
+
+    UPDATE_CUR_TOKEN();
+    // EOF
+    if (cur_token->type != END_OF_FILE)
+      RETURN_ON_ERROR(ERR_SYNTAX, "inside fun def list nl, expected \"EOF\"");
+    // EOF was parsed
+    cur_token = NULL;
 
     return SUCCESS;
   }
@@ -227,7 +223,46 @@ static ErrCode parse_fun_def_list(ASTNode ast_root) {
     break;
   }
 
-  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing fun def list");
+  RETURN_ON_ERROR(ERR_SYNTAX,
+                  "failed parsing fun def list nl, expected NEW LINE");
+  return ERR_SYNTAX;
+}
+
+static ErrCode parse_fun_def_list(ASTNode ast_root) {
+
+  ErrCode err = SUCCESS;
+  UPDATE_CUR_TOKEN();
+
+  // 3 <fun_def_list> -> epsilon
+  // 4 <fun_def_list> -> <fun_def_any> <fun_def_list_nl>
+  // Match rule
+  switch (cur_token->type) {
+  case END_OF_FILE: {
+
+    // 3 <fun_def_list> -> epsilon
+    return SUCCESS;
+  }
+  case AT_MAIN:
+  case KW_DEF: {
+
+    // 4 <fun_def_list> -> <fun_def_any> <fun_def_list_nl>
+    // <fun_def_any>
+    err = parse_fun_def_any(ast_root);
+    RETURN_ON_ERROR(err, "inside fun def list");
+
+    // <fun_def_list_nl>
+    err = parse_fun_def_list_nl(ast_root);
+    RETURN_ON_ERROR(err, "further inside fun def list");
+
+    return SUCCESS;
+  }
+  default: {
+    break;
+  }
+  }
+
+  RETURN_ON_ERROR(ERR_SYNTAX,
+                  "failed parsing fun def list, expected EOF, @main or def");
   return ERR_SYNTAX;
 }
 
@@ -278,7 +313,8 @@ static ErrCode parse_fun_def_any(ASTNode ast_root) {
     break;
   }
 
-  RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing fun def any");
+  RETURN_ON_ERROR(ERR_SYNTAX,
+                  "failed parsing fun def any, expected @main or def");
   return ERR_SYNTAX;
 }
 
