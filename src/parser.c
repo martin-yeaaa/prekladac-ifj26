@@ -12,16 +12,16 @@
 #include "expr_parser.h" // Parsing expressions using different method
 
 #include "ast_module.h"
+#include "codegen.h"
 #include "error_codes.h"
 #include "lexer.h"
 #include "semantics.h"
 #include "symtable.h"
-// #include "codegen.h" TODO add this when its made
 
 #include <assert.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
-#include <stdbool.h>
 
 // Global variable that holds current token.
 // It's easier to keep track of it this way, otherwise we would need to pass
@@ -83,8 +83,8 @@ ErrCode compile(void) {
     return err;
   }
 
-  // TODO Generate code (cannot fail?)
-  // generate_program(program_tree);
+  // AST is done, output IFJcode26
+  generate_code(program_tree);
 
   // Free memory before quitting
   ST_destroy(&st);
@@ -279,7 +279,7 @@ static ErrCode parse_fun_def_any(ASTNode ast_root) {
 
   // 5 <fun_def_any> -> @main <fun_def>
   // 6 <fun_def_any> -> <fun_def>
-  //  Match rule
+  // Match rule
   switch (cur_token->type) {
   case AT_MAIN: {
 
@@ -326,7 +326,7 @@ static ErrCode parse_fun_def(ASTNode func_def) {
   UPDATE_CUR_TOKEN();
 
   // 7 <fun_def> -> def IDENTIFIER (<param_list>) <data_type_opt> = <fun_body>
-  //  Match rule
+  // Match rule
   switch (cur_token->type) {
   case KW_DEF: {
 
@@ -400,7 +400,7 @@ static ErrCode parse_param_list(ASTNode func_def) {
 
   // 8 <param_list> -> epsilon
   // 9 <param_list> -> <param> <param_sep>
-  //  Match rule
+  // Match rule
   switch (cur_token->type) {
   case CLOSE_BRACKET: {
 
@@ -434,7 +434,7 @@ static ErrCode parse_param(ASTNode param_list) {
   UPDATE_CUR_TOKEN();
 
   // 12 <param> -> IDENTIFIER : <data_type>
-  //  Match rule
+  // Match rule
   switch (cur_token->type) {
   case IDENTIFIER: {
 
@@ -474,7 +474,7 @@ static ErrCode parse_param_sep(ASTNode param_list) {
 
   // 10 <param_sep> -> epsilon
   // 11 <param_sep> -> , <param> <param_sep>
-  //  Match rule
+  // Match rule
   switch (cur_token->type) {
   case CLOSE_BRACKET: {
 
@@ -515,7 +515,7 @@ static ErrCode parse_data_type_opt(ASTNode idtf, ASTNode extra_node) {
 
   // 13 <data_type_opt> -> epsilon
   // 14 <data_type_opt> -> : <data_type>
-  //  Match rule
+  // Match rule
   switch (cur_token->type) {
   case ASSIGNMENT: {
 
@@ -562,7 +562,7 @@ static ErrCode parse_data_type(ASTNode idtf) {
   // 16 <data_type> -> Double
   // 17 <data_type> -> String
   // 18 <data_type> -> Unit
-  //  Match rule
+  // Match rule
   switch (cur_token->type) {
   case KW_INT: {
     // 15 <data_type> -> Int
@@ -615,7 +615,7 @@ static ErrCode parse_fun_body(ASTNode func_def) {
 
   // 19 <fun_body> -> <expr_or_call>
   // 20 <fun_body> -> <block>
-  //  Match rule
+  // Match rule
   switch (cur_token->type) {
   case IDENTIFIER:
   case OPEN_BRACKET:
@@ -658,7 +658,8 @@ static ErrCode parse_block(ASTNode parent) {
   RETURN_ON_ERROR(err, "inside block");
 
   // 21 <block> -> \NL INDENT <stmts> DEDENT
-  //  Match rule
+  // Rule 21 also CREATES an artificial token \NL at the very end!!!
+  // Match rule
   switch (cur_token->type) {
   case NEW_LINE: {
 
@@ -683,7 +684,7 @@ static ErrCode parse_block(ASTNode parent) {
     // DEDENT was parsed
     // <stmt_sep> expects a newline as a separator after statement, however that
     // is parsed inside the block. Lexer doesn't generate another fake newline
-    // token after DEDENT, so we "generate" it here. Works really well :)
+    // token after DEDENT, so we "generate" it here. Works REALLY well :)
     cur_token->type = NEW_LINE;
 
     return SUCCESS;
@@ -702,7 +703,7 @@ static ErrCode parse_stmts(ASTNode block) {
   UPDATE_CUR_TOKEN();
 
   // 22 <stmts> -> <stmt> <stmt_sep>
-  //  Match rule
+  // Match rule
   switch (cur_token->type) {
   case IDENTIFIER:
   case OPEN_BRACKET:
@@ -747,7 +748,7 @@ static ErrCode parse_stmt(ASTNode block) {
   // 30 <stmt> -> <if_stmt>
   // 31 <stmt> -> <while_loop>
   // 100 <stmt> -> <decision>
-  //  Match rule
+  // Match rule
   switch (cur_token->type) {
   case IDENTIFIER:
   case OPEN_BRACKET:
@@ -824,7 +825,7 @@ static ErrCode parse_decision(ASTNode block) {
   // Decide if we are reading expression or function call or assignment
   // 103 <decision> -> <expr_or_call>
   // 104 <decision> -> <assignment>
-  //  Match rule
+  // Match rule
   switch (cur_token->type) {
   case IDENTIFIER: {
 
@@ -874,7 +875,7 @@ static ErrCode parse_expr_or_call(ASTNode parent) {
   // Decide if we are reading expression or function call
   // 101 <expr_or_call> -> <fun_call>
   // 102 <expr_or_call> -> <expr>
-  //  Match rule
+  // Match rule
   switch (cur_token->type) {
   case IDENTIFIER: {
 
@@ -923,7 +924,7 @@ static ErrCode parse_stmt_sep(ASTNode block) {
 
   // 23 <stmt_sep> -> ; <after_semicolon>
   // 24 <stmt_sep> -> \NL <stmt_next>
-  //  Match rule
+  // Match rule
   switch (cur_token->type) {
   case SEMICOLON: {
 
@@ -964,7 +965,7 @@ static ErrCode parse_after_semicolon(ASTNode block) {
 
   // 200 <after_semicolon> -> <stmts>
   // 201 <after_semicolon> -> \NL <stmt_next>
-  //  Match rule
+  // Match rule
   switch (cur_token->type) {
   case IDENTIFIER:
   case OPEN_BRACKET:
@@ -1013,7 +1014,7 @@ static ErrCode parse_stmt_next(ASTNode block) {
 
   // 25 <stmt_next> -> epsilon
   // 26 <stmt_next> -> <stmts>
-  //  Match rule
+  // Match rule
   switch (cur_token->type) {
   case IDENTIFIER:
   case OPEN_BRACKET:
