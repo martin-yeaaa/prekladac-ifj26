@@ -1239,6 +1239,7 @@ static ErrCode parse_if_stmt(ASTNode block) {
     // if was parsed
     cur_token = NULL;
 
+    // <cond> is expression, we just set argument is_cond to true
     err = parse_expr(if_stmt, &cur_token, true);
     RETURN_ON_ERROR(err, "inside if, condition");
     // Function might have "consumed" token, renew it
@@ -1302,6 +1303,7 @@ static ErrCode parse_while_loop(ASTNode block) {
     // while was parsed
     cur_token = NULL;
 
+    // <cond> is expression, we just set argument is_cond to true
     err = parse_expr(while_loop, &cur_token, true);
     RETURN_ON_ERROR(err, "inside while, condition");
     // Function might have "consumed" token, renew it
