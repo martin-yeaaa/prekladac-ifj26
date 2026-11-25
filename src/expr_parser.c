@@ -126,8 +126,11 @@ static PSAVal tokentype_to_psaval(TokenType token_type) {
   }
 
   // Valid expressions end only with semicolon or new line
+  // Conditions also end with "do" or "then"
   case SEMICOLON:
-  case NEW_LINE: {
+  case NEW_LINE:
+  case KW_DO:
+  case KW_THEN: {
     return PS_END;
   }
 
@@ -137,7 +140,6 @@ static PSAVal tokentype_to_psaval(TokenType token_type) {
   }
   }
 }
-
 
 // PSA Table equivalent to the one in documentation
 // The only difference is that $ on stack and $ on input shouldn't be checked,
@@ -351,6 +353,9 @@ static ErrCode PSA_reduce(PSAStack *stack) {
       third_node->ast_node = NULL;
       PSA_stack_destroy(third_node);
 
+      // Set new stack top
+      *stack = start_finder;
+
       return SUCCESS;
     }
     default: {
@@ -408,6 +413,9 @@ static ErrCode PSA_reduce(PSAStack *stack) {
     second_node->previous = NULL;
     second_node->ast_node = NULL;
     PSA_stack_destroy(second_node);
+
+    // Set new stack top
+    *stack = start_finder;
 
     return SUCCESS;
   }
@@ -541,6 +549,9 @@ static ErrCode PSA_reduce(PSAStack *stack) {
     first_node->ast_node = NULL;
     PSA_stack_destroy(first_node);
 
+    // Set new stack top
+    *stack = start_finder;
+
     return SUCCESS;
   } else {
     // There is no longer rule
@@ -630,7 +641,9 @@ static ErrCode init_respective_AST_node(ASTNode *ast_node, Token *token) {
   case OPEN_BRACKET:
   case CLOSE_BRACKET:
   case SEMICOLON:
-  case NEW_LINE: {
+  case NEW_LINE:
+  case KW_DO:
+  case KW_THEN: {
     // No node for these types
     // Just don't forget to make Unit node later!
     *ast_node = NULL;
@@ -660,8 +673,9 @@ static bool PSA_finished(PSAStack stack) {
 
     // 2nd condition: current token is: $
     // That means it's the end of expression, which only happens when
-    // current token is new line or semicolon
-    if (cur_token->type == NEW_LINE || cur_token->type == SEMICOLON) {
+    // current token is new line or semicolon or "do" or "then"
+    if (cur_token->type == NEW_LINE || cur_token->type == SEMICOLON ||
+        cur_token->type == KW_DO || cur_token->type == KW_THEN) {
       // PSA is done!
       return true;
     }

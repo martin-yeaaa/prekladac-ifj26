@@ -887,23 +887,33 @@ static ErrCode parse_stmt_sep(ASTNode block) {
   ErrCode err = SUCCESS;
   UPDATE_CUR_TOKEN();
 
-  // 23 <stmt_sep> -> ; <stmt_next> <stmt_sep>
+  // TODO
+  // 23 <stmt_sep> -> ; <stmts>
   // 24 <stmt_sep> -> \NL <stmt_next>
   //  Match rule
   switch (cur_token->type) {
   case SEMICOLON: {
 
-    // 23 <stmt_sep> -> ; <stmt_next> <stmt_sep>
+    // 23 <stmt_sep> -> ; <stmts>
     // ; was parsed
     cur_token = NULL;
 
-    // <stmt_next>
-    err = parse_stmt_next(block);
-    RETURN_ON_ERROR(err, "inside next statement");
+    // hotfix <stmt_sep> -> ; <stmts>
+    // Doesn't allow ; at end of line
+    err = parse_stmts(block);
+    RETURN_ON_ERROR(err, "special");
 
-    // <stmt_sep>
-    err = parse_stmt_sep(block);
-    RETURN_ON_ERROR(err, "inside next statement separator");
+    // <stmt_next>
+    /* LOOKAHEAD WEIRD FIX
+    cur_token = get_next_token();
+    if (cur_token->type == DEDENT || cur_token->type == NEW_LINE) {
+      err = parse_stmt_next(block);
+      RETURN_ON_ERROR(err, "inside next statement");
+      cur_token->type = NEW_LINE;
+    } else {
+      err = parse_stmt_next(block);
+      RETURN_ON_ERROR(err, "inside next statement");
+    }*/
 
     return SUCCESS;
   }
@@ -956,7 +966,8 @@ static ErrCode parse_stmt_next(ASTNode block) {
 
     return SUCCESS;
   }
-  case DEDENT: {
+  case DEDENT:
+  case NEW_LINE: { // TODO ADD TO LL TABLE
 
     // 25 <stmt_next> -> epsilon
     return SUCCESS;
@@ -1215,6 +1226,12 @@ static ErrCode parse_if_stmt(ASTNode block) {
     RETURN_ON_ERROR(err, "inside if, then block");
     // Function might have "consumed" token, renew it
     UPDATE_CUR_TOKEN();
+
+    // TODO DOCUMENT
+    // <block> creates artificial \NL for convenience
+    if (cur_token->type != NEW_LINE)
+      RETURN_ON_ERROR(ERR_SYNTAX, "inside if, expected fake new line");
+    cur_token = get_next_token();
 
     // else
     if (cur_token->type != KW_ELSE)
@@ -1616,4 +1633,4 @@ static ErrCode parse_template(ASTNode template_node) {
   RETURN_ON_ERROR(ERR_SYNTAX, "failed parsing REPLACETEMPLATE");
   return ERR_SYNTAX;
 }
-*/ 
+*/
