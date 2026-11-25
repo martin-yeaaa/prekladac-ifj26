@@ -3,9 +3,11 @@
 // Author: Lukáš Dvořák (xdvoral00)
 
 /* AI usage: Gemini was used to consult IFJcode26 string escaping, DEFVAR
-   hoisting, user function stack frames, and to generate most of the comments in
-   this file becouse i suck in makeing good comments but the "how this file
-   works" and marknig of key fitures was my makeing */
+   hoisting, user function stack frames, control flow (if, while, return), and
+   to generate most of the comments in this file becouse i suck in makeing good
+   comments but the "how this file works" and marknig of key fitures was my
+   idea. I also found some bugs in the code (mainly in substring temp
+   variables, stack and bounds) which AI helped me fix. */
 
 /* how this file works (in order of calls):
 1. generate_code() - prints header, temp vars and jumps to $main
@@ -49,9 +51,11 @@ void generate_statement(ASTNode node);
 void print_escaped_string(char *str) {
   printf("PUSHS string@");
   if (str != NULL) {
+    // go char by char until null terminator
     for (int i = 0; str[i] != '\0'; i++) {
       // cast to unsigned char so special/czech chars arent negative
       unsigned char c = str[i];
+      // ascii 0-32 are control chars + space, 35 is '#', 92 is '\'
       if (c <= 32 || c == 35 || c == 92) {
         printf("\\%03d", c);
       } else {
@@ -79,11 +83,11 @@ void declare_local_vars(ASTNode node) {
   if (node->node_type == NODE_VAR_DEF || node->node_type == NODE_VAL_DEF) {
     if (node->child_count >= 1 && node->child_arr[0] != NULL &&
         node->child_arr[0]->symbol_ptr != NULL) {
-      printf("DEFVAR LF@var_%d\n", node->child_arr[0]->symbol_ptr->id);
+      printf("DEFVAR LF@var_%d\n", node->child_arr[0]->symbol_ptr->uniq_id);
     }
   }
 
-  // keep searching in all children (blocks, ifs, whiles...)
+  // keep searching recursively in all children (blocks, ifs, whiles...)
   for (int i = 0; i < node->child_count; i++) {
     declare_local_vars(node->child_arr[i]);
   }
@@ -179,7 +183,123 @@ void generate_builtin(ASTNode node) {
       printf("PUSHS GF@temp_result\n");
     }
   }
-  // TODO: add substring, strcmp and ord builtin functions here
+  // ord(s, i) - gets ascii code of char at index i
+  // (AI-assisted, prompt: "jak v ifjcode26 vytáhnout ascii hodnotu znaku na
+  // indexu i ze stringu, když mám obojí na zásobníku?")
+  else if (strcmp(func_name, "ord") == 0) {
+    if (args->child_count >= 2) {
+      // evaluate string (arg 0) and index (arg 1) onto stack
+      generate_expression(args->child_arr[0]);
+      generate_expression(args->child_arr[1]);
+      // index is on top so pop it to temp_op2 first, string goes to temp_op1
+      printf("POPS GF@temp_op2\n");
+      printf("POPS GF@temp_op1\n");
+      // STRI2INT reads char from temp_op1 at position temp_op2 as int
+      printf("STRI2INT GF@temp_result GF@temp_op1 GF@temp_op2\n");
+      printf("PUSHS GF@temp_result\n");
+    }
+  }
+  // strcmp(a, b) - compares two strings, returns -1, 0 or 1
+  // (AI-assisted, prompt: "jak mám v ifjcode26 porovnat dva stringy ze
+  // zásobníku a vrátit -1, 0 nebo 1 podle toho jestli je první menší, stejný
+  // nebo větší, když na to není jedna instrukce?")
+  else if (strcmp(func_name, "strcmp") == 0) {
+    if (args->child_count >= 2) {
+      // unique label id so multiple strcmp calls in one program dont collide
+      int lbl = label_id++;
+      // compute both strings onto stack and pop them into helper vars
+      generate_expression(args->child_arr[0]);
+      generate_expression(args->child_arr[1]);
+      printf("POPS GF@temp_op2\n");
+      printf("POPS GF@temp_op1\n");
+
+      // check if strings are equal first -> if yes jump straight to 0
+      printf("JUMPIFEQ $strcmp_eq_%d GF@temp_op1 GF@temp_op2\n", lbl);
+      // not equal -> push them back on stack to test if op1 < op2
+      printf("PUSHS GF@temp_op1\n");
+      printf("PUSHS GF@temp_op2\n");
+      printf("LTS\n");
+      printf("PUSHS bool@true\n");
+      printf("JUMPIFEQS $strcmp_lt_%d\n", lbl);
+
+      // otherwise op1 > op2 -> push 1 and skip the other branches
+      printf("PUSHS int@1\n");
+      printf("JUMP $strcmp_end_%d\n", lbl);
+
+      // op1 was smaller than op2 -> push -1
+      printf("LABEL $strcmp_lt_%d\n", lbl);
+      printf("PUSHS int@-1\n");
+      printf("JUMP $strcmp_end_%d\n", lbl);
+
+      // strings were identical -> push 0
+      printf("LABEL $strcmp_eq_%d\n", lbl);
+      printf("PUSHS int@0\n");
+
+      printf("LABEL $strcmp_end_%d\n", lbl);
+    }
+  }
+  // substring(s, start, end) - returns substring from start to end, or nil on
+  // invalid bounds (bugs in first version fixed with AI help)
+  // (AI-assisted, prompt: "jak v ifjcode26 napsat funkci substring(s, start,
+  // end) včetně kontroly mezí, aby při neplatných indexech vrátila nil a v
+  // cyklu přes GETCHAR a CONCAT nerozhodila zásobník?")
+  else if (strcmp(func_name, "substring") == 0) {
+    if (args->child_count >= 3) {
+      int lbl = label_id++;
+      // evaluate all 3 arguments onto stack: string, start, end
+      generate_expression(args->child_arr[0]);
+      generate_expression(args->child_arr[1]);
+      generate_expression(args->child_arr[2]);
+
+      // pop arguments in reverse order: end, start, string
+      printf("POPS GF@temp_op2\n");    // end index
+      printf("POPS GF@temp_op1\n");    // start index (also loop counter)
+      printf("POPS GF@temp_result\n"); // source string
+
+      // check invalid bounds (start < 0, end < 0, start > end, start >= len,
+      // end > len)
+      printf("STRLEN GF@temp_len GF@temp_result\n");
+
+      printf("LT GF@temp_cmp GF@temp_op1 int@0\n");
+      printf("JUMPIFEQ $sub_nil_%d GF@temp_cmp bool@true\n", lbl);
+
+      printf("LT GF@temp_cmp GF@temp_op2 int@0\n");
+      printf("JUMPIFEQ $sub_nil_%d GF@temp_cmp bool@true\n", lbl);
+
+      printf("GT GF@temp_cmp GF@temp_op1 GF@temp_op2\n");
+      printf("JUMPIFEQ $sub_nil_%d GF@temp_cmp bool@true\n", lbl);
+
+      printf("LT GF@temp_cmp GF@temp_op1 GF@temp_len\n");
+      printf("JUMPIFEQ $sub_nil_%d GF@temp_cmp bool@false\n", lbl);
+
+      printf("GT GF@temp_cmp GF@temp_op2 GF@temp_len\n");
+      printf("JUMPIFEQ $sub_nil_%d GF@temp_cmp bool@true\n", lbl);
+
+      // build substring char by char without touching the stack inside the
+      // loop
+      printf("MOVE GF@temp_out string@\n");
+      printf("LABEL $sub_loop_%d\n", lbl);
+      printf("LT GF@temp_cmp GF@temp_op1 GF@temp_op2\n");
+      printf("JUMPIFEQ $sub_done_%d GF@temp_cmp bool@false\n", lbl);
+
+      // read single char at current index and append it to output string
+      printf("GETCHAR GF@temp_ch GF@temp_result GF@temp_op1\n");
+      printf("CONCAT GF@temp_out GF@temp_out GF@temp_ch\n");
+      printf("ADD GF@temp_op1 GF@temp_op1 int@1\n");
+      printf("JUMP $sub_loop_%d\n", lbl);
+
+      // valid bounds -> push built substring on stack and skip nil branch
+      printf("LABEL $sub_done_%d\n", lbl);
+      printf("PUSHS GF@temp_out\n");
+      printf("JUMP $sub_end_%d\n", lbl);
+
+      // invalid bounds -> push nil@nil on stack
+      printf("LABEL $sub_nil_%d\n", lbl);
+      printf("PUSHS nil@nil\n");
+
+      printf("LABEL $sub_end_%d\n", lbl);
+    }
+  }
 }
 
 /* EXPRESSIONS AND STACK MATH
@@ -259,11 +379,11 @@ void generate_expression(ASTNode node) {
     }
   }
   /* push variable value from local frame (LF) onto stack
-     we use unique symbol_ptr->id instead of variable name so variables with
-     the same name in different blocks dont overwrite each other */
+     we use unique symbol_ptr->uniq_id instead of variable name so variables
+     with the same name in different blocks dont overwrite each other */
   else if (node->node_type == NODE_IDENTIFIER) {
     if (node->symbol_ptr != NULL) {
-      printf("PUSHS LF@var_%d\n", node->symbol_ptr->id);
+      printf("PUSHS LF@var_%d\n", node->symbol_ptr->uniq_id);
     }
   }
   // addition or string concatenation
@@ -279,8 +399,10 @@ void generate_expression(ASTNode node) {
       printf("ADDS\n");
     }
   } else if (node->node_type == NODE_SUB) {
+    // subtracts top stack value from second stack value
     printf("SUBS\n");
   } else if (node->node_type == NODE_MUL) {
+    // multiplies top 2 values on stack
     printf("MULS\n");
   } else if (node->node_type == NODE_DIV) {
     // DIVS for float division, IDIVS for integer division
@@ -314,8 +436,10 @@ void generate_expression(ASTNode node) {
     printf("EQS\n");
     printf("NOTS\n");
   } else if (node->node_type == NODE_LT) {
+    // checks if left operand < right operand
     printf("LTS\n");
   } else if (node->node_type == NODE_GT) {
+    // checks if left operand > right operand
     printf("GTS\n");
   } else if (node->node_type == NODE_LT_EQ) {
     // <= is the same as "not greater" (!(a > b))
@@ -337,10 +461,12 @@ void generate_expression(ASTNode node) {
    něj přes JUMP, a v jakém pořadí mám ze zásobníku vybírat parametry funkce?")
  */
 void generate_function(ASTNode node) {
+  // safety check: function definition must have id, params and body
   if (node == NULL || node->child_count < 3) {
     return;
   }
 
+  // get function name node, parameter list node and body node
   ASTNode func_id = node->child_arr[0];
   ASTNode params = node->child_arr[1];
   ASTNode body = node->child_arr[2];
@@ -371,8 +497,9 @@ void generate_function(ASTNode node) {
     for (int i = params->child_count - 1; i >= 0; i--) {
       ASTNode param = params->child_arr[i];
       if (param != NULL && param->symbol_ptr != NULL) {
-        printf("DEFVAR LF@var_%d\n", param->symbol_ptr->id);
-        printf("POPS LF@var_%d\n", param->symbol_ptr->id);
+        // define parameter as local variable and pop its value from stack
+        printf("DEFVAR LF@var_%d\n", param->symbol_ptr->uniq_id);
+        printf("POPS LF@var_%d\n", param->symbol_ptr->uniq_id);
       }
     }
   }
@@ -385,9 +512,11 @@ void generate_function(ASTNode node) {
     // it
     generate_expression(body);
     if (is_main_func == 1) {
+      // clean up frame and exit program if this was main
       printf("POPFRAME\n");
       printf("EXIT int@0\n");
     } else {
+      // clean up frame and return to caller with result on stack
       printf("POPFRAME\n");
       printf("RETURN\n");
     }
@@ -422,17 +551,24 @@ void generate_statement(ASTNode node) {
   }
   // return statement: evaluate return expression onto stack, clean frame and
   // return
+  // (AI-assisted, prompt: "jak mám v ifjcode26 ošetřit příkaz return, když se
+  // může objevit jak v normální funkci, tak i v mainu kde se místo RETURN musí
+  // zavolat EXIT, a co dát na zásobník když je return prázdný bez hodnoty?")
   else if (node->node_type == NODE_RETURN) {
     if (node->child_count > 0 && node->child_arr[0] != NULL) {
+      // return with expression (like return x + 1) -> leave result on stack
       generate_expression(node->child_arr[0]);
     } else {
+      // empty return without value -> push nil so stack stays balanced
       printf("PUSHS nil@nil\n");
     }
 
     if (is_main_func == 1) {
+      // returning from main ends the whole program with exit code 0
       printf("POPFRAME\n");
       printf("EXIT int@0\n");
     } else {
+      // returning from normal function pops frame and jumps back after CALL
       printf("POPFRAME\n");
       printf("RETURN\n");
     }
@@ -451,7 +587,7 @@ void generate_statement(ASTNode node) {
        into the variable */
     if (node->child_count == 2 && node->child_arr[0]->symbol_ptr != NULL) {
       generate_expression(node->child_arr[1]);
-      printf("POPS LF@var_%d\n", node->child_arr[0]->symbol_ptr->id);
+      printf("POPS LF@var_%d\n", node->child_arr[0]->symbol_ptr->uniq_id);
     }
   }
   // assignment to an already existing variable (x = ...)
@@ -461,11 +597,14 @@ void generate_statement(ASTNode node) {
      */
     if (node->child_count == 2 && node->child_arr[0]->symbol_ptr != NULL) {
       generate_expression(node->child_arr[1]);
-      printf("POPS LF@var_%d\n", node->child_arr[0]->symbol_ptr->id);
+      printf("POPS LF@var_%d\n", node->child_arr[0]->symbol_ptr->uniq_id);
     }
   }
   // if-else statment: child 0 is conditon, child 1 is then block, child 2 is
   // optional else block
+  // (AI-assisted, prompt: "jak v ifjcode26 přeložit podmínku if-else přes
+  // zásobníkové instrukce JUMPIFEQS, a jak ošetřit návěští aby se mi při
+  // zanořených ifech nepřepisovala?")
   else if (node->node_type == NODE_IF) {
     if (node->child_count >= 2) {
       // reserve unique label number for this if block
@@ -489,6 +628,9 @@ void generate_statement(ASTNode node) {
     }
   }
   // while loop: child 0 is conditon, child 1 is loop body block
+  // (AI-assisted, prompt: "jak v ifjcode26 napsat cyklus while s vyhodnocením
+  // podmínky na zásobníku přes JUMPIFEQS a unikátními návěštími pro začátek a
+  // konec cyklu?")
   else if (node->node_type == NODE_WHILE) {
     if (node->child_count == 2) {
       int lbl = label_id++;
@@ -528,6 +670,11 @@ void generate_code(ASTNode root) {
   printf("DEFVAR GF@temp_result\n");
   printf("DEFVAR GF@temp_op1\n");
   printf("DEFVAR GF@temp_op2\n");
+  // extra helper vars needed for substring loop and bounds checks
+  printf("DEFVAR GF@temp_out\n");
+  printf("DEFVAR GF@temp_ch\n");
+  printf("DEFVAR GF@temp_len\n");
+  printf("DEFVAR GF@temp_cmp\n");
 
   // jump straight to $main so other functions defined above main dont run first
   printf("JUMP $main\n");
