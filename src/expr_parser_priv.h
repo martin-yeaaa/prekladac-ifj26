@@ -68,7 +68,6 @@ typedef enum psa_actions {
   R,         // ACT_REDUCE, >
   P,         // ACT_PUSH_ONLY, =
   I,         // ACT_INVALID, empty slot
-  ACT_WRONG, // For detecting my programming errors
 } PSAAction;
 
 /**

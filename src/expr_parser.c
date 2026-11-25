@@ -143,7 +143,7 @@ static PSAVal tokentype_to_psaval(TokenType token_type) {
 
 // PSA Table equivalent to the one in documentation
 // The only difference is that $ on stack and $ on input shouldn't be checked,
-// so there is not OK, but ACT_WRONG
+// so there is not OK, but I as invalid action
 // clang-format off
 static const PSAAction psa_table[7][7] = {
     {R, R, R, S, R, S, R},
@@ -152,7 +152,7 @@ static const PSAAction psa_table[7][7] = {
     {S, S, S, S, P, S, I},
     {R, R, R, I, R, I, R}, 
     {R, R, R, I, R, I, R},
-    {S, S, S, S, I, S, ACT_WRONG},
+    {S, S, S, S, I, S, I},
 };
 // clang-format on
 
@@ -331,6 +331,7 @@ static ErrCode PSA_reduce(PSAStack *stack) {
 
   // Move helper
   start_finder = start_finder->previous;
+  assert(start_finder != NULL);
 
   if (start_finder->val == PS_RULE_START) {
     // We found "<", match rule
@@ -370,6 +371,7 @@ static ErrCode PSA_reduce(PSAStack *stack) {
 
   // Move helper again
   start_finder = start_finder->previous;
+  assert(start_finder != NULL);
 
   if (start_finder->val == PS_RULE_START) {
     // We found "<", match rule
@@ -438,6 +440,7 @@ static ErrCode PSA_reduce(PSAStack *stack) {
 
   // Move helper again
   start_finder = start_finder->previous;
+  assert(start_finder != NULL);
 
   if (start_finder->val == PS_RULE_START) {
     // We found "<", match rule
@@ -716,30 +719,32 @@ ErrCode parse_expr(ASTNode parent, Token **cur_token_ptr, bool is_cond) {
 
     // Turn token into PSAVal
     PSAVal input = tokentype_to_psaval(cur_token->type);
+    // Fails if there is wrong token in expression
     if (input == PS_UNKNOWN) {
       PSA_stack_destroy(stack);
       fprintf(stderr, "failed parsing expression, wrong token in expression\n");
       return ERR_SYNTAX;
     }
 
-    // Token is valid for expression, make AST node
-    ASTNode ast_node;
-    err = init_respective_AST_node(&ast_node, cur_token);
-    if (err != SUCCESS) {
-      PSA_stack_destroy(stack);
-      RETURN_ON_ERROR(err, "inside expression");
-    }
-
     // Figure out what to do
     PSAAction act = PSA_lookup_table(stack, input);
-    // Sanity check
-    assert(act != ACT_WRONG);
 
     // Match action
     switch (act) {
     case S: {
 
+      // Make AST node
+      ASTNode ast_node;
+      err = init_respective_AST_node(&ast_node, cur_token);
+      if (err != SUCCESS)
+        break;
+
+      // Do shifting
       err = PSA_shift(&stack, input, ast_node);
+      if (err != SUCCESS) {
+        AST_destroy_tree(ast_node);
+        break;
+      }
       // Token parsed, get next
       cur_token = get_next_token();
       break;
@@ -747,13 +752,26 @@ ErrCode parse_expr(ASTNode parent, Token **cur_token_ptr, bool is_cond) {
 
     case R: {
 
+      // No new AST node here, possibly inside reduce(), but not here
       err = PSA_reduce(&stack);
       break;
     }
 
     case P: {
 
+      // Make AST node
+      ASTNode ast_node;
+      err = init_respective_AST_node(&ast_node, cur_token);
+      if (err != SUCCESS)
+        break;
+
+      // Push value from input to stack
       err = PSA_push(&stack, input, ast_node);
+      if (err != SUCCESS) {
+        AST_destroy_tree(ast_node);
+        break;
+      }
+
       // Token parsed, get next
       cur_token = get_next_token();
       break;
