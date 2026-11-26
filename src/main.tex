@@ -24,6 +24,7 @@
 \usepackage{xcolor}
 \usepackage{listings}
 \usepackage{tikz}
+\usepackage{multicol}
 \usetikzlibrary{arrows.meta,positioning,shapes.geometric,automata}
 
 \usepackage[hidelinks]{hyperref}
@@ -179,7 +180,7 @@ DOPLŇTE VLASTNÍ TEXT.
         width=\textwidth,
         height=0.75\textheight,
         keepaspectratio
-    ]{FSM_ver5.jpg}
+    ]{LL tabulka.png}
     \caption{Konečný automat lexikálního analyzátoru}
     \label{fig:automat}
 \end{figure}
@@ -196,39 +197,159 @@ DOPLŇTE VLASTNÍ TEXT.
 \subsection{LL gramatika}
 % ZDE VLOZTE VLASTNI GRAMATIKU.
 
-\subsection{LL tabulka}
-% Tabulku vytvorte podle vlastni gramatiky.
-% Pro rozsahlejsi tabulku lze pouzit longtable.
+1 <program> $\to$ <prolog> <fun\_def\_list\_nl> \\
+2 <prolog> $\to$ import ifj26.* \\
+300 <fun\_def\_list\_nl> $\to$ \textbackslash NL <fun\_def\_list> EOF \\
+3 <fun\_def\_list> $\to$ epsilon \\
+4 <fun\_def\_list> $\to$ <fun\_def\_any> <fun\_def\_list\_nl>\\
+5 <fun\_def\_any> $\to$ @main <fun\_def> \\
+- POZOR: parser ve pravidle 5 ignoruje \textbackslash NL 
+mezi @main a <fun\_def>, i když lexer \textbackslash NL, 
+vydá, protože lexer porušil dohodu vypisovat pouze povinné nebo zakázané \textbackslash NL
 
-\begin{table}[H]
+6 <fun\_def\_any> $\to$ <fun\_def>\\
+7 <fun\_def> $\to$ def IDENTIFIER (<param\_list>) <data\_type\_opt> = <fun\_body>\\
+8 <param\_list> $\to$ epsilon\\
+9 <param\_list> $\to$ <param> <param\_sep>\\
+10 <param\_sep> $\to$ epsilon\\
+11 <param\_sep> $\to$ , <param> <param\_sep>\\
+12 <param> $\to$ IDENTIFIER : <data\_type>\\
+13 <data\_type\_opt> $\to$ epsilon\\
+14 <data\_type\_opt> $\to$ : <data\_type>\\
+15 <data\_type> $\to$ Int\\
+16 <data\_type> $\to$ Double\\
+17 <data\_type> $\to$ String\\
+18 <data\_type> $\to$ Unit\\
+19 <fun\_body> $\to$ <expr\_or\_call>\\
+20 <fun\_body> $\to$ <block>\\
+21 <block> $\to$ \textbackslash NL INDENT <stmts> DEDENT  + "VYTVORI" UMELY TOKEN \textbackslash NL\\
+22 <stmts> $\to$ <stmt> <stmt\_sep>\\
+23 <stmt\_sep> $\to$ ; <after\_semicolon>\\
+24 <stmt\_sep> $\to$ \textbackslash NL <stmt\_next>\\
+200 <after\_semicolon> $\to$ <stmts>\\
+201 <after\_semicolon> $\to$ \textbackslash NL <stmt\_next>\\
+25 <stmt\_next> $\to$ epsilon\\
+26 <stmt\_next> $\to$ <stmts>\\
+27 <stmt> $\to$ <val\_def>\\
+28 <stmt> $\to$ <var\_def>\\
+29 <stmt> $\to$ return <return\_stmt>\\
+30 <stmt> $\to$ <if\_stmt>\\
+31 <stmt> $\to$ <while\_loop>\\
+100 <stmt> $\to$ <decision>\\
+
+VYUŽÍVÁ LOOK AHEAD, pokud zpracovávaný token je IDENTIFIER\\
+101 <expr\_or\_call> $\to$ <fun\_call>   \hspace{0.7cm}   Pokud look ahead je (\\
+102 <expr\_or\_call> $\to$ <expr>   \hspace{0.7cm}   Pokud look ahead není (\\
+
+VYUŽÍVÁ LOOK AHEAD, pokud zpracovávaný token je IDENTIFIER\\
+103 <decision> $\to$ <expr\_or\_call> \hspace{0.7cm}  Pokud look ahead není =\\
+104 <decision> $\to$ <assignment> \hspace{0.7cm}  Pokud look ahead je =\\
+\\
+\\
+
+120 <fun\_call> $\to$ IDENTIFIER(<arg\_list>)\\
+140 <assignment> $\to$ IDENTIFIER = <expr\_or\_call>\\
+
+37 <return\_stmt> $\to$ epsilon\\
+38 <return\_stmt> $\to$ <expr\_or\_call>\\
+39 <val\_def> $\to$ val IDENTIFIER <data\_type\_opt> = <expr\_or\_call>\\
+40 <var\_def> $\to$ var IDENTIFIER <data\_type\_opt> = <expr\_or\_call>\\
+
+46 <arg\_list> $\to$ epsilon\\
+47 <arg\_list> $\to$ <arg> <arg\_sep>\\
+48 <arg\_sep> $\to$ epsilon\\
+49 <arg\_sep> $\to$ , <arg> <arg\_sep>\\
+50 <arg> $\to$ IDENTIFIER\\
+51 <arg> $\to$ <literal>\\
+52 <arg> $\to$ <unary\_op> <literal>\\
+
+66 <unary\_op> $\to$ -\\
+67 <unary\_op> $\to$ +\\
+
+72 <if\_stmt> $\to$ if <cond> then <block> \textbackslash NL else <block>\\
+73 <while\_loop> $\to$ while <cond> do <block>\\
+
+81 <literal> $\to$ VAL\_INT\\
+82 <literal> $\to$ VAL\_DOUBLE\\
+83 <literal> $\to$ VAL\_STRING\\
+84 <literal> $\to$ ()\\
+
+\textbackslash NL je 
+<expr> a <cond> se řeší pomocí precedenční syntaktické analýzy.\\
+Pravidla jsou nepravidelně očíslovaná, protože původní očíslovaná pravidla obsahovala
+chyby. Hodně pravidel bylo odstraněno a novým pravidlům jsme přidělili velká čísla,
+aby se nepřekrývala se starými.
+
+\subsection{LL tabulka}
+
+\begin{figure}[H]
     \centering
-    \caption{LL tabulka}
-    \label{tab:ll}
-    \begin{tabular}{c|c}
-        \toprule
-        \textbf{Neterminál} & \textbf{DOPLŇTE TERMINÁLY A PRAVIDLA} \\
-        \midrule
-        DOPLŇTE & DOPLŇTE \\
-        \bottomrule
-    \end{tabular}
-\end{table}
+    \includegraphics[
+        width=\textwidth,
+        height=0.89\textheight,
+        keepaspectratio
+    ]{LL tabulka.png}
+    \label{fig:LL tabulka}
+\end{figure}
+
+Vysvětlivky: \\
+skip – právě analyzovaný token se přeskočí, přečte se další \\
+LA – look-ahead token, tedy token následující po právě analyzovaném tokenu\\
+
+\subsection{Redukční pravidla precedenční syntaktické analýzy}
+
+E ve značení LL gramatiky je výraz reprezentovaný neterminálem <expr> nebo <cond>.
+
+\begin{multicols}{2}
+E $\to$ i \\
+E $\to$ VAL\_STRING \\
+E $\to$ VAL\_INT \\
+E $\to$ VAL\_DOUBLE \\
+E $\to$ () \hspace{0.7cm} (Literál Unit!) \\
+E $\to$ +E \\
+E $\to$ -E \\
+E $\to$ E+E \\
+E $\to$ E-E \\
+E $\to$ E*E \\
+E $\to$ E/E \\
+E $\to$ (E) \\
+E $\to$ E > E \\
+E $\to$ E >= E \\
+E $\to$ E < E \\
+E $\to$ E <= E \\
+E $\to$ E == E \\
+E $\to$ E != E 
+\end{multicols}
+
+Vysvětlivky: \\
+i – identifikator \\
+VAL\_STRING, VAL\_INT, VAL\_DOUBLE – Literály daných typů
+
 
 \subsection{Precedenční tabulka}
-% ZDE VLOZTE VLASTNI PRECEDENCNI TABULKU.
-% U rozsahle tabulky upravte sirku a velikost pisma podle potreby.
 
-\begin{table}[H]
+\begin{figure}[H]
     \centering
-    \caption{Precedenční tabulka}
-    \label{tab:precedence}
-    \begin{tabular}{c|c}
-        \toprule
-        \textbf{Terminál} & \textbf{DOPLŇTE ZNAKY PRECEDENCE} \\
-        \midrule
-        DOPLŇTE & DOPLŇTE \\
-        \bottomrule
-    \end{tabular}
-\end{table}
+    \includegraphics[
+        width=\textwidth,
+        height=0.89\textheight,
+        keepaspectratio
+    ]{Precedencni tabulka.png}
+    \label{fig:Precedencni tabulka}
+\end{figure}
+
+V tabulce nejsou zobrazeny všechny operátory, protože operátory se stejnou prioritou mají 
+naprosto identické řádky i sloupce. Vytvořili jsme z nich skupiny a do tabulky vložili pouze
+jeden operátor reprezentující celou skupinu.
+
+* reprezentuje *  / \\
++ reprezentuje + - \\
+< reprezentuje < <= > >= == != \\
+( reprezentuje pouze sebe \\
+) reprezentuje pouze sebe \\
+i reprezentuje identifikátory a literály \\
+\$ na zásobníku je speciální znak, který se chová jako terminál a je vždy na spodku zásobníku.\\
+\$ na vstupu je ukončovač výrazu.
 
 % =================================================
 \section{Popis implementovaných modulů}
@@ -250,6 +371,8 @@ DOPLŇTE VLASTNÍ TEXT.
      
     \bottomrule
 \end{longtable}
+
+
 
 % =================================================
 \section{Použité zdroje}
