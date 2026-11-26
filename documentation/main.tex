@@ -45,7 +45,7 @@
 
 \hypersetup{
     pdftitle={Dokumentace projektu IFJ26},
-    pdfsubject={Implementace překladače imperativního jazyka IFJ26}
+    pdfsubject={Překladač imperativního jazyka IFJ26}
 }
 
 % Sloupec s automatickým zalamováním textu
@@ -54,7 +54,7 @@
 % ------------------------------------------------
 % UDAJE K DOPLNENI
 % ------------------------------------------------
-\newcommand{\nazevprojektu}{Implementace překladače imperativního jazyka IFJ26}
+\newcommand{\nazevprojektu}{Překladač imperativního jazyka IFJ26}
 \newcommand{\varianta}{vv-BVS}
 \newcommand{\gitrepo}{https://github.com/martin-yeaaa/prekladac-ifj26}
 
@@ -108,10 +108,10 @@
 \subsection{Členové týmu a jejich odpovědnosti}
 
 \begin{itemize}
-    \item \textbf{xvaskom00:} implementace celého parseru a sémantické analýzy, tabulky symbolů a BVS, specifikace AST, nárvh a oprava gramatiky
-    \item \textbf{xdvoral00:} generátor kódu 
-    \item \textbf{xbinami00:} část lexeru a část gramatiky a tabulky
-    \item \textbf{xsvecji00:} část lexeru a dokumentace
+    \item \textbf{Martin Vaško:} implementace celého parseru a sémantické analýzy, tabulky symbolů a BVS, specifikace AST, nárvh a oprava gramatiky
+    \item \textbf{Lukáš Dvořák:} generátor kódu 
+    \item \textbf{Michal Bína:} část lexeru a část gramatiky a tabulky
+    \item \textbf{Jiří Švec:} část lexeru a dokumentace
 \end{itemize}
 
 \subsection{Odůvodnění rozdělení bodů}
@@ -123,7 +123,7 @@ Rozdělení bodů bylo přizpůsobeno podle vykonané práce každého člena a 
 \subsection{Organizace spolupráce a verzování}
 Jako komunikační prostředek byl zvolen \texttt{Discord}. Neukázal se však jako dostačující, protože někteří členové týmu na zprávy reagovali později, než bylo potřeba.
 
-Důležité věci se probraly na 2 offline schůzkách a 2 online schůzkách.
+Důležité věci se probraly na 2 offline schůzkách a 3 online schůzkách.
 
 Pro verzování byl využit \texttt{github}. 
 
@@ -137,7 +137,8 @@ Některé části byly testovány ručně, jiné pomocí testovací knihovny \te
 
 \subsection{Formátování zdrojového kódu}
 K formátování zdrojového kódu byl využit \texttt{clang-format LLVM}. \\
-Pro názvy identifikátorů byl použit \texttt{snake\_case}, pro klíčová slova (typedef) \texttt{PascalCase} . Pro výčty (enum) a konstanty byl použit \texttt{MACRO\_CASE}.
+Pro názvy identifikátorů byl použit \texttt{snake\_case}, pro definice vlastního typu (typedef) \texttt{PascalCase}.
+\\ Pro výčty (enum) a konstanty byl použit \texttt{MACRO\_CASE}.
 
 % =================================================
 \section{Architektura řešení}
@@ -169,26 +170,29 @@ Pro názvy identifikátorů byl použit \texttt{snake\_case}, pro klíčová slo
 \subsection{Popis datových toků a komponent}
 DOPLŇTE VLASTNÍ TEXT.
 
-% =================================================
-\section{Lexikální analýza}
-% =================================================
-\subsection{Konečný automat}
 
 \begin{landscape}
 \begin{figure}[p]
+
+% =================================================
+\section{Lexikální analýza}
+% =================================================
+
+\subsection{Konečný automat}
+
     \centering
     \includegraphics[
         width=0.95\linewidth,
         height=0.85\textheight,
         keepaspectratio
-    ]{LL tabulka.png}
+    ]{FSM_ver5.jpg}
     \caption{Konečný automat lexikálního analyzátoru}
     \label{fig:automat}
 \end{figure}
 \end{landscape}
 
 \subsection{Odchylky od standardního modelu}
-1. Token pro \texttt{@} byl nakonec řešen jinak (jako celek \texttt{@main)}. \\
+1. Pro \texttt{@} sa netvoril samostatny token, ale tvoril sa token pre celek \texttt{@main}. \\
 2. Mezery, \texttt{LF} a \texttt{EOF} mají vlastní pravidla. \\
 3. Diagram dovoluje pouze jedno podtržítko mezi číslicemi, ale implementace dovoluje více. \\
 4. Vnořené komentáře jsou řešeny složitěji a v diagramu by šly těžko zapsat.
@@ -197,7 +201,6 @@ DOPLŇTE VLASTNÍ TEXT.
 \section{Syntaktická analýza}
 % =================================================
 \subsection{LL gramatika}
-% ZDE VLOZTE VLASTNI GRAMATIKU.
 
 1 <program> $\to$ <prolog> <fun\_def\_list\_nl> \\
 2 <prolog> $\to$ import ifj26.* \\
@@ -283,13 +286,15 @@ Pravidla jsou nepravidelně očíslovaná, protože původní očíslovaná prav
 chyby. Hodně pravidel bylo odstraněno a novým pravidlům jsme přidělili velká čísla,
 aby se nepřekrývala se starými.
 
+\begin{landscape}
+
 \subsection{LL tabulka}
 
 \begin{figure}[H]
     \centering
     \includegraphics[
-        width=\textwidth,
-        height=0.89\textheight,
+        width=1.5\textwidth,
+        height=1\textheight,
         keepaspectratio
     ]{LL tabulka.png}
     \label{fig:LL tabulka}
@@ -298,6 +303,8 @@ aby se nepřekrývala se starými.
 Vysvětlivky: \\
 skip – právě analyzovaný token se přeskočí, přečte se další \\
 LA – look-ahead token, tedy token následující po právě analyzovaném tokenu\\
+
+\end{landscape}
 
 \subsection{Redukční pravidla precedenční syntaktické analýzy}
 
@@ -331,6 +338,8 @@ E ve značení LL gramatiky je výraz reprezentovaný neterminálem
 
 \subsection{Precedenční tabulka}
 
+
+
 \begin{figure}[H]
     \centering
     \includegraphics[
@@ -340,6 +349,8 @@ E ve značení LL gramatiky je výraz reprezentovaný neterminálem
     ]{Precedencni tabulka.png}
     \label{fig:Precedencni tabulka}
 \end{figure}
+
+
 
 V tabulce nejsou zobrazeny všechny operátory, protože operátory se stejnou prioritou mají 
 naprosto identické řádky i sloupce. Vytvořili jsme z nich skupiny a do tabulky vložili pouze
@@ -357,8 +368,6 @@ jeden operátor reprezentující celou skupinu.
 % =================================================
 \section{Popis implementovaných modulů}
 % =================================================
-% Pro kazdou dvojici .c/.h uvedte kratky, vecny popis.
-% Radky podle potreby pridejte nebo odeberte.
 
 \begin{longtable}{p{0.30\textwidth}p{0.68\textwidth}}
     \toprule
@@ -383,7 +392,8 @@ jeden operátor reprezentující celou skupinu.
     \texttt{bst.c / bst.h / bst\_priv.h} & Implementace výškově vyváženého 
     binárního vyhledávacího stromu. Je implementován jako AVL strom, klíčem 
     je řetězec. \\
-    \texttt{codegen.c / codegen.h} & DOPLŇTE \\
+    \texttt{codegen.c / codegen.h} & Prochází sémanticky zanalyzovaný AST a generuje
+     z něj cílový mezikód IFJcode26. \\
      
     \texttt{error\_codes.h} & Obsahuje definice konstant chybových 
     návratových kódů a makro pro vypisování chybových hlášek. \\
@@ -400,18 +410,16 @@ jeden operátor reprezentující celou skupinu.
 % Tuto cast vyplnte vlastnimi skutecnymi zkusenostmi.
 
 \subsection{Použité nástroje a modely}
-- ChatGPT
-\\
-- Claude Sonet 5.5 Medium Effort
-\\
+- ChatGPT \\
+- Claude Sonnet 5.5, Medium Effort \\
+- Claude Opus 5.5, Medium Effort \\
 - Gemini
 
 \subsection{Pracovní postup}
 Dovysvětlení zadání a funkci dílčích částí překladače, k vyplnění jednoduchých polí podle předlohy a ke konzultaci našeho řešení. \\
-Dále byl využit k tvorbě šablony pro tuto dokumentaci.
-\\
-\\
-Dovysvětlení k čemu slouží abstraktní syntaktický strom a k čemu slouží tabulka symbolů, tvorba testovací sady pro modul \texttt{semantics}, po dokončení daného modulu hledání chyb v kódu parseru, semantické analýzy, a tabulky symbolů.\\
+Dále byl využit k tvorbě šablony pro tuto dokumentaci (pouze šablona, text NE!),
+pro tvorbu testovací sady pro modul \texttt{semantics}, po dokončení daného modulu 
+hledání chyb v kódu parseru, semantické analýzy, a tabulky symbolů.\\
 
 \subsection{Problémy a nevyužité nebo upravené návrhy}
 - Na vysvětlení věcí bylo potřeba se ptát vícekrát, protože AI vysvětlovalo příliš složitě.\\
