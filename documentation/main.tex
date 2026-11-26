@@ -44,38 +44,43 @@
 \renewcommand{\headrulewidth}{0.4pt}
 
 \hypersetup{
-    pdftitle={Dokumentace projektu IFJ26},
-    pdfsubject={Překladač imperativního jazyka IFJ26}
+    pdfsubject={Překladač imperativního jazyka IFJ26},
+    pdftitle={Dokumentace projektu IFJ26}
 }
 
 % Sloupec s automatickým zalamováním textu
 \newcolumntype{Y}{>{\raggedright\arraybackslash}X}
-
-% ------------------------------------------------
-% UDAJE K DOPLNENI
-% ------------------------------------------------
-\newcommand{\nazevprojektu}{Překladač imperativního jazyka IFJ26}
-\newcommand{\varianta}{vv-BVS}
-\newcommand{\gitrepo}{https://github.com/martin-yeaaa/prekladac-ifj26}
 
 \begin{document}
 
 % =================================================
 % TITULNI STRANA
 % =================================================
+
 \begin{titlepage}
-    \centering
-    {\large VYSOKÉ UČENÍ TECHNICKÉ V BRNĚ}\\[0.3cm]
-    {\large Fakulta informačních technologií}\\[2.0cm]
+\centering
 
-    {\Large Dokumentace projektu}\\[0.5cm]
-    {\huge\bfseries \nazevprojektu}\\[1.5cm]
+    \begin{figure}[H]
+        \raggedright
+        \includegraphics[
+            width=0.6\linewidth,
+            height=0.6\textheight,
+            keepaspectratio
+        ]{vutfitlogo.png}
+        \label{fig:Logo}
+    \end{figure}
 
+    \vspace{7cm}
+    
+    {\huge\bfseries Překladač imperativního jazyka IFJ26}\\[0.5cm]
+    {\LARGE\bfseries Dokumentace}\\[6.5cm]
+
+    \raggedright {\large\bfseries Členové týmu:}\\[0.3cm]
     \begin{tabularx}{\textwidth}{|l|Y|Y|Y|}
         \hline
-        \textbf{Člen týmu} & \textbf{VUT login} & \textbf{Osobní číslo} & \textbf{Podíl bodů} \\
+        \textbf{Jméno a příjmení} & \textbf{Login} & \textbf{Osobní číslo} & \textbf{Podíl bodů} \\
         \hline
-        \textbf{Martin Vaško} & \textbf{xvaskom00} & \textbf{282244} & 54 \% \\
+        \textbf{Martin Vaško} & \textbf{xvaskom00} & \textbf{282244} & \textbf{54 \%} \\
         \hline
         Michal Bína & xbinami00 & 282028 & 13 \% \\
         \hline
@@ -87,76 +92,63 @@
 
     \vspace{1.0cm}
     \begin{tabularx}{\textwidth}{lY}
-        \textbf{Varianta zadání:} & \varianta \\
+        \textbf{Varianta zadání:} & vv-BVS \\
         \textbf{Implementovaná rozšíření:} &ŽÁDNÁ \\
-        \textbf{Git repozitář:} & \url{\gitrepo} \\
+        \textbf{Git repozitář:} & \url{https://github.com/martin-yeaaa/prekladac-ifj26} \\
     \end{tabularx}
 
     \vfill
-    {\large Brno, 2026}
+    {\large Brno, 27.11.2026}
 \end{titlepage}
 
 \tableofcontents
 \newpage
 
 % =================================================
-\section{Rozdělení práce}
-% =================================================
-% Uvedte, kdo se podilel na jednotlivych castech projektu.
-% Pokud rozdeleni bodu neni rovnomerne, uvedte jeho duvod.
-
-\subsection{Členové týmu a jejich odpovědnosti}
-
-\begin{itemize}
-    \item \textbf{Martin Vaško:} implementace celého parseru a sémantické analýzy, tabulky symbolů a BVS, specifikace AST, nárvh a oprava gramatiky
-    \item \textbf{Lukáš Dvořák:} generátor kódu 
-    \item \textbf{Michal Bína:} část lexeru a část gramatiky a tabulky
-    \item \textbf{Jiří Švec:} část lexeru a dokumentace
-\end{itemize}
-
-\subsection{Odůvodnění rozdělení bodů}
-Rozdělení bodů bylo přizpůsobeno podle vykonané práce každého člena a také podle jejich přístupu k práci.
-
-% =================================================
 \section{Spolupráce a vývoj}
 % =================================================
-\subsection{Organizace spolupráce a verzování}
-Jako komunikační prostředek byl zvolen \texttt{Discord}. Neukázal se však jako dostačující, protože někteří členové týmu na zprávy reagovali později, než bylo potřeba.
 
-Důležité věci se probraly na 2 offline schůzkách a 3 online schůzkách.
+\subsection{Rozdělení práce}
 
-Pro verzování byl využit \texttt{github}. 
+\begin{itemize}
+    \item \textbf{Martin Vaško (vedoucí):} implementace celé syntaktické analýzy i 
+    sémantické analýzy, tabulky symbolů a vv-BVS, specifikace AST a funkce pro jeho tvorbu,
+    nárvh a dokončení LL gramatiky, dokončení \\ LL tabulky, testování, část dokumentace
+    \item \textbf{Lukáš Dvořák:} generátor kódu 
+    \item \textbf{Michal Bína:} část lexeru, část LL gramatiky,
+     prvá verze LL tabulky, precedenční tabulka
+    \item \textbf{Jiří Švec:} část lexeru a část dokumentace
+\end{itemize}
 
 
+Rozdělení bodů bylo přizpůsobeno podle vykonané práce každého člena a 
+podle jejich přístupu k práci. 
 
-\subsection{Code review a schvalování změn}
-Code review byl prováděn samostatně s pomocí AI nástrojů.
+
+\subsection{Organizace vývoje}
+Jako komunikační prostředek byl zvolen Discord. Neukázal se však jako dostačující, 
+protože někteří členové týmu na zprávy reagovali později, než bylo potřeba.
+Důležité věci se probraly na 2 osobních schůzkách \\ a na 3 online schůzkách.
+
+Git repozitář jsme si vytvořili na GitHubu. Code review byl prováděn samostatně
+s asistencí AI nástrojů. PR schvaloval ve většině případů jen vedoucí.
 
 \subsection{Testování}
-Některé části byly testovány ručně, jiné pomocí testovací knihovny \texttt{GoogleTest}.
+Pro moduly \texttt{semantics}, symtable a bst jsme vytvořili jednotkové testy s využitím 
+testovacího rámce GoogleTest
 
 \subsection{Formátování zdrojového kódu}
-K formátování zdrojového kódu byl využit \texttt{clang-format LLVM}. \\
-Pro názvy identifikátorů byl použit \texttt{snake\_case}, pro definice vlastního typu (typedef) \texttt{PascalCase}.
-\\ Pro výčty (enum) a konstanty byl použit \texttt{MACRO\_CASE}.
+K formátování zdrojového kódu byl využit nástroj clang-format s formátovacím stylem LLVM. \\
+Pro názvy identifikátorů byl použit styl zápisu snake\_case, pro definice
+vlastních typů (\texttt{typedef}) PascalCase, pro výčty (\texttt{enum}) a konstanty
+byl použit MACRO\_CASE.
 
 % =================================================
 \section{Architektura řešení}
 % =================================================
-% Vlozte vlastni blokove schema. Diagram musi ukazovat moduly,
-% datove toky a struktury predavane mezi moduly.
 
 \subsection{Blokové schéma}
 
-% Moznost vlozeni externiho obrazku:
-% \begin{figure}[H]
-%     \centering
-%     \includegraphics[width=\textwidth]{architektura.pdf}
-%     \caption{Blokové schéma architektury překladače}
-%     \label{fig:architektura}
-% \end{figure}
-
-% Nebo vytvorte diagram primo v TikZ:
 \begin{figure}[H]
     \centering
     \fbox{\parbox[c][5cm][c]{0.9\textwidth}{
@@ -405,30 +397,34 @@ jeden operátor reprezentující celou skupinu.
 % =================================================
 \section{Využití nástrojů AI}
 % =================================================
-% Podle zadani uvedte konkretni nastroje a modely, typicky postup,
-% problemy a priklady navrhu, ktere jste nevyuzili nebo upravili.
-% Tuto cast vyplnte vlastnimi skutecnymi zkusenostmi.
 
-\subsection{Použité nástroje a modely}
-- ChatGPT \\
-- Claude Sonnet 5.5, Medium Effort \\
-- Claude Opus 5.5, Medium Effort \\
-- Gemini
+\subsection{Použité AI modely}
 
-\subsection{Pracovní postup}
-Dovysvětlení zadání a funkci dílčích částí překladače, k vyplnění jednoduchých polí podle předlohy a ke konzultaci našeho řešení. \\
-Dále byl využit k tvorbě šablony pro tuto dokumentaci (pouze šablona, text NE!),
-pro tvorbu testovací sady pro modul \texttt{semantics}, po dokončení daného modulu 
-hledání chyb v kódu parseru, semantické analýzy, a tabulky symbolů.\\
+Každý člen využíval AI model, jaký chtěl. Mezi využité modely patří tyto:
+\begin{itemize}
+\item Claude Sonnet 5.5
+\item Claude Opus 5.5
+\item Gemini 4 Hydrogen
+\item ChatGPT GPT-6
+\end{itemize}
 
-\subsection{Problémy a nevyužité nebo upravené návrhy}
-- Na vysvětlení věcí bylo potřeba se ptát vícekrát, protože AI vysvětlovalo příliš složitě.\\
-- Při hledání chyb AI vypisovalo i chyby které ve skutečnosti chybami nebyly.
-\\
-- Testy pro modul \texttt{semantics} bylo potřeba psát vícekrát, protože AI správně nevytvořilo \texttt{AST} podle naší konkrétní specifikace. 
-\\
-- Byla využívána bezplatná verze, takže občas došly tokeny a bylo potřeba čekat.
-\\
+\subsection{Využití AI}
+Dovysvětlení zadání a funkci dílčích částí překladače (napr. významu AST, tabulky symbolů),
+k vyplnění jednoduchých polí podle předlohy (v lexeru) a ke konzultaci řešení některých
+částí lexeru a generátoru kódu. Dále byl využit k tvorbě návrhu šablony pro tuto
+dokumentaci (pouze šablona, text NE!), pro tvorbu testovací sady pro modul
+\texttt{semantics}, a pro hledání chyb v kódu.
+
+\subsection{Problémy s AI}
+
+\begin{itemize}
+\item Na vysvětlení věcí bylo potřeba se ptát vícekrát, protože AI
+ vysvětlovalo příliš složitě.
+\item Při hledání chyb AI vypisovala i chyby, které ve skutečnosti chybami 
+nebyly, protože neměla celý kontext.
+\item Někteří členové týmu využívali bezplatné verze AI nástrojů, 
+takže občas byl vyčerpán limit používání a bylo třeba počkat.
+\end{itemize}
 
 \end{document}
 
