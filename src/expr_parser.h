@@ -15,7 +15,7 @@
 
 /**
  * @brief Parses expressions (including conditions) using
- * precedence syntax analysis.
+ * precedence syntax analysis = PSA.
  * @param parent AST node which has the expression as a child node.
  * @param cur_token_ptr Pointer to pointer to currently parsed token.
  * @param is_cond Set to `true` if expression is condition,

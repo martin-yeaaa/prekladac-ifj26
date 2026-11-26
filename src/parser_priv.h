@@ -70,7 +70,7 @@ static ErrCode parse_arg_list(ASTNode func_call);
 static ErrCode parse_arg_sep(ASTNode arg_list);
 static ErrCode parse_arg(ASTNode arg_list);
 /**
- * @param ptr_to_node Pointer to uninitialized node declared 
+ * @param ptr_to_node Pointer to uninitialized node declared
  * outside of function body.
  */
 static ErrCode parse_unary_op(ASTNode parent, ASTNode *ptr_to_node);

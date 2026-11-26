@@ -1,5 +1,4 @@
 .vscode/settings.json
-tests/example_programs
 tests/bst/build
 tests/symtable/build
 tests/semantics/build

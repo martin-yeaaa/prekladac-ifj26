@@ -2,7 +2,7 @@
 // File: error_codes.h
 // Author: Martin Vaško (xvaskom00)
 
-// File containing macros for all possible errors.
+// File containing definitions for all possible errors.
 
 #ifndef ERROR_CODES_H
 #define ERROR_CODES_H

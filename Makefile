@@ -21,15 +21,16 @@ all: release
 
 # -DNDEBUG removes asserts!
 release: $(SOURCES)
-	$(CC) $(CFLAGS) -DNDEBUG $^ -o prekladac-ifj26
+	$(CC) $(CFLAGS) -DNDEBUG $^ -o prekladac_ifj26_bin
 
-
+# Compiles with asserts
 debug_build: $(SOURCES)
-	$(CC) $(CFLAGS) $^ -o prekladac-ifj26
+	$(CC) $(CFLAGS) $^ -o prekladac_ifj26_bin
 
+# Compiles without caring about bad programming
 permissive: $(SOURCES)
-	$(CC) -std=c23 $^ -o prekladac-ifj26
+	$(CC) -std=c23 $^ -o prekladac_ifj26_bin
 
-
+# Formats source files
 format:
 	clang-format --style=llvm -i src/*

@@ -12,7 +12,7 @@
 #include "lexer.h"
 #include <stdbool.h>
 
-// Possible values of PSA nodes
+// Possible values of PSA nodes (PSA = precedence syntax analysis)
 // Most of them represent an equivalent TokenType, but not all
 typedef enum psa_values {
 

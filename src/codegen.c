@@ -1,12 +1,12 @@
 // Project: prekladac-ifj26
 // File: codegen.c
-// Author: Lukas Dvorak (xdvoral00)
+// Author: Lukáš Dvořák (xdvoral00)
 
 /* AI usage: Gemini was used to generate IFJcode26 string escaping, DEFVAR
    hoisting, user function stack frames, control flow (if, while, return) and
    checked or adjusted by me, and to generate most of the comments in this file
-   becouse i suck in makeing good comments but the "how this file works" and
-   marknig of key fitures was my idea. I also found some bugs in the code (in
+   because I suck at making good comments but the "how this file works" and
+   marking of key features was my idea. I also found some bugs in the code (in
    subStr, ord, readInt/readDouble/readLine, missing toStr, implicit function
    return value, printing Unit, Unit function return discarding, $$entry_main
    label collision and standalone expression statements) which AI helped me
@@ -35,7 +35,7 @@
 // GLOBAL VARIABLES AND DECLARATIONS
 // ---------------------------------
 
-// counter for unik labels so if and while jumps dont get the same name
+// Counter for unique labels so if and while jumps don't get the same name
 // if two ifs had the same label name, the ifjcode26 interpreter would crash
 int label_id = 0;
 
@@ -50,7 +50,7 @@ void generate_statement(ASTNode node);
 /* HELPER FUNCTIONS
    ----------------
    prints string in ifjcode26 format (like PUSHS string@hello\032world)
-   ifjcode26 cant have raw spaces, newlines, '#' or '\' inside strings,
+   ifjcode26 can't have raw spaces, newlines, '#' or '\' inside strings,
    so we have to convert them to \XYZ decimal ascii codes
    (AI-assisted, prompt: "potrebuju v C napsat funkci, ktera mi vypise string ve
    formatu pro ifjcode26 a vsechny mezery, odradkovani, krizky a lomitka v nem
