@@ -134,14 +134,17 @@ Git repozitář jsme si vytvořili na GitHubu. Code review byl prováděn samost
 s asistencí AI nástrojů. PR schvaloval ve většině případů jen vedoucí.
 
 \subsection{Testování}
-Pro moduly \texttt{semantics}, symtable a bst jsme vytvořili jednotkové testy s využitím 
-testovacího rámce GoogleTest
+Pro moduly \texttt{semantics}, \texttt{symtable} a \texttt{bst} jsme vytvořili
+jednotkové testy s využitím testovacího rámce GoogleTest. Lexer jsme testovali
+manuální kontrolou výstupních tokenů. Parser a generátor kódu jsme testovali spolu
+s překladačem jako celkem, a to tak, že jsme vytvořili krátké programy v jazyce IFJ26 
+a pokusili se je naším překladačem přeložit.
 
 \subsection{Formátování zdrojového kódu}
-K formátování zdrojového kódu byl využit nástroj clang-format s formátovacím stylem LLVM. \\
-Pro názvy identifikátorů byl použit styl zápisu snake\_case, pro definice
+K formátování zdrojového kódu jsme použili nástroj clang-format s formátovacím stylem LLVM. \\
+Pro názvy identifikátorů jsme použili styl zápisu snake\_case, pro definice
 vlastních typů (\texttt{typedef}) PascalCase, pro výčty (\texttt{enum}) a konstanty
-byl použit MACRO\_CASE.
+jsme použili MACRO\_CASE.
 
 % =================================================
 \section{Architektura řešení}
