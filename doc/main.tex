@@ -74,13 +74,13 @@
         \hline
         \textbf{Člen týmu} & \textbf{VUT login} & \textbf{Osobní číslo} & \textbf{Podíl bodů} \\
         \hline
-        \textbf{Martin Vaško} & xvaskom00 & 282244 & DOPLŇTE \% \\
+        \textbf{Martin Vaško} & \textbf{xvaskom00} & \textbf{282244} & 54 \% \\
         \hline
-        Michal Bína & xbinami00 & 282028 & DOPLŇTE \% \\
+        Michal Bína & xbinami00 & 282028 & 13 \% \\
         \hline
-        Lukáš Dvořák & xdvoral00 & 282092 & DOPLŇTE \% \\
+        Lukáš Dvořák & xdvoral00 & 282092 & 20 \% \\
         \hline
-        Jiří Švec & xsvecji00 & 281993 & DOPLŇTE \% \\
+        Jiří Švec & xsvecji00 & 281993 & 13 \% \\
         \hline
     \end{tabularx}
 
@@ -274,7 +274,8 @@ VYUŽÍVÁ LOOK AHEAD, pokud zpracovávaný token je IDENTIFIER\\
 83 <literal> $\to$ VAL\_STRING\\
 84 <literal> $\to$ ()\\
 
-\textbackslash NL je 
+\textbackslash NL je token nového řádku pouze tam, kde jsou nové řádky
+ vyžadovány nebo zakázány.\\
 <expr> a <cond> se řeší pomocí precedenční syntaktické analýzy.\\
 Pravidla jsou nepravidelně očíslovaná, protože původní očíslovaná pravidla obsahovala
 chyby. Hodně pravidel bylo odstraněno a novým pravidlům jsme přidělili velká čísla,
@@ -298,8 +299,6 @@ LA – look-ahead token, tedy token následující po právě analyzovaném toke
 
 \subsection{Redukční pravidla precedenční syntaktické analýzy}
 
-E ve značení LL gramatiky je výraz reprezentovaný neterminálem <expr> nebo <cond>.
-
 \begin{multicols}{2}
 E $\to$ i \\
 E $\to$ VAL\_STRING \\
@@ -322,8 +321,10 @@ E $\to$ E != E
 \end{multicols}
 
 Vysvětlivky: \\
-i – identifikator \\
-VAL\_STRING, VAL\_INT, VAL\_DOUBLE – Literály daných typů
+i – identifikátor \\
+VAL\_STRING, VAL\_INT, VAL\_DOUBLE – Literály daných typů\\
+E ve značení LL gramatiky je výraz reprezentovaný neterminálem
+ <expr> nebo <cond>.
 
 
 \subsection{Precedenční tabulka}
@@ -342,14 +343,14 @@ V tabulce nejsou zobrazeny všechny operátory, protože operátory se stejnou p
 naprosto identické řádky i sloupce. Vytvořili jsme z nich skupiny a do tabulky vložili pouze
 jeden operátor reprezentující celou skupinu.
 
-* reprezentuje *  / \\
-+ reprezentuje + - \\
-< reprezentuje < <= > >= == != \\
-( reprezentuje pouze sebe \\
-) reprezentuje pouze sebe \\
-i reprezentuje identifikátory a literály \\
-\$ na zásobníku je speciální znak, který se chová jako terminál a je vždy na spodku zásobníku.\\
-\$ na vstupu je ukončovač výrazu.
+\textbf{*} reprezentuje *  / \\
+\textbf{+} reprezentuje + - \\
+\textbf{<} reprezentuje < <= > >= == != \\
+\textbf{(} reprezentuje pouze sebe \\
+\textbf{)} reprezentuje pouze sebe \\
+\textbf{i} reprezentuje identifikátory a literály \\
+\textbf{\$} na zásobníku je speciální znak, který se chová jako terminál a je vždy na spodku zásobníku.\\
+\textbf{\$} na vstupu je ukončovač výrazu.
 
 % =================================================
 \section{Popis implementovaných modulů}
@@ -361,13 +362,29 @@ i reprezentuje identifikátory a literály \\
     \toprule
     \textbf{Modul} & \textbf{Stručný popis odpovědnosti modulu} \\
     \midrule
-     \texttt{lexer.c / lexer.h} & Ze zdrojového kódu v jazyce \texttt{IFJ26}, který si celý zanalyzuje, umožnuje postupně vrátit všechny vytvořené tokeny z programu.  \\
-     \texttt{parser.c / parser.h} & Nad tokeny, které si vezme od lexeru, provede syntaktickou analýzu a vytvoří odpovídající abstraktní syntaktický strom. \\
-     \texttt{semantics.c / semantics.h} & Z BST kontroluje, zda je program sémanticky správně a vrací abstraktní sémantický strom.\\
-     \texttt{symtable.c / symtable.h} & DOPLŇTE \\
-     \texttt{codegen.c / codegen.h} & DOPLŇTE \\
-     \texttt{bst.c / bst.h / bst\_priv.h} & Umožnuje ukládat data do výškově vyváženého binárního stromu a poté k nim efektivně přistupovat. \\
-    \texttt{error\_codes.h} & Obsahuje seznam chybových návratových kódů. \\
+    \texttt{main.c} & Vstupní bod celého programu. \\
+    \texttt{lexer.c/.h} & Ze zdrojového kódu v jazyce \texttt{IFJ26}, který si
+     celý předem zanalyzuje, umožnuje postupně vrátit všechny vytvořené tokeny
+      z programu.  \\
+    \texttt{parser.c/.h/\_priv.h} & Volá funkce všech hlavních modulů potřebných
+     pro překlad, zpracovává tokeny pomocí syntaktické analýzy založené na 
+     LL gramatice metodou rekurzivního sestupu (kromě tokenů výrazů) a zároveň 
+     při tom vytváří abstraktní syntaktický strom. \\
+    \texttt{expr\_parser.c/.h/\_priv.h} & Zpracovává tokeny všech výrazů pouze pomocí
+     precedenční syntaktické analýzy, a zároveň při tom vytváří abstraktní 
+     syntaktický strom. \\
+    \texttt{ast\_module.c/.h} & Obsahuje funkce pro tvorbu abstraktního
+     syntaktického stromu (AST). \\
+    \texttt{semantics.c/.h/\_priv.h} & Z BST kontroluje, zda je program 
+     sémanticky správně a vrací abstraktní sémantický strom.\\
+    \texttt{symtable.c / symtable.h} & DOPLŇTE \\
+    \texttt{bst.c / bst.h / bst\_priv.h} & Implementace výškově vyváženého 
+    binárního vyhledávacího stromu. Je implementován jako AVL strom, klíčem 
+    je řetězec. \\
+    \texttt{codegen.c / codegen.h} & DOPLŇTE \\
+     
+    \texttt{error\_codes.h} & Obsahuje definice konstant chybových 
+    návratových kódů a makro pro vypisování chybových hlášek. \\
      
     \bottomrule
 \end{longtable}
