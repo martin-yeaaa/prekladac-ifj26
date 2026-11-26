@@ -1,0 +1,15 @@
+import ifj26.*
+
+
+def hello() = is()
+
+def is() = this()
+
+def this() = thing()
+
+
+@main def main() : Unit = hello()
+
+def thing() = on()
+
+def on() = hello()

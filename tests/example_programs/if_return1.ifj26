@@ -1,0 +1,9 @@
+import ifj26.*
+
+@main def main() : Unit = 
+    val x = 5
+    val y = 7
+    if x > y + y then
+     return ()
+    else
+      return ()

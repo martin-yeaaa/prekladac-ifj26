@@ -1,0 +1,6 @@
+import ifj26.*
+
+def what(x: Int) : = x
+
+
+@main def main() = ()

@@ -1,0 +1,13 @@
+import ifj26.*
+
+def what(x: Int) = x
+
+
+
+
+def is(  hi   :  String  ) = hi
+
+def up(no:Double) = no
+def guys(lol:Unit) = lol
+
+@main def main() = ()

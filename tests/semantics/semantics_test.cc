@@ -8,6 +8,7 @@ extern "C" {
 #include "../../src/semantics.h"
 #include "../../src/bst.h"
 #include "../../src/symtable.h"
+#include "../../src/ast_module.h"
 #include <string.h>
 }
 
