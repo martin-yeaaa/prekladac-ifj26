@@ -1,0 +1,11 @@
+import ifj26.*
+
+
+
+@main def main() : Unit =
+    hey(5)
+    ()
+
+
+def hey(a : Int) : Int = a + a
+

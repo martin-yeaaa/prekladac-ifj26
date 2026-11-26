@@ -1,0 +1,16 @@
+import ifj26.*
+
+
+def suma_real(x: Double, y: Double) = 
+    x + y
+
+def suma(x: Double, y: Double) = 
+    suma_real(x, y)
+
+
+@main def hi() =
+    val x = 5+5*2
+    val y = -(85.0/(-5.0))
+    var sum = suma(x, y)
+    var printing = toInt(sum)
+    print(printing);print("\n");

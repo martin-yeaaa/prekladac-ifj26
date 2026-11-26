@@ -1,0 +1,8 @@
+import ifj26.*
+
+// small s in string
+def wow(x: Int, d : Double , this   : string  ,  is:Unit,crazy:Int) = x
+
+
+
+@main def main() = ()

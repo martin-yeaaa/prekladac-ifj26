@@ -1,0 +1,20 @@
+import ifj26.*
+
+
+
+@main def main() : Unit = hey(5, -45, +8.88, "WHAT", ())
+
+
+def hey(a : Int,
+        b : Int,
+        c : Double,
+        d : String,
+        e : Unit,
+        ) : Unit = 
+    michael(a, b, c, d, e)
+
+
+def michael(a : Int,
+        b : Int, c : Double,
+        d : String, e : Unit) : Unit = 
+        hey(a, b, c, d, e)

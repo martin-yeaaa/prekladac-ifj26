@@ -1,0 +1,12 @@
+import ifj26.*
+
+def wow(x: Int, 
+    d : Double , 
+    this   : String    ,
+    is:Unit,
+    crazy:Int) = 
+    x
+
+
+
+@main def main() = ()
