@@ -8,7 +8,7 @@ CFLAGS = -std=c23 -pedantic -Wall -Wextra -Werror
 MAIN = src/main.c src/error_codes.h
 LEXER = src/lexer.c src/lexer.h
 PARSER = src/parser.c src/parser.h src/parser_priv.h
-EXPR_PARSER = src/expr_parser.c src/expr_parser.h
+EXPR_PARSER = src/expr_parser.c src/expr_parser.h src/expr_parser_priv.h
 SEMANTICS = src/semantics.c src/semantics.h src/semantics_priv.h
 SYMTABLE = src/symtable.c src/symtable.h
 BST = src/bst.c src/bst.h src/bst_priv.h
