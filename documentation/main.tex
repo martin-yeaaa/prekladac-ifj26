@@ -26,6 +26,7 @@
 \usepackage{listings}
 \usepackage{tikz}
 \usepackage{multicol}
+\usepackage{caption}
 \usetikzlibrary{arrows.meta,positioning,shapes.geometric,automata}
 
 \usepackage[hidelinks]{hyperref}
@@ -39,13 +40,13 @@
 
 \pagestyle{fancy}
 \fancyhf{}
-\lhead{IFJ26 -- Dokumentace projektu}
+\lhead{Dokumentace překladače jazyka IFJ26}
 \rhead{\thepage}
 \renewcommand{\headrulewidth}{0.4pt}
 
 \hypersetup{
     pdfsubject={Překladač imperativního jazyka IFJ26},
-    pdftitle={Dokumentace projektu IFJ26}
+    pdftitle={Dokumentace}
 }
 
 % Sloupec s automatickým zalamováním textu
@@ -78,7 +79,7 @@
     \raggedright {\large\bfseries Členové týmu:}\\[0.3cm]
     \begin{tabularx}{\textwidth}{|l|Y|Y|Y|}
         \hline
-        \textbf{Jméno a příjmení} & \textbf{Login} & \textbf{Osobní číslo} & \textbf{Podíl bodů} \\
+        \textbf{Jméno a příjmení} & \textbf{VUT login} & \textbf{Osobní číslo} & \textbf{Podíl bodů} \\
         \hline
         \textbf{Martin Vaško} & \textbf{xvaskom00} & \textbf{282244} & \textbf{54 \%} \\
         \hline
@@ -146,6 +147,7 @@ Pro názvy identifikátorů jsme použili styl zápisu snake\_case, pro definice
 vlastních typů (\texttt{typedef}) PascalCase, pro výčty (\texttt{enum}) a konstanty
 jsme použili MACRO\_CASE.
 
+\newpage
 % =================================================
 \section{Architektura řešení}
 % =================================================
@@ -181,16 +183,25 @@ DOPLŇTE VLASTNÍ TEXT.
         height=0.85\textheight,
         keepaspectratio
     ]{FSM_ver5.jpg}
-    \caption{Konečný automat lexikálního analyzátoru}
+    \caption*{Koncové stavy jsou vyznačeny tučným okrajem.}
     \label{fig:automat}
 \end{figure}
 \end{landscape}
 
-\subsection{Odchylky od standardního modelu}
-1. Pro \texttt{@} sa netvoril samostatny token, ale tvoril sa token pre celek \texttt{@main}. \\
-2. Mezery, \texttt{LF} a \texttt{EOF} mají vlastní pravidla. \\
-3. Diagram dovoluje pouze jedno podtržítko mezi číslicemi, ale implementace dovoluje více. \\
-4. Vnořené komentáře jsou řešeny složitěji a v diagramu by šly těžko zapsat.
+\subsection{Poznámky ke konečnému automatu}
+
+\begin{itemize}
+\item Tři velké tečky u stavů vnořených komentářů naznačují pokračování diagramu 
+s opakujícími se stavy.
+\item Vnořené komentáře jsou v implementaci řešeny složitěji a v diagramu 
+by šly těžko zapsat.
+\item Pro znak \texttt{@} se nevytváří samostatný token, ale 
+vytváří se token pro celek \texttt{@main}.
+\item Mezery, \texttt{LF} a \texttt{EOF} jsou v automatu vyznačeny jako koncové stavy,
+avšak mezery tokeny netvoří a tvorba tokenů \texttt{LF} a \texttt{EOF} má vlastní pravidla.
+\item Diagram dovoluje pouze jedno podtržítko mezi číslicemi, ale naše implementace 
+dovoluje více.
+\end{itemize}
 
 % =================================================
 \section{Syntaktická analýza}
@@ -198,41 +209,45 @@ DOPLŇTE VLASTNÍ TEXT.
 \subsection{LL gramatika}
 
 1 <program> $\to$ <prolog> <fun\_def\_list\_nl> \\
-2 <prolog> $\to$ import ifj26.* \\
+2 <prolog> $\to$ \texttt{import ifj26.*} \\
 300 <fun\_def\_list\_nl> $\to$ \textbackslash NL <fun\_def\_list> EOF \\
-3 <fun\_def\_list> $\to$ epsilon \\
+3 <fun\_def\_list> $\to$ $\varepsilon$ \\
 4 <fun\_def\_list> $\to$ <fun\_def\_any> <fun\_def\_list\_nl>\\
-5 <fun\_def\_any> $\to$ @main <fun\_def> \\
+5 <fun\_def\_any> $\to$ \texttt{@main} <fun\_def> \\
 - POZOR: parser ve pravidle 5 ignoruje \textbackslash NL 
 mezi @main a <fun\_def>, i když lexer \textbackslash NL, 
-vydá, protože lexer porušil dohodu vypisovat pouze povinné nebo zakázané \textbackslash NL
+vydá, protože lexer tady porušil dohodu vytvářet pouze povinné 
+nebo zakázané \textbackslash NL
 
-6 <fun\_def\_any> $\to$ <fun\_def>\\
-7 <fun\_def> $\to$ def IDENTIFIER (<param\_list>) <data\_type\_opt> = <fun\_body>\\
-8 <param\_list> $\to$ epsilon\\
+6 <fun\_def\_any> $\to$ <fun\_def> \\
+7 <fun\_def> $\to$ \texttt{def} IDENTIFIER \texttt{(}<param\_list>\texttt{)}
+ <data\_type\_opt> \texttt{=} <fun\_body>\\
+8 <param\_list> $\to$ $\varepsilon$ \\
 9 <param\_list> $\to$ <param> <param\_sep>\\
-10 <param\_sep> $\to$ epsilon\\
-11 <param\_sep> $\to$ , <param> <param\_sep>\\
-12 <param> $\to$ IDENTIFIER : <data\_type>\\
-13 <data\_type\_opt> $\to$ epsilon\\
-14 <data\_type\_opt> $\to$ : <data\_type>\\
-15 <data\_type> $\to$ Int\\
-16 <data\_type> $\to$ Double\\
-17 <data\_type> $\to$ String\\
-18 <data\_type> $\to$ Unit\\
+10 <param\_sep> $\to$ $\varepsilon$\\
+11 <param\_sep> $\to$ \texttt{,} <param> <param\_sep>\\
+12 <param> $\to$ IDENTIFIER \texttt{:} <data\_type>\\
+13 <data\_type\_opt> $\to$ $\varepsilon$\\
+14 <data\_type\_opt> $\to$ \texttt{:} <data\_type>\\
+15 <data\_type> $\to$ \texttt{Int}\\
+16 <data\_type> $\to$ \texttt{Double}\\
+17 <data\_type> $\to$ \texttt{String}\\
+18 <data\_type> $\to$ \texttt{Unit}\\
 19 <fun\_body> $\to$ <expr\_or\_call>\\
 20 <fun\_body> $\to$ <block>\\
-21 <block> $\to$ \textbackslash NL INDENT <stmts> DEDENT  + "VYTVORI" UMELY TOKEN \textbackslash NL\\
+21 <block> $\to$ \textbackslash NL INDENT <stmts> DEDENT \\
+- POZOR: parser po použití pravidla 21 vytvoří token \textbackslash NL ,
+a pak ho analyzuje, jako kdyby přišel ze vstupu!\\
 22 <stmts> $\to$ <stmt> <stmt\_sep>\\
-23 <stmt\_sep> $\to$ ; <after\_semicolon>\\
+23 <stmt\_sep> $\to$ \texttt{;} <after\_semicolon>\\
 24 <stmt\_sep> $\to$ \textbackslash NL <stmt\_next>\\
 200 <after\_semicolon> $\to$ <stmts>\\
 201 <after\_semicolon> $\to$ \textbackslash NL <stmt\_next>\\
-25 <stmt\_next> $\to$ epsilon\\
+25 <stmt\_next> $\to$ $\varepsilon$\\
 26 <stmt\_next> $\to$ <stmts>\\
 27 <stmt> $\to$ <val\_def>\\
 28 <stmt> $\to$ <var\_def>\\
-29 <stmt> $\to$ return <return\_stmt>\\
+29 <stmt> $\to$ \texttt{return} <return\_stmt>\\
 30 <stmt> $\to$ <if\_stmt>\\
 31 <stmt> $\to$ <while\_loop>\\
 100 <stmt> $\to$ <decision>\\
@@ -247,35 +262,37 @@ VYUŽÍVÁ LOOK AHEAD, pokud zpracovávaný token je IDENTIFIER\\
 \\
 \\
 
-120 <fun\_call> $\to$ IDENTIFIER(<arg\_list>)\\
-140 <assignment> $\to$ IDENTIFIER = <expr\_or\_call>\\
+120 <fun\_call> $\to$ IDENTIFIER\texttt{(}<arg\_list>\texttt{)}\\
+140 <assignment> $\to$ IDENTIFIER \texttt{=} <expr\_or\_call>\\
 
-37 <return\_stmt> $\to$ epsilon\\
+37 <return\_stmt> $\to$ $\varepsilon$\\
 38 <return\_stmt> $\to$ <expr\_or\_call>\\
-39 <val\_def> $\to$ val IDENTIFIER <data\_type\_opt> = <expr\_or\_call>\\
-40 <var\_def> $\to$ var IDENTIFIER <data\_type\_opt> = <expr\_or\_call>\\
+39 <val\_def> $\to$ \texttt{val} IDENTIFIER <data\_type\_opt> \texttt{=} <expr\_or\_call>\\
+40 <var\_def> $\to$ \texttt{var} IDENTIFIER <data\_type\_opt> \texttt{=} <expr\_or\_call>\\
 
-46 <arg\_list> $\to$ epsilon\\
+46 <arg\_list> $\to$ $\varepsilon$\\
 47 <arg\_list> $\to$ <arg> <arg\_sep>\\
-48 <arg\_sep> $\to$ epsilon\\
-49 <arg\_sep> $\to$ , <arg> <arg\_sep>\\
+48 <arg\_sep> $\to$ $\varepsilon$\\
+49 <arg\_sep> $\to$ \texttt{,} <arg> <arg\_sep>\\
 50 <arg> $\to$ IDENTIFIER\\
 51 <arg> $\to$ <literal>\\
 52 <arg> $\to$ <unary\_op> <literal>\\
 
-66 <unary\_op> $\to$ -\\
-67 <unary\_op> $\to$ +\\
+66 <unary\_op> $\to$ \texttt{-}\\
+67 <unary\_op> $\to$ \texttt{+}\\
 
-72 <if\_stmt> $\to$ if <cond> then <block> \textbackslash NL else <block>\\
-73 <while\_loop> $\to$ while <cond> do <block>\\
+72 <if\_stmt> $\to$ \texttt{if} <cond> \texttt{then} <block> \textbackslash NL 
+\texttt{else} <block>\\
+73 <while\_loop> $\to$ \texttt{while} <cond> \texttt{do} <block>\\
 
 81 <literal> $\to$ VAL\_INT\\
 82 <literal> $\to$ VAL\_DOUBLE\\
 83 <literal> $\to$ VAL\_STRING\\
-84 <literal> $\to$ ()\\
+84 <literal> $\to$ \texttt{()}\\
 
 \textbackslash NL je token nového řádku pouze tam, kde jsou nové řádky
  vyžadovány nebo zakázány.\\
+IDENTIFIER je to token identifikátoru. VAL\_INT VAL\_DOUBLE VAL\_STRING jsou tokeny literálů. \\
 <expr> a <cond> se řeší pomocí precedenční syntaktické analýzy.\\
 Pravidla jsou nepravidelně očíslovaná, protože původní očíslovaná pravidla obsahovala
 chyby. Hodně pravidel bylo odstraněno a novým pravidlům jsme přidělili velká čísla,
