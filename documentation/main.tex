@@ -377,10 +377,12 @@ jeden operátor reprezentující celou skupinu.
 \textbf{\$} na zásobníku je speciální znak, který se chová jako terminál a je vždy na spodku zásobníku.\\
 \textbf{\$} na vstupu je ukončovač výrazu.
 
+\newpage
 % =================================================
-\section{Popis implementovaných modulů}
+\section{Popisy implementovaných modulů}
 % =================================================
 
+\renewcommand{\arraystretch}{1.2}
 \begin{longtable}{p{0.30\textwidth}p{0.68\textwidth}}
     \toprule
     \textbf{Modul} & \textbf{Stručný popis odpovědnosti modulu} \\
@@ -398,13 +400,17 @@ jeden operátor reprezentující celou skupinu.
      syntaktický strom. \\
     \texttt{ast\_module.c/.h} & Obsahuje funkce pro tvorbu abstraktního
      syntaktického stromu (AST). \\
-    \texttt{semantics.c/.h/\_priv.h} & Z BST kontroluje, zda je program 
-     sémanticky správně a vrací abstraktní sémantický strom.\\
-    \texttt{symtable.c / symtable.h} & DOPLŇTE \\
-    \texttt{bst.c / bst.h / bst\_priv.h} & Implementace výškově vyváženého 
+    \texttt{semantics.c/.h/\_priv.h} & Projde neúplným AST (který vytvořil parser),
+     přičemž naplní tabulku symbolů, provede všechny typové a sémantické kontroly 
+     a AST dokončí tím, že do uzlů zapíše dodatečné informace 
+     (např. doplní chybějící datové typy, ukazatele do tabulky symbolů, ...).\\
+    \texttt{symtable.c/.h} & Umožňuje vytvořit tabulku symbolů a vložit do ní symboly,
+     podporuje překrývání proměnných pomocí zásobníku tabulek symbolů a umožňuje
+      dočasné odložení a obnovení tohoto zásobníku. \\
+    \texttt{bst.c/.h/\_priv.h} & Implementace výškově vyváženého 
     binárního vyhledávacího stromu. Je implementován jako AVL strom, klíčem 
     je řetězec. \\
-    \texttt{codegen.c / codegen.h} & Prochází sémanticky zanalyzovaný AST a generuje
+    \texttt{codegen.c/.h} & Prochází sémanticky zanalyzovaný AST a generuje
      z něj cílový mezikód IFJcode26. \\
      
     \texttt{error\_codes.h} & Obsahuje definice konstant chybových 
@@ -413,6 +419,7 @@ jeden operátor reprezentující celou skupinu.
     \bottomrule
 \end{longtable}
 
+\vspace{0.6cm}
 
 % =================================================
 \section{Využití nástrojů AI}
@@ -429,21 +436,23 @@ Každý člen využíval AI model, jaký chtěl. Mezi využité modely patří t
 \end{itemize}
 
 \subsection{Využití AI}
-Dovysvětlení zadání a funkci dílčích částí překladače (napr. významu AST, tabulky symbolů),
+Každý člen používal AI svým stylem, ale typicky jsme ji využívali k dovysvětlení zadání
+a funkci dílčích částí překladače (napr. významu AST, tabulky symbolů),
 k vyplnění jednoduchých polí podle předlohy (v lexeru) a ke konzultaci řešení některých
-částí lexeru a generátoru kódu. Dále byl využit k tvorbě návrhu šablony pro tuto
-dokumentaci (pouze šablona, text NE!), pro tvorbu testovací sady pro modul
-\texttt{semantics}, a pro hledání chyb v kódu.
+částí lexeru a většiny částí generátoru kódu, patřičně označených v kódu. 
+Dále byl využit k tvorbě \textbf{návrhu šablony} pro tuto
+dokumentaci (pouze šablona, text NE!), \\ pro tvorbu testovací sady pro modul
+\texttt{semantics}, a pro hledání kritických chyb v kódu.
 
 \subsection{Problémy s AI}
 
 \begin{itemize}
 \item Na vysvětlení věcí bylo potřeba se ptát vícekrát, protože AI
- vysvětlovalo příliš složitě.
+ vysvětlovala příliš složitě.
 \item Při hledání chyb AI vypisovala i chyby, které ve skutečnosti chybami 
 nebyly, protože neměla celý kontext.
 \item Někteří členové týmu využívali bezplatné verze AI nástrojů, 
-takže občas byl vyčerpán limit používání a bylo třeba počkat.
+takže občas v nečekanou chvíli vyčerpali limit a museli čekat, dokud se jim neobnoví.
 \end{itemize}
 
 \end{document}
