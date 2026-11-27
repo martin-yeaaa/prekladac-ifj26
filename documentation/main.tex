@@ -1,0 +1,455 @@
+
+
+
+\documentclass[10pt,a4paper]{article}
+
+% ------------------------------------------------
+% ZAKLADNI NASTAVENI A BALICKY
+% ------------------------------------------------
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[czech]{babel}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=2.3cm,headheight=14pt]{geometry}
+
+\usepackage{pdflscape}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{tikz}
+\usepackage{multicol}
+\usepackage{caption}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,automata}
+
+\usepackage[hidelinks]{hyperref}
+
+% ------------------------------------------------
+% VZHLED DOKUMENTU
+% ------------------------------------------------
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\setlist{nosep,leftmargin=*}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{Dokumentace překladače jazyka IFJ26}
+\rhead{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\hypersetup{
+    pdfsubject={Překladač imperativního jazyka IFJ26},
+    pdftitle={Dokumentace}
+}
+
+% Sloupec s automatickým zalamováním textu
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+
+\begin{document}
+
+% =================================================
+% TITULNI STRANA
+% =================================================
+
+\begin{titlepage}
+\centering
+
+    \begin{figure}[H]
+        \raggedright
+        \includegraphics[
+            width=0.6\linewidth,
+            height=0.6\textheight,
+            keepaspectratio
+        ]{vutfitlogo.png}
+        \label{fig:Logo}
+    \end{figure}
+
+    \vspace{7cm}
+    
+    {\huge\bfseries Překladač imperativního jazyka IFJ26}\\[0.5cm]
+    {\LARGE\bfseries Dokumentace}\\[6.5cm]
+
+    \raggedright {\large\bfseries Členové týmu:}\\[0.3cm]
+    \begin{tabularx}{\textwidth}{|l|Y|Y|Y|}
+        \hline
+        \textbf{Jméno a příjmení} & \textbf{VUT login} & \textbf{Osobní číslo} & \textbf{Podíl bodů} \\
+        \hline
+        \textbf{Martin Vaško} & \textbf{xvaskom00} & \textbf{282244} & \textbf{54 \%} \\
+        \hline
+        Michal Bína & xbinami00 & 282028 & 13 \% \\
+        \hline
+        Lukáš Dvořák & xdvoral00 & 282092 & 20 \% \\
+        \hline
+        Jiří Švec & xsvecji00 & 281993 & 13 \% \\
+        \hline
+    \end{tabularx}
+
+    \vspace{1.0cm}
+    \begin{tabularx}{\textwidth}{lY}
+        \textbf{Varianta zadání:} & vv-BVS \\
+        \textbf{Implementovaná rozšíření:} &ŽÁDNÁ \\
+        \textbf{Git repozitář:} & \url{https://github.com/martin-yeaaa/prekladac-ifj26} \\
+    \end{tabularx}
+
+    \vfill
+    {\large Brno, 27.11.2026}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% =================================================
+\section{Spolupráce a vývoj}
+% =================================================
+
+\subsection{Rozdělení práce}
+
+\begin{itemize}
+    \item \textbf{Martin Vaško (vedoucí):} implementace celé syntaktické analýzy i 
+    sémantické analýzy, tabulky symbolů a vv-BVS, specifikace AST a funkce pro jeho tvorbu,
+    nárvh a dokončení LL gramatiky, dokončení \\ LL tabulky, testování, část dokumentace
+    \item \textbf{Lukáš Dvořák:} generátor kódu 
+    \item \textbf{Michal Bína:} část lexeru, část LL gramatiky,
+     prvá verze LL tabulky, precedenční tabulka
+    \item \textbf{Jiří Švec:} část lexeru a část dokumentace
+\end{itemize}
+
+
+Rozdělení bodů bylo přizpůsobeno podle vykonané práce každého člena a 
+podle jejich přístupu k práci. 
+
+
+\subsection{Organizace vývoje}
+Jako komunikační prostředek byl zvolen Discord. Neukázal se však jako dostačující, 
+protože někteří členové týmu na zprávy reagovali později, než bylo potřeba.
+Důležité věci se probraly na 2 osobních schůzkách \\ a na 3 online schůzkách.
+
+Git repozitář jsme si vytvořili na GitHubu. Code review byl prováděn samostatně
+s asistencí AI nástrojů. PR schvaloval ve většině případů jen vedoucí.
+
+\subsection{Testování}
+Pro moduly \texttt{semantics}, \texttt{symtable} a \texttt{bst} jsme vytvořili
+jednotkové testy s využitím testovacího rámce GoogleTest. Lexer jsme testovali
+manuální kontrolou výstupních tokenů. Parser a generátor kódu jsme testovali spolu
+s překladačem jako celkem, a to tak, že jsme vytvořili krátké programy v jazyce IFJ26 
+a pokusili se je naším překladačem přeložit.
+
+\subsection{Formátování zdrojového kódu}
+K formátování zdrojového kódu jsme použili nástroj clang-format s formátovacím stylem LLVM. \\
+Pro názvy identifikátorů jsme použili styl zápisu snake\_case, pro definice
+vlastních typů (\texttt{typedef}) PascalCase, pro výčty (\texttt{enum}) a konstanty
+jsme použili MACRO\_CASE.
+
+\newpage
+% =================================================
+\section{Blokové schéma architektury}
+% =================================================
+
+\subsection{Blokové schéma}
+
+\begin{figure}[H]
+    \centering
+    \makebox[\textwidth][c]{%
+        \includegraphics[width=1.15\textwidth]{BLOK SCHEMA.png}
+    }
+\end{figure}
+
+\begin{landscape}
+\begin{figure}[p]
+
+% =================================================
+\section{Lexikální analýza}
+% =================================================
+
+\subsection{Konečný automat}
+
+    \centering
+    \includegraphics[
+        width=0.95\linewidth,
+        height=0.85\textheight,
+        keepaspectratio
+    ]{FSM_ver5.jpg}
+    \caption*{Koncové stavy jsou vyznačeny tučným okrajem.}
+    \label{fig:automat}
+\end{figure}
+\end{landscape}
+
+\subsection{Poznámky ke konečnému automatu}
+
+\begin{itemize}
+\item Tři velké tečky u stavů vnořených komentářů naznačují pokračování diagramu 
+s opakujícími se stavy.
+\item Vnořené komentáře jsou v implementaci řešeny složitěji a v diagramu 
+by šly těžko zapsat.
+\item Pro znak \texttt{@} se nevytváří samostatný token, ale 
+vytváří se token pro celek \texttt{@main}.
+\item Mezery, \texttt{LF} a \texttt{EOF} jsou v automatu vyznačeny jako koncové stavy,
+avšak mezery tokeny netvoří a tvorba tokenů \texttt{LF} a \texttt{EOF} má vlastní pravidla.
+\item Diagram dovoluje pouze jedno podtržítko mezi číslicemi, ale naše implementace 
+dovoluje více.
+\end{itemize}
+
+% =================================================
+\section{Syntaktická analýza}
+% =================================================
+\subsection{LL gramatika}
+
+1 <program> $\to$ <prolog> <fun\_def\_list\_nl> \\
+2 <prolog> $\to$ \texttt{import ifj26.*} \\
+300 <fun\_def\_list\_nl> $\to$ \textbackslash NL <fun\_def\_list> EOF \\
+3 <fun\_def\_list> $\to$ $\varepsilon$ \\
+4 <fun\_def\_list> $\to$ <fun\_def\_any> <fun\_def\_list\_nl>\\
+5 <fun\_def\_any> $\to$ \texttt{@main} <fun\_def> \\
+- POZOR: parser ve pravidle 5 ignoruje \textbackslash NL 
+mezi @main a <fun\_def>, i když lexer \textbackslash NL, 
+vydá, protože lexer tady porušil dohodu vytvářet pouze povinné 
+nebo zakázané \textbackslash NL
+
+6 <fun\_def\_any> $\to$ <fun\_def> \\
+7 <fun\_def> $\to$ \texttt{def} IDENTIFIER \texttt{(}<param\_list>\texttt{)}
+ <data\_type\_opt> \texttt{=} <fun\_body>\\
+8 <param\_list> $\to$ $\varepsilon$ \\
+9 <param\_list> $\to$ <param> <param\_sep>\\
+10 <param\_sep> $\to$ $\varepsilon$\\
+11 <param\_sep> $\to$ \texttt{,} <param> <param\_sep>\\
+12 <param> $\to$ IDENTIFIER \texttt{:} <data\_type>\\
+13 <data\_type\_opt> $\to$ $\varepsilon$\\
+14 <data\_type\_opt> $\to$ \texttt{:} <data\_type>\\
+15 <data\_type> $\to$ \texttt{Int}\\
+16 <data\_type> $\to$ \texttt{Double}\\
+17 <data\_type> $\to$ \texttt{String}\\
+18 <data\_type> $\to$ \texttt{Unit}\\
+19 <fun\_body> $\to$ <expr\_or\_call>\\
+20 <fun\_body> $\to$ <block>\\
+21 <block> $\to$ \textbackslash NL INDENT <stmts> DEDENT \\
+- POZOR: parser po použití pravidla 21 vytvoří token \textbackslash NL ,
+a pak ho analyzuje, jako kdyby přišel ze vstupu!\\
+22 <stmts> $\to$ <stmt> <stmt\_sep>\\
+23 <stmt\_sep> $\to$ \texttt{;} <after\_semicolon>\\
+24 <stmt\_sep> $\to$ \textbackslash NL <stmt\_next>\\
+200 <after\_semicolon> $\to$ <stmts>\\
+201 <after\_semicolon> $\to$ \textbackslash NL <stmt\_next>\\
+25 <stmt\_next> $\to$ $\varepsilon$\\
+26 <stmt\_next> $\to$ <stmts>\\
+27 <stmt> $\to$ <val\_def>\\
+28 <stmt> $\to$ <var\_def>\\
+29 <stmt> $\to$ \texttt{return} <return\_stmt>\\
+30 <stmt> $\to$ <if\_stmt>\\
+31 <stmt> $\to$ <while\_loop>\\
+100 <stmt> $\to$ <decision>\\
+
+VYUŽÍVÁ LOOK AHEAD, pokud zpracovávaný token je IDENTIFIER\\
+101 <expr\_or\_call> $\to$ <fun\_call>   \hspace{0.7cm}   Pokud look ahead je (\\
+102 <expr\_or\_call> $\to$ <expr>   \hspace{0.7cm}   Pokud look ahead není (\\
+
+VYUŽÍVÁ LOOK AHEAD, pokud zpracovávaný token je IDENTIFIER\\
+103 <decision> $\to$ <expr\_or\_call> \hspace{0.7cm}  Pokud look ahead není =\\
+104 <decision> $\to$ <assignment> \hspace{0.7cm}  Pokud look ahead je =\\
+\\
+\\
+
+120 <fun\_call> $\to$ IDENTIFIER\texttt{(}<arg\_list>\texttt{)}\\
+140 <assignment> $\to$ IDENTIFIER \texttt{=} <expr\_or\_call>\\
+
+37 <return\_stmt> $\to$ $\varepsilon$\\
+38 <return\_stmt> $\to$ <expr\_or\_call>\\
+39 <val\_def> $\to$ \texttt{val} IDENTIFIER <data\_type\_opt> \texttt{=} <expr\_or\_call>\\
+40 <var\_def> $\to$ \texttt{var} IDENTIFIER <data\_type\_opt> \texttt{=} <expr\_or\_call>\\
+
+46 <arg\_list> $\to$ $\varepsilon$\\
+47 <arg\_list> $\to$ <arg> <arg\_sep>\\
+48 <arg\_sep> $\to$ $\varepsilon$\\
+49 <arg\_sep> $\to$ \texttt{,} <arg> <arg\_sep>\\
+50 <arg> $\to$ IDENTIFIER\\
+51 <arg> $\to$ <literal>\\
+52 <arg> $\to$ <unary\_op> <literal>\\
+
+66 <unary\_op> $\to$ \texttt{-}\\
+67 <unary\_op> $\to$ \texttt{+}\\
+
+72 <if\_stmt> $\to$ \texttt{if} <cond> \texttt{then} <block> \textbackslash NL 
+\texttt{else} <block>\\
+73 <while\_loop> $\to$ \texttt{while} <cond> \texttt{do} <block>\\
+
+81 <literal> $\to$ VAL\_INT\\
+82 <literal> $\to$ VAL\_DOUBLE\\
+83 <literal> $\to$ VAL\_STRING\\
+84 <literal> $\to$ \texttt{()}\\
+
+\textbackslash NL je token nového řádku pouze tam, kde jsou nové řádky
+ vyžadovány nebo zakázány.\\
+IDENTIFIER je to token identifikátoru. VAL\_INT VAL\_DOUBLE VAL\_STRING jsou tokeny literálů. \\
+<expr> a <cond> se řeší pomocí precedenční syntaktické analýzy.\\
+Pravidla jsou nepravidelně očíslovaná, protože původní očíslovaná pravidla obsahovala
+chyby. Hodně pravidel bylo odstraněno a novým pravidlům jsme přidělili velká čísla,
+aby se nepřekrývala se starými.
+
+\begin{landscape}
+
+\subsection{LL tabulka}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[
+        width=1.5\textwidth,
+        height=1\textheight,
+        keepaspectratio
+    ]{LL tabulka.png}
+    \label{fig:LL tabulka}
+\end{figure}
+
+Vysvětlivky: \\
+skip – právě analyzovaný token se přeskočí, přečte se další \\
+LA – look-ahead token, tedy token následující po právě analyzovaném tokenu\\
+
+\end{landscape}
+
+\subsection{Redukční pravidla precedenční syntaktické analýzy}
+
+\begin{multicols}{2}
+E $\to$ i \\
+E $\to$ VAL\_STRING \\
+E $\to$ VAL\_INT \\
+E $\to$ VAL\_DOUBLE \\
+E $\to$ () \hspace{0.7cm} (Literál Unit!) \\
+E $\to$ +E \\
+E $\to$ -E \\
+E $\to$ E+E \\
+E $\to$ E-E \\
+E $\to$ E*E \\
+E $\to$ E/E \\
+E $\to$ (E) \\
+E $\to$ E > E \\
+E $\to$ E >= E \\
+E $\to$ E < E \\
+E $\to$ E <= E \\
+E $\to$ E == E \\
+E $\to$ E != E 
+\end{multicols}
+
+Vysvětlivky: \\
+i – identifikátor \\
+VAL\_STRING, VAL\_INT, VAL\_DOUBLE – Literály daných typů\\
+E ve značení LL gramatiky je výraz reprezentovaný neterminálem
+ <expr> nebo <cond>.
+
+
+\subsection{Precedenční tabulka}
+
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[
+        width=\textwidth,
+        height=0.89\textheight,
+        keepaspectratio
+    ]{Precedencni tabulka.png}
+    \label{fig:Precedencni tabulka}
+\end{figure}
+
+
+
+V tabulce nejsou zobrazeny všechny operátory, protože operátory se stejnou prioritou mají 
+naprosto identické řádky i sloupce. Vytvořili jsme z nich skupiny a do tabulky vložili pouze
+jeden operátor reprezentující celou skupinu.
+
+\textbf{*} reprezentuje *  / \\
+\textbf{+} reprezentuje + - \\
+\textbf{<} reprezentuje < <= > >= == != \\
+\textbf{(} reprezentuje pouze sebe \\
+\textbf{)} reprezentuje pouze sebe \\
+\textbf{i} reprezentuje identifikátory a literály \\
+\textbf{\$} na zásobníku je speciální znak, který se chová jako terminál a je vždy na spodku zásobníku.\\
+\textbf{\$} na vstupu je ukončovač výrazu.
+
+\newpage
+% =================================================
+\section{Popisy implementovaných modulů}
+% =================================================
+
+\renewcommand{\arraystretch}{1.2}
+\begin{longtable}{p{0.30\textwidth}p{0.68\textwidth}}
+    \toprule
+    \textbf{Modul} & \textbf{Stručný popis odpovědnosti modulu} \\
+    \midrule
+    \texttt{main.c} & Vstupní bod celého programu. \\
+    \texttt{lexer.c/.h} & Ze zdrojového kódu v jazyce \texttt{IFJ26}, který si
+     celý předem zanalyzuje, umožnuje postupně vrátit všechny vytvořené tokeny
+      z programu.  \\
+    \texttt{parser.c/.h/\_priv.h} & Volá funkce všech hlavních modulů potřebných
+     pro překlad, zpracovává tokeny pomocí syntaktické analýzy založené na 
+     LL gramatice metodou rekurzivního sestupu (kromě tokenů výrazů) a zároveň 
+     při tom vytváří abstraktní syntaktický strom. \\
+    \texttt{expr\_parser.c/.h/\_priv.h} & Zpracovává tokeny všech výrazů pouze pomocí
+     precedenční syntaktické analýzy, a zároveň při tom vytváří abstraktní 
+     syntaktický strom. \\
+    \texttt{ast\_module.c/.h} & Obsahuje funkce pro tvorbu abstraktního
+     syntaktického stromu (AST). \\
+    \texttt{semantics.c/.h/\_priv.h} & Projde neúplným AST (který vytvořil parser),
+     přičemž naplní tabulku symbolů, provede všechny typové a sémantické kontroly 
+     a AST dokončí tím, že do uzlů zapíše dodatečné informace 
+     (např. doplní chybějící datové typy, ukazatele do tabulky symbolů, ...).\\
+    \texttt{symtable.c/.h} & Umožňuje vytvořit tabulku symbolů a vložit do ní symboly,
+     podporuje překrývání proměnných pomocí zásobníku tabulek symbolů a umožňuje
+      dočasné odložení a obnovení tohoto zásobníku. \\
+    \texttt{bst.c/.h/\_priv.h} & Implementace výškově vyváženého 
+    binárního vyhledávacího stromu. Je implementován jako AVL strom, klíčem 
+    je řetězec. \\
+    \texttt{codegen.c/.h} & Prochází sémanticky zanalyzovaný AST a generuje
+     z něj cílový mezikód IFJcode26. \\
+     
+    \texttt{error\_codes.h} & Obsahuje definice konstant chybových 
+    návratových kódů a makro pro vypisování chybových hlášek. \\
+     
+    \bottomrule
+\end{longtable}
+
+\vspace{0.6cm}
+
+% =================================================
+\section{Využití nástrojů AI}
+% =================================================
+
+\subsection{Použité AI modely}
+
+Každý člen využíval AI model, jaký chtěl. Mezi využité modely patří tyto:
+\begin{itemize}
+\item Claude Sonnet 5.5
+\item Claude Opus 5.5
+\item Gemini 4 Hydrogen
+\item ChatGPT GPT-6
+\end{itemize}
+
+\subsection{Využití AI}
+Každý člen používal AI svým stylem, ale typicky jsme ji využívali k dovysvětlení zadání
+a funkci dílčích částí překladače (napr. významu AST, tabulky symbolů),
+k vyplnění jednoduchých polí podle předlohy (v lexeru) a ke konzultaci řešení některých
+částí lexeru a většiny částí generátoru kódu, patřičně označených v kódu. 
+Dále byl využit k tvorbě \textbf{návrhu šablony} pro tuto
+dokumentaci (pouze šablona, text NE!), \\ pro tvorbu testovací sady pro modul
+\texttt{semantics}, a pro hledání kritických chyb v kódu.
+
+\subsection{Problémy s AI}
+
+\begin{itemize}
+\item Na vysvětlení věcí bylo potřeba se ptát vícekrát, protože AI
+ vysvětlovala příliš složitě.
+\item Při hledání chyb AI vypisovala i chyby, které ve skutečnosti chybami 
+nebyly, protože neměla celý kontext.
+\item Někteří členové týmu využívali bezplatné verze AI nástrojů, 
+takže občas v nečekanou chvíli vyčerpali limit a museli čekat, dokud se jim neobnoví.
+\end{itemize}
+
+\end{document}
+
+
+
+
